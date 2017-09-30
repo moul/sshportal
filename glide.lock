@@ -1,0 +1,17 @@
+hash: ccf85a0328819b0771666d20889b1b2cb572db9b1d19d3f69e209956f0055b10
+updated: 2017-09-30T13:13:10.902768+01:00
+imports:
+- name: github.com/anmitsu/go-shlex
+  version: 648efa622239a2f6ff949fed78ee37b48d499ba4
+- name: github.com/gliderlabs/ssh
+  version: 4a4de396c4d49400d09e0b4d83053a01539e4bcc
+- name: github.com/urfave/cli
+  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
+- name: golang.org/x/crypto
+  version: 0fe963104e9d1877082f8fb38f816fcd97eb1d10
+  subpackages:
+  - curve25519
+  - ed25519
+  - ed25519/internal/edwards25519
+  - ssh
+testImports: []
