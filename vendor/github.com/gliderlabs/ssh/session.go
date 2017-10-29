@@ -64,6 +64,8 @@ type Session interface {
 	Pty() (Pty, <-chan Window, bool)
 
 	// TODO: Signals(c chan<- Signal)
+
+	MaskedReqs() chan *gossh.Request
 }
 
 func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx *sshContext) {
@@ -73,27 +75,29 @@ func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChanne
 		return
 	}
 	sess := &session{
-		Channel: ch,
-		conn:    conn,
-		handler: srv.Handler,
-		ptyCb:   srv.PtyCallback,
-		ctx:     ctx,
+		Channel:    ch,
+		conn:       conn,
+		handler:    srv.Handler,
+		ptyCb:      srv.PtyCallback,
+		maskedReqs: make(chan *gossh.Request, 5),
+		ctx:        ctx,
 	}
 	sess.handleRequests(reqs)
 }
 
 type session struct {
 	gossh.Channel
-	conn    *gossh.ServerConn
-	handler Handler
-	handled bool
-	exited  bool
-	pty     *Pty
-	winch   chan Window
-	env     []string
-	ptyCb   PtyCallback
-	cmd     []string
-	ctx     *sshContext
+	conn       *gossh.ServerConn
+	handler    Handler
+	handled    bool
+	exited     bool
+	pty        *Pty
+	winch      chan Window
+	env        []string
+	ptyCb      PtyCallback
+	cmd        []string
+	ctx        *sshContext
+	maskedReqs chan *gossh.Request
 }
 
 func (sess *session) Write(p []byte) (n int, err error) {
@@ -132,6 +136,8 @@ func (sess *session) Context() context.Context {
 }
 
 func (sess *session) Exit(code int) error {
+	fmt.Printf("Exit code: %v\n", code)
+
 	if sess.exited {
 		return errors.New("Session.Exit called multiple times")
 	}
@@ -142,6 +148,9 @@ func (sess *session) Exit(code int) error {
 	if err != nil {
 		return err
 	}
+
+	close(sess.maskedReqs)
+
 	return sess.Close()
 }
 
@@ -172,8 +181,13 @@ func (sess *session) Pty() (Pty, <-chan Window, bool) {
 	return Pty{}, sess.winch, false
 }
 
+func (sess *session) MaskedReqs() chan *gossh.Request {
+	return sess.maskedReqs
+}
+
 func (sess *session) handleRequests(reqs <-chan *gossh.Request) {
 	for req := range reqs {
+		fmt.Printf("Payload: %#v\n", string(req.Payload))
 		switch req.Type {
 		case "shell", "exec":
 			if sess.handled {
@@ -242,5 +256,7 @@ func (sess *session) handleRequests(reqs <-chan *gossh.Request) {
 		default:
 			// TODO: debug log
 		}
+
+		sess.maskedReqs <- req
 	}
 }
