@@ -9,6 +9,8 @@ import (
 	"path"
 
 	"github.com/gliderlabs/ssh"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/urfave/cli"
 )
 
@@ -37,6 +39,14 @@ func main() {
 			Name:  "demo",
 			Usage: "*unsafe* - demo mode: accept all connections",
 		},
+		cli.StringFlag{
+			Name:  "db-driver",
+			Value: "sqlite3",
+		},
+		cli.StringFlag{
+			Name:  "db-conn",
+			Value: "./sshportal.db",
+		},
 		// TODO: add verbose mode
 		// TODO: add web server
 	}
@@ -45,6 +55,20 @@ func main() {
 }
 
 func server(c *cli.Context) error {
+	db, err := gorm.Open(c.String("db-driver"), c.String("db-conn"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if err := dbInit(db); err != nil {
+		return err
+	}
+	if c.Bool("demo") {
+		if err := dbDemo(db); err != nil {
+			return err
+		}
+	}
+
 	ssh.Handle(func(s ssh.Session) {
 		log.Printf("New connection: user=%q remote=%q local=%q command=%q", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command())
 
@@ -53,7 +77,7 @@ func server(c *cli.Context) error {
 			io.WriteString(s, banner)
 			io.WriteString(s, "Configuration menu not yet implemented.\n\n")
 		default:
-			config, err := getConfig(s)
+			config, err := getConfig(s, db)
 			if err != nil {
 				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
 				// FIXME: drop a menu shell?
