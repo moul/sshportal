@@ -1,7 +1,6 @@
 package: github.com/moul/sshportal
 import:
 - package: github.com/gliderlabs/ssh
-  version: 4a4de39
 - package: github.com/urfave/cli
   version: ^1.20.0
 - package: golang.org/x/crypto
