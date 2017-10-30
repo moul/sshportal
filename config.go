@@ -1,9 +1,10 @@
 package main
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/gliderlabs/ssh"
+	"github.com/jinzhu/gorm"
 	gossh "golang.org/x/crypto/ssh"
 )
 
@@ -12,17 +13,24 @@ type Config struct {
 	remoteAddr   string
 }
 
-func getConfig(s ssh.Session) (*Config, error) {
-	// TODO: get the config from a database
+func getConfig(s ssh.Session, db *gorm.DB) (*Config, error) {
+	var host Host
+	db.Where("name = ?", s.User()).Find(&host)
+	if host.Name == "" {
+		// FIXME: add available hosts
+		return nil, fmt.Errorf("No such target: %q", s.User())
+	}
+
 	config := Config{
-		remoteAddr: os.Getenv("SSH_ADDR"),
+		remoteAddr: host.Addr,
 		clientConfig: &gossh.ClientConfig{
-			User:            os.Getenv("SSH_USERNAME"),
-			HostKeyCallback: gossh.InsecureIgnoreHostKey(), // TODO: show the remote host to the client + store it in db if approved
-			Auth: []gossh.AuthMethod{
-				gossh.Password(os.Getenv("SSH_PASSWORD")),
-			},
+			User:            host.User,
+			HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+			Auth:            []gossh.AuthMethod{},
 		},
+	}
+	if host.Password != "" {
+		config.clientConfig.Auth = append(config.clientConfig.Auth, gossh.Password(host.Password))
 	}
 
 	return &config, nil
