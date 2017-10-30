@@ -32,6 +32,12 @@ func getConfig(s ssh.Session, db *gorm.DB) (*Config, error) {
 	if host.Password != "" {
 		config.clientConfig.Auth = append(config.clientConfig.Auth, gossh.Password(host.Password))
 	}
+	if host.PrivKey != nil {
+		return nil, fmt.Errorf("auth by priv key is not yet implemented")
+	}
+	if len(config.clientConfig.Auth) == 0 {
+		return nil, fmt.Errorf("no valid authentication method for host %q", s.User())
+	}
 
 	return &config, nil
 }
