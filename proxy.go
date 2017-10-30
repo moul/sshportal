@@ -22,10 +22,7 @@ func proxy(s ssh.Session, config *Config) error {
 	}
 
 	log.Println("SSH Connectin established")
-	lreqs := make(chan *gossh.Request, 1)
-	defer close(lreqs)
-
-	return pipe(lreqs, rreqs, s, rch)
+	return pipe(s.MaskedReqs(), rreqs, s, rch)
 }
 
 func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
@@ -44,10 +41,6 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 	go func() {
 		_, _ = io.Copy(rch, lch)
 		errch <- errors.New("rch closed the connection")
-	}()
-
-	go func() {
-		// FIXME: find a way to get the client requests
 	}()
 
 	for {
