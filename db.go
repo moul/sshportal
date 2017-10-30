@@ -22,7 +22,6 @@ type User struct {
 }
 
 func dbInit(db *gorm.DB) error {
-	db.LogMode(true)
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Key{})
 	db.AutoMigrate(&Host{})

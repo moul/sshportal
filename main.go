@@ -10,6 +10,7 @@ import (
 
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/urfave/cli"
 )
@@ -42,13 +43,17 @@ func main() {
 		cli.StringFlag{
 			Name:  "db-driver",
 			Value: "sqlite3",
+			Usage: "GORM driver (sqlite3, mysql)",
 		},
 		cli.StringFlag{
 			Name:  "db-conn",
 			Value: "./sshportal.db",
+			Usage: "GORM connection string",
 		},
-		// TODO: add verbose mode
-		// TODO: add web server
+		cli.BoolFlag{
+			Name:  "debug, D",
+			Usage: "Display debug information",
+		},
 	}
 	app.Action = server
 	app.Run(os.Args)
@@ -60,6 +65,9 @@ func server(c *cli.Context) error {
 		return err
 	}
 	defer db.Close()
+	if c.Bool("debug") {
+		db.LogMode(true)
+	}
 	if err := dbInit(db); err != nil {
 		return err
 	}
