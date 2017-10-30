@@ -136,8 +136,6 @@ func (sess *session) Context() context.Context {
 }
 
 func (sess *session) Exit(code int) error {
-	fmt.Printf("Exit code: %v\n", code)
-
 	if sess.exited {
 		return errors.New("Session.Exit called multiple times")
 	}
@@ -187,7 +185,6 @@ func (sess *session) MaskedReqs() chan *gossh.Request {
 
 func (sess *session) handleRequests(reqs <-chan *gossh.Request) {
 	for req := range reqs {
-		fmt.Printf("Payload: %#v\n", string(req.Payload))
 		switch req.Type {
 		case "shell", "exec":
 			if sess.handled {
