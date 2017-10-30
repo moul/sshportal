@@ -1,10 +1,18 @@
-hash: ccf85a0328819b0771666d20889b1b2cb572db9b1d19d3f69e209956f0055b10
-updated: 2017-09-30T13:13:10.902768+01:00
+hash: 74a47bab28a3e971e5aa42495b008a9c7460d393990d6b612789a0dbce1e7f15
+updated: 2017-10-30T17:07:47.989994+01:00
 imports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/gliderlabs/ssh
   version: 4a4de396c4d49400d09e0b4d83053a01539e4bcc
+- name: github.com/jinzhu/gorm
+  version: 0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e
+  subpackages:
+  - dialects/sqlite
+- name: github.com/jinzhu/inflection
+  version: 1c35d901db3da928c72a72d8458480cc9ade058f
+- name: github.com/mattn/go-sqlite3
+  version: 615c193e01d8d462eef7ee390171506f531a1c9a
 - name: github.com/urfave/cli
   version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
 - name: golang.org/x/crypto
@@ -14,4 +22,8 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
   - ssh
+- name: golang.org/x/net
+  version: da2b4fa28524a3baf148c1b94df4440267063c88
+  subpackages:
+  - context
 testImports: []
