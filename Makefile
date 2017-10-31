@@ -5,4 +5,4 @@ install:
 .PHONY: dev
 dev:
 	-go get github.com/githubnemo/CompileDaemon
-	CompileDaemon -build="make install" -command="sshportal --demo --debug" .
+	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug" .
