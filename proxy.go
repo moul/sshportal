@@ -9,8 +9,13 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-func proxy(s ssh.Session, config *Config) error {
-	rconn, err := gossh.Dial("tcp", config.remoteAddr, config.clientConfig)
+func proxy(s ssh.Session, host *Host) error {
+	config, err := host.ClientConfig(s)
+	if err != nil {
+		return err
+	}
+
+	rconn, err := gossh.Dial("tcp", host.Addr, config)
 	if err != nil {
 		return err
 	}

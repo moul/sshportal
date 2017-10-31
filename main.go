@@ -85,13 +85,13 @@ func server(c *cli.Context) error {
 			io.WriteString(s, banner)
 			io.WriteString(s, "Configuration menu not yet implemented.\n\n")
 		default:
-			config, err := getConfig(s, db)
+			host, err := RemoteHostFromSession(s, db)
 			if err != nil {
 				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
-				// FIXME: drop a menu shell?
+				// FIXME: print available hosts
 				return
 			}
-			if err := proxy(s, config); err != nil {
+			if err := proxy(s, host); err != nil {
 				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
 			}
 		}
