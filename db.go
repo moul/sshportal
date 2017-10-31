@@ -21,6 +21,10 @@ type User struct {
 	Keys []Key
 }
 
+func (u *User) Name() string {
+	return "anonymous"
+}
+
 func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Key{})

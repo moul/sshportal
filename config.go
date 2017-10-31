@@ -13,6 +13,10 @@ type Config struct {
 	remoteAddr   string
 }
 
+func getCurrentUser(s ssh.Session, db *gorm.DB) (*User, error) {
+	return &User{}, nil
+}
+
 func getConfig(s ssh.Session, db *gorm.DB) (*Config, error) {
 	var host Host
 	db.Where("name = ?", s.User()).Find(&host)
