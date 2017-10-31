@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
-	gossh "golang.org/x/crypto/ssh"
 )
 
 type SSHKey struct {
+	// FIXME: use uuid for ID
 	gorm.Model
 	Type        string
 	Fingerprint string
@@ -17,24 +19,36 @@ type SSHKey struct {
 }
 
 type Host struct {
+	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string
+	Name        string `gorm:"unique_index"`
 	Addr        string
 	User        string
 	Password    string
 	Fingerprint string
 	PrivKey     *SSHKey
+	Groups      []Group `gorm:"many2many:host_groups;"`
+}
+
+type Group struct {
+	// FIXME: use uuid for ID
+	gorm.Model
+	Name string `gorm:"unique_index"`
 }
 
 type User struct {
+	// FIXME: use uuid for ID
 	gorm.Model
+	Name    string `gorm:"unique_index"`
 	SSHKeys []SSHKey
+	Groups  []Group `gorm:"many2many:user_groups;"`
 }
 
 func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&SSHKey{})
 	db.AutoMigrate(&Host{})
+	db.AutoMigrate(&Group{})
 	return nil
 }
 
@@ -56,20 +70,47 @@ func RemoteHostFromSession(s ssh.Session, db *gorm.DB) (*Host, error) {
 	return &host, nil
 }
 
-func (host *Host) ClientConfig(_ ssh.Session) (*gossh.ClientConfig, error) {
-	config := gossh.ClientConfig{
-		User:            host.User,
-		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
-		Auth:            []gossh.AuthMethod{},
+func (host *Host) URL() string {
+	return fmt.Sprintf("%s@%s", host.User, host.Addr)
+}
+
+func NewHostFromURL(rawurl string) (*Host, error) {
+	if !strings.Contains(rawurl, "://") {
+		rawurl = "ssh://" + rawurl
 	}
-	if host.Password != "" {
-		config.Auth = append(config.Auth, gossh.Password(host.Password))
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return nil, err
 	}
-	if host.PrivKey != nil {
-		return nil, fmt.Errorf("auth by priv key is not yet implemented")
+	host := Host{Addr: u.Host}
+	if u.User != nil {
+		password, _ := u.User.Password()
+		host.Password = password
+		host.User = u.User.Username()
 	}
-	if len(config.Auth) == 0 {
-		return nil, fmt.Errorf("no valid authentication method for host %q", host.Name)
+	return &host, nil
+}
+
+func (host *Host) Hostname() string {
+	return strings.Split(host.Addr, ":")[0]
+}
+
+func FindHostByIdOrName(db *gorm.DB, query string) (*Host, error) {
+	var host Host
+	if err := db.Where("id = ?", query).Or("name = ?", query).First(&host).Error; err != nil {
+		return nil, err
 	}
-	return &config, nil
+	return &host, nil
+}
+
+func FindHostsByIdOrName(db *gorm.DB, queries []string) ([]*Host, error) {
+	var hosts []*Host
+	for _, query := range queries {
+		host, err := FindHostByIdOrName(db, query)
+		if err != nil {
+			return nil, err
+		}
+		hosts = append(hosts, host)
+	}
+	return hosts, nil
 }

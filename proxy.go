@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 
@@ -73,4 +74,22 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 		}
 	}
 	return nil
+}
+
+func (host *Host) ClientConfig(_ ssh.Session) (*gossh.ClientConfig, error) {
+	config := gossh.ClientConfig{
+		User:            host.User,
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+		Auth:            []gossh.AuthMethod{},
+	}
+	if host.Password != "" {
+		config.Auth = append(config.Auth, gossh.Password(host.Password))
+	}
+	if host.PrivKey != nil {
+		return nil, fmt.Errorf("auth by priv key is not yet implemented")
+	}
+	if len(config.Auth) == 0 {
+		return nil, fmt.Errorf("no valid authentication method for host %q", host.Name)
+	}
+	return &config, nil
 }

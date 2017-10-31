@@ -73,7 +73,7 @@ func server(c *cli.Context) error {
 
 		switch s.User() {
 		case "config":
-			if err := shell(s, s.Command()); err != nil {
+			if err := shell(s, s.Command(), db); err != nil {
 				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
 			}
 		default:

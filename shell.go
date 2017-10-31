@@ -1,13 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 
 	"golang.org/x/crypto/ssh/terminal"
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
+	"github.com/jinzhu/gorm"
+	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
 )
 
@@ -20,8 +24,9 @@ var banner = `
 
 
 `
+var isNameValid = regexp.MustCompile(`^[A-Za-z0-9-]+$`).MatchString
 
-func shell(s ssh.Session, sshCommand []string) error {
+func shell(s ssh.Session, sshCommand []string, db *gorm.DB) error {
 	if len(sshCommand) == 0 {
 		io.WriteString(s, banner)
 	}
@@ -45,24 +50,116 @@ GLOBAL OPTIONS:
 			Usage: "Manage hosts",
 			Subcommands: []cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Create a new host",
-					Action: func(c *cli.Context) error { return nil },
+					Name:        "create",
+					Usage:       "Create a new host",
+					ArgsUsage:   "<user>[:<password>]@<host>[:<port>]",
+					Description: "$> host create bob@example.com:2222",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "name",
+							Usage: "Assign a name to the host",
+						},
+						cli.StringFlag{
+							Name:  "password",
+							Usage: "If present, sshportal will use password-based authentication",
+						},
+						cli.StringFlag{
+							Name:  "fingerprint",
+							Usage: "SSH host key fingerprint",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return fmt.Errorf("invalid usage")
+						}
+						host, err := NewHostFromURL(c.Args().First())
+						if err != nil {
+							return err
+						}
+						if c.String("password") != "" {
+							host.Password = c.String("password")
+						}
+						host.Fingerprint = c.String("fingerprint")
+						host.Name = host.Hostname()
+						if c.String("name") != "" {
+							host.Name = c.String("name")
+						}
+						if !isNameValid(host.Name) {
+							return fmt.Errorf("invalid name %q", host.Name)
+						}
+						if err := db.Create(&host).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", host.ID)
+						return nil
+					},
 				},
 				{
-					Name:   "inspect",
-					Usage:  "Display detailed information on one or more hosts",
-					Action: func(c *cli.Context) error { return nil },
+					Name:      "inspect",
+					Usage:     "Display detailed information on one or more hosts",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						hosts, err := FindHostsByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(hosts)
+					},
 				},
 				{
-					Name:   "ls",
-					Usage:  "List hosts",
-					Action: func(c *cli.Context) error { return nil },
+					Name:  "ls",
+					Usage: "List hosts",
+					Action: func(c *cli.Context) error {
+						var hosts []Host
+						if err := db.Find(&hosts).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "Name", "URL", "Password", "Fingerprint"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
+						for _, host := range hosts {
+							table.Append([]string{
+								fmt.Sprintf("%d", host.ID),
+								host.Name,
+								host.URL(),
+								host.Password,
+								host.Fingerprint,
+								//host.PrivKey,
+								//FIXME: add some stats about last access time etc
+							})
+						}
+						table.Render()
+						return nil
+					},
 				},
 				{
-					Name:   "rm",
-					Usage:  "Remove one or more hosts",
-					Action: func(c *cli.Context) error { return nil },
+					Name:      "rm",
+					Usage:     "Remove one or more hosts",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						hosts, err := FindHostsByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, host := range hosts {
+							db.Where("id = ?", host.ID).Delete(&Host{})
+							fmt.Fprintf(s, "%d\n", host.ID)
+						}
+						return nil
+					},
 				},
 			},
 		}, {
@@ -135,10 +232,14 @@ GLOBAL OPTIONS:
 				io.WriteString(s, "syntax error.\n")
 				continue
 			}
-			app.Run(append([]string{"config"}, words...))
+			if err := app.Run(append([]string{"config"}, words...)); err != nil {
+				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+			}
 		}
 	} else { // oneshot mode
-		app.Run(append([]string{"config"}, sshCommand...))
+		if err := app.Run(append([]string{"config"}, sshCommand...)); err != nil {
+			io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+		}
 	}
 
 	return nil
