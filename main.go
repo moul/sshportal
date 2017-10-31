@@ -15,15 +15,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-var banner = `
-
-    __________ _____           __       __
-   / __/ __/ // / _ \___  ____/ /____ _/ /
-  _\ \_\ \/ _  / ___/ _ \/ __/ __/ _ '/ /
- /___/___/_//_/_/   \___/_/  \__/\_,_/_/
-
-`
-
 func main() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
@@ -82,8 +73,9 @@ func server(c *cli.Context) error {
 
 		switch s.User() {
 		case "config":
-			io.WriteString(s, banner)
-			io.WriteString(s, "Configuration menu not yet implemented.\n\n")
+			if err := userMenu(s, db); err != nil {
+				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+			}
 		default:
 			config, err := getConfig(s, db)
 			if err != nil {
