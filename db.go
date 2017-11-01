@@ -95,7 +95,7 @@ func dbDemo(db *gorm.DB) error {
 
 func RemoteHostFromSession(s ssh.Session, db *gorm.DB) (*Host, error) {
 	var host Host
-	db.Where("name = ?", s.User()).Find(&host)
+	db.Preload("SSHKey").Where("name = ?", s.User()).Find(&host)
 	if host.Name == "" {
 		// FIXME: add available hosts
 		return nil, fmt.Errorf("No such target: %q", s.User())

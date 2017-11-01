@@ -29,7 +29,7 @@ func NewSSHKey(keyType string, length uint) (*SSHKey, error) {
 
 	// convert priv key to x509 format
 	var pemKey = &pem.Block{
-		Type:  "PRIVATE KEY",
+		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
 	buf := bytes.NewBufferString("")

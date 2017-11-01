@@ -82,11 +82,15 @@ func (host *Host) ClientConfig(_ ssh.Session) (*gossh.ClientConfig, error) {
 		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 		Auth:            []gossh.AuthMethod{},
 	}
+	if host.SSHKey != nil {
+		signer, err := gossh.ParsePrivateKey([]byte(host.SSHKey.PrivKey))
+		if err != nil {
+			return nil, err
+		}
+		config.Auth = append(config.Auth, gossh.PublicKeys(signer))
+	}
 	if host.Password != "" {
 		config.Auth = append(config.Auth, gossh.Password(host.Password))
-	}
-	if host.SSHKey != nil {
-		return nil, fmt.Errorf("auth by priv key is not yet implemented")
 	}
 	if len(config.Auth) == 0 {
 		return nil, fmt.Errorf("no valid authentication method for host %q", host.Name)
