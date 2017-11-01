@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"time"
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
@@ -27,6 +28,7 @@ var banner = `
 
 `
 var isNameValid = regexp.MustCompile(`^[A-Za-z0-9_-]+$`).MatchString
+var startTime = time.Now()
 
 func shell(globalContext *cli.Context, s ssh.Session, sshCommand []string, db *gorm.DB) error {
 	if len(sshCommand) == 0 {
@@ -176,6 +178,12 @@ GLOBAL OPTIONS:
 				fmt.Fprintf(s, "DB Driver: %s\n", globalContext.String("db-driver"))
 				fmt.Fprintf(s, "DB Conn: %s\n", globalContext.String("db-conn"))
 				fmt.Fprintf(s, "Bind Address: %s\n", globalContext.String("bind-address"))
+				fmt.Fprintf(s, "System Time: %v\n", time.Now().Format(time.RFC3339Nano))
+				fmt.Fprintf(s, "OS Type: %s\n", runtime.GOOS)
+				fmt.Fprintf(s, "OS Architecture: %s\n", runtime.GOARCH)
+				fmt.Fprintf(s, "Go routines: %d\n", runtime.NumGoroutine())
+				fmt.Fprintf(s, "Go version (build): %v\n", runtime.Version())
+				fmt.Fprintf(s, "Uptime: %v\n", time.Since(startTime))
 				// FIXME: add version
 				// FIXME: add info about current server (network, cpu, ram, OS)
 				// FIXME: add info about current user
