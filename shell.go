@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"runtime"
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
@@ -26,7 +28,7 @@ var banner = `
 `
 var isNameValid = regexp.MustCompile(`^[A-Za-z0-9_-]+$`).MatchString
 
-func shell(s ssh.Session, sshCommand []string, db *gorm.DB) error {
+func shell(globalContext *cli.Context, s ssh.Session, sshCommand []string, db *gorm.DB) error {
 	if len(sshCommand) == 0 {
 		io.WriteString(s, banner)
 	}
@@ -163,9 +165,24 @@ GLOBAL OPTIONS:
 				},
 			},
 		}, {
-			Name:   "info",
-			Usage:  "Display system-wide information",
-			Action: func(c *cli.Context) error { return nil },
+			Name:  "info",
+			Usage: "Display system-wide information",
+			Action: func(c *cli.Context) error {
+				fmt.Fprintf(s, "Debug mode (server): %v\n", globalContext.Bool("debug"))
+				hostname, _ := os.Hostname()
+				fmt.Fprintf(s, "Hostname: %s\n", hostname)
+				fmt.Fprintf(s, "CPUs: %d\n", runtime.NumCPU())
+				fmt.Fprintf(s, "Demo mode: %v\n", globalContext.Bool("demo"))
+				fmt.Fprintf(s, "DB Driver: %s\n", globalContext.String("db-driver"))
+				fmt.Fprintf(s, "DB Conn: %s\n", globalContext.String("db-conn"))
+				fmt.Fprintf(s, "Bind Address: %s\n", globalContext.String("bind-address"))
+				// FIXME: add version
+				// FIXME: add info about current server (network, cpu, ram, OS)
+				// FIXME: add info about current user
+				// FIXME: add active connections
+				// FIXME: stats
+				return nil
+			},
 		}, {
 			Name:  "key",
 			Usage: "Manage keys",
