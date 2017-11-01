@@ -18,6 +18,7 @@ type SSHKey struct {
 	Fingerprint string
 	PrivKey     string
 	PubKey      string
+	Comment     string
 }
 
 type Host struct {
@@ -27,15 +28,17 @@ type Host struct {
 	Addr        string
 	User        string
 	Password    string
-	Fingerprint string
-	PrivKey     *SSHKey
+	Key         *SSHKey
+	Fingerprint string  // FIXME: replace with hostkey ?
 	Groups      []Group `gorm:"many2many:host_groups;"`
+	Comment     string
 }
 
 type Group struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name string `gorm:"unique_index"` // FIXME: govalidator: min length 3, alphanum
+	Name    string `gorm:"unique_index"` // FIXME: govalidator: min length 3, alphanum
+	Comment string
 }
 
 type User struct {
@@ -44,6 +47,7 @@ type User struct {
 	Name    string `gorm:"unique_index"` // FIXME: govalidator: min length 3, alphanum
 	SSHKeys []SSHKey
 	Groups  []Group `gorm:"many2many:user_groups;"`
+	Comment string
 }
 
 func dbInit(db *gorm.DB) error {
@@ -51,6 +55,23 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&SSHKey{})
 	db.AutoMigrate(&Host{})
 	db.AutoMigrate(&Group{})
+
+	// create default ssh key
+	var count uint
+	if err := db.Table("ssh_keys").Where("name = ?", "default").Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		key, err := NewSSHKey("rsa", 2048)
+		if err != nil {
+			return err
+		}
+		key.Name = "default"
+		key.Comment = "created by sshportal"
+		if err := db.Create(&key).Error; err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

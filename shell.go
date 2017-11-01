@@ -1,16 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
@@ -18,7 +12,6 @@ import (
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
-	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -65,6 +58,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
 						cli.StringFlag{Name: "password", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "fingerprint", Usage: "SSH host key fingerprint"},
+						cli.StringFlag{Name: "comment"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -85,6 +79,8 @@ GLOBAL OPTIONS:
 						if !isNameValid(host.Name) {
 							return fmt.Errorf("invalid name %q", host.Name)
 						}
+						host.Comment = c.String("comment")
+
 						if err := db.Create(&host).Error; err != nil {
 							return err
 						}
@@ -120,18 +116,24 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Password", "Fingerprint"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Auth", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
+							authMethod := ""
+							if host.Password != "" {
+								authMethod = "password"
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
 								host.Name,
 								host.URL(),
-								host.Password,
-								host.Fingerprint,
+								authMethod,
+								//host.Fingerprint,
 								//host.PrivKey,
+								host.Comment,
 								//FIXME: add some stats about last access time etc
+								//FIXME: add creation date
 							})
 						}
 						table.Render()
@@ -176,43 +178,23 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
 						cli.StringFlag{Name: "type", Value: "rsa"},
 						cli.UintFlag{Name: "length", Value: 2048},
+						cli.StringFlag{Name: "comment"},
 					},
 					Action: func(c *cli.Context) error {
-						key := SSHKey{}
-						key.Name = namesgenerator.GetRandomName(0)
+						name := namesgenerator.GetRandomName(0)
 						if c.String("name") != "" {
-							key.Name = c.String("name")
+							name = c.String("name")
 						}
-						if key.Name == "" || !isNameValid(key.Name) {
-							return fmt.Errorf("invalid name %q", key.Name)
+						if name == "" || !isNameValid(name) {
+							return fmt.Errorf("invalid name %q", name)
 						}
-						key.Length = c.Uint("length")
-						key.Type = c.String("type")
 
-						// generate the ssh key
-						if key.Type != "rsa" {
-							return fmt.Errorf("key type not supported: %q", key.Type)
-						}
-						privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
 						if err != nil {
 							return err
 						}
-						// convert priv key to x509 format
-						var pemKey = &pem.Block{
-							Type:  "PRIVATE KEY",
-							Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
-						}
-						buf := bytes.NewBufferString("")
-						if err = pem.Encode(buf, pemKey); err != nil {
-							return err
-						}
-						key.PrivKey = buf.String()
-						//
-						pub, err := gossh.NewPublicKey(&privateKey.PublicKey)
-						if err != nil {
-							return err
-						}
-						key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(pub)))
+						key.Name = name
+						key.Comment = c.String("comment")
 
 						// save the key in database
 						if err := db.Create(&key).Error; err != nil {
@@ -250,7 +232,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Fingerprint"})
+						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d keys.", len(keys)))
 						for _, key := range keys {
@@ -259,8 +241,10 @@ GLOBAL OPTIONS:
 								key.Name,
 								key.Type,
 								fmt.Sprintf("%d", key.Length),
-								key.Fingerprint,
+								//key.Fingerprint,
+								key.Comment,
 								//FIXME: add some stats
+								//FIXME: add creation date
 							})
 						}
 						table.Render()
