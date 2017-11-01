@@ -85,7 +85,7 @@ func (host *Host) ClientConfig(_ ssh.Session) (*gossh.ClientConfig, error) {
 	if host.Password != "" {
 		config.Auth = append(config.Auth, gossh.Password(host.Password))
 	}
-	if host.Key != nil {
+	if host.SSHKey != nil {
 		return nil, fmt.Errorf("auth by priv key is not yet implemented")
 	}
 	if len(config.Auth) == 0 {

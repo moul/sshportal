@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
 
 	shlex "github.com/anmitsu/go-shlex"
@@ -57,12 +58,13 @@ GLOBAL OPTIONS:
 					Name:        "create",
 					Usage:       "Create a new host",
 					ArgsUsage:   "<user>[:<password>]@<host>[:<port>]",
-					Description: "$> host create bob@example.com:2222",
+					Description: "$> host create bart@foo.org\n   $> host create bob:marley@example.com:2222",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
 						cli.StringFlag{Name: "password", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "fingerprint", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "key", Usage: "ID or name of the key to use for authentication"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -76,14 +78,28 @@ GLOBAL OPTIONS:
 							host.Password = c.String("password")
 						}
 						host.Fingerprint = c.String("fingerprint")
-						host.Name = host.Hostname()
+						host.Name = strings.Split(host.Hostname(), ".")[0]
+
 						if c.String("name") != "" {
 							host.Name = c.String("name")
 						}
 						if !isNameValid(host.Name) {
 							return fmt.Errorf("invalid name %q", host.Name)
 						}
+						// FIXME: check if name already exists
+
 						host.Comment = c.String("comment")
+						inputKey := c.String("key")
+						if inputKey == "" && host.Password == "" {
+							inputKey = "default"
+						}
+						if inputKey != "" {
+							key, err := FindKeyByIdOrName(db, inputKey)
+							if err != nil {
+								return err
+							}
+							host.SSHKeyID = key.ID
+						}
 
 						if err := db.Create(&host).Error; err != nil {
 							return err
@@ -120,21 +136,25 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Auth", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
-							authMethod := ""
+							authKey, authPass := "", ""
 							if host.Password != "" {
-								authMethod = "password"
+								authPass = "X"
+							}
+							if host.SSHKeyID > 0 {
+								var key SSHKey
+								db.Model(&host).Related(&key)
+								authKey = key.Name
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
 								host.Name,
 								host.URL(),
-								authMethod,
-								//host.Fingerprint,
-								//host.PrivKey,
+								authKey,
+								authPass,
 								host.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
@@ -213,6 +233,7 @@ GLOBAL OPTIONS:
 						if name == "" || !isNameValid(name) {
 							return fmt.Errorf("invalid name %q", name)
 						}
+						// FIXME: check if name already exists
 
 						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
 						if err != nil {
