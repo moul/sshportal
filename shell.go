@@ -323,6 +323,13 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error { return nil },
 				},
 			},
+		}, {
+			Name:  "version",
+			Usage: "Show the SSHPortal version information",
+			Action: func(c *cli.Context) error {
+				fmt.Fprintf(s, "%s\n", version)
+				return nil
+			},
 		},
 	}
 

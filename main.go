@@ -15,10 +15,13 @@ import (
 	"github.com/urfave/cli"
 )
 
+var version = "0.0.1"
+
 func main() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
+	app.Version = version
 	app.Email = "https://github.com/moul/sshportal"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
