@@ -48,6 +48,11 @@ func main() {
 			Name:  "debug, D",
 			Usage: "Display debug information",
 		},
+		cli.StringFlag{
+			Name:  "config-user",
+			Usage: "SSH user that spawns a configuration shell",
+			Value: "admin",
+		},
 	}
 	app.Action = server
 	app.Run(os.Args)
@@ -75,7 +80,7 @@ func server(c *cli.Context) error {
 		log.Printf("New connection: user=%q remote=%q local=%q command=%q", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command())
 
 		switch s.User() {
-		case "config":
+		case c.String("config-user"):
 			if err := shell(c, s, s.Command(), db); err != nil {
 				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
 			}
