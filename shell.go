@@ -1,18 +1,25 @@
 package main
 
 import (
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"regexp"
-
-	"golang.org/x/crypto/ssh/terminal"
+	"strings"
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
+	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
+	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var banner = `
@@ -24,7 +31,7 @@ var banner = `
 
 
 `
-var isNameValid = regexp.MustCompile(`^[A-Za-z0-9-]+$`).MatchString
+var isNameValid = regexp.MustCompile(`^[A-Za-z0-9_-]+$`).MatchString
 
 func shell(s ssh.Session, sshCommand []string, db *gorm.DB) error {
 	if len(sshCommand) == 0 {
@@ -55,18 +62,9 @@ GLOBAL OPTIONS:
 					ArgsUsage:   "<user>[:<password>]@<host>[:<port>]",
 					Description: "$> host create bob@example.com:2222",
 					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:  "name",
-							Usage: "Assign a name to the host",
-						},
-						cli.StringFlag{
-							Name:  "password",
-							Usage: "If present, sshportal will use password-based authentication",
-						},
-						cli.StringFlag{
-							Name:  "fingerprint",
-							Usage: "SSH host key fingerprint",
-						},
+						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
+						cli.StringFlag{Name: "password", Usage: "If present, sshportal will use password-based authentication"},
+						cli.StringFlag{Name: "fingerprint", Usage: "SSH host key fingerprint"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -171,24 +169,124 @@ GLOBAL OPTIONS:
 			Usage: "Manage keys",
 			Subcommands: []cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Create a new key",
-					Action: func(c *cli.Context) error { return nil },
+					Name:        "create",
+					Usage:       "Create a new key",
+					Description: "$> key create\n   $> key create --name=mykey",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
+						cli.StringFlag{Name: "type", Value: "rsa"},
+						cli.UintFlag{Name: "length", Value: 2048},
+					},
+					Action: func(c *cli.Context) error {
+						key := SSHKey{}
+						key.Name = namesgenerator.GetRandomName(0)
+						if c.String("name") != "" {
+							key.Name = c.String("name")
+						}
+						if key.Name == "" || !isNameValid(key.Name) {
+							return fmt.Errorf("invalid name %q", key.Name)
+						}
+						key.Length = c.Uint("length")
+						key.Type = c.String("type")
+
+						// generate the ssh key
+						if key.Type != "rsa" {
+							return fmt.Errorf("key type not supported: %q", key.Type)
+						}
+						privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+						if err != nil {
+							return err
+						}
+						// convert priv key to x509 format
+						var pemKey = &pem.Block{
+							Type:  "PRIVATE KEY",
+							Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+						}
+						buf := bytes.NewBufferString("")
+						if err = pem.Encode(buf, pemKey); err != nil {
+							return err
+						}
+						key.PrivKey = buf.String()
+						//
+						pub, err := gossh.NewPublicKey(&privateKey.PublicKey)
+						if err != nil {
+							return err
+						}
+						key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(pub)))
+
+						// save the key in database
+						if err := db.Create(&key).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", key.ID)
+						return nil
+					},
 				},
 				{
-					Name:   "inspect",
-					Usage:  "Display detailed information on one or more keys",
-					Action: func(c *cli.Context) error { return nil },
+					Name:      "inspect",
+					Usage:     "Display detailed information on one or more keys",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						keys, err := FindKeysByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(keys)
+					},
 				},
 				{
-					Name:   "ls",
-					Usage:  "List keys",
-					Action: func(c *cli.Context) error { return nil },
+					Name:  "ls",
+					Usage: "List keys",
+					Action: func(c *cli.Context) error {
+						var keys []SSHKey
+						if err := db.Find(&keys).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Fingerprint"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d keys.", len(keys)))
+						for _, key := range keys {
+							table.Append([]string{
+								fmt.Sprintf("%d", key.ID),
+								key.Name,
+								key.Type,
+								fmt.Sprintf("%d", key.Length),
+								key.Fingerprint,
+								//FIXME: add some stats
+							})
+						}
+						table.Render()
+						return nil
+					},
 				},
 				{
-					Name:   "rm",
-					Usage:  "Remove one or more keys",
-					Action: func(c *cli.Context) error { return nil },
+					Name:      "rm",
+					Usage:     "Remove one or more keys",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						keys, err := FindKeysByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, key := range keys {
+							db.Where("id = ?", key.ID).Delete(&SSHKey{})
+							fmt.Fprintf(s, "%d\n", key.ID)
+						}
+						return nil
+					},
 				},
 			},
 		}, {

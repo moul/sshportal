@@ -12,16 +12,18 @@ import (
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model
+	Name        string // FIXME: govalidator: min length 3, alphanum
 	Type        string
+	Length      uint
 	Fingerprint string
-	PrivKey     []byte
-	PubKey      []byte
+	PrivKey     string
+	PubKey      string
 }
 
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string `gorm:"unique_index"`
+	Name        string `gorm:"unique_index"` // FIXME: govalidator: min length 3, alphanum
 	Addr        string
 	User        string
 	Password    string
@@ -33,13 +35,13 @@ type Host struct {
 type Group struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name string `gorm:"unique_index"`
+	Name string `gorm:"unique_index"` // FIXME: govalidator: min length 3, alphanum
 }
 
 type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name    string `gorm:"unique_index"`
+	Name    string `gorm:"unique_index"` // FIXME: govalidator: min length 3, alphanum
 	SSHKeys []SSHKey
 	Groups  []Group `gorm:"many2many:user_groups;"`
 }
@@ -113,4 +115,24 @@ func FindHostsByIdOrName(db *gorm.DB, queries []string) ([]*Host, error) {
 		hosts = append(hosts, host)
 	}
 	return hosts, nil
+}
+
+func FindKeyByIdOrName(db *gorm.DB, query string) (*SSHKey, error) {
+	var key SSHKey
+	if err := db.Where("id = ?", query).Or("name = ?", query).First(&key).Error; err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
+func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
+	var keys []*SSHKey
+	for _, query := range queries {
+		key, err := FindKeyByIdOrName(db, query)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+	return keys, nil
 }
