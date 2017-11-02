@@ -46,6 +46,10 @@ GLOBAL OPTIONS:
 		// FIXME: forward valid exit code
 		io.WriteString(s, fmt.Sprintf("exit: %d\n", c))
 	}
+	cli.HelpFlag = cli.BoolFlag{
+		Name:   "help, h",
+		Hidden: true,
+	}
 	app := cli.NewApp()
 	app.Writer = s
 	app.HideVersion = true
@@ -68,7 +72,7 @@ GLOBAL OPTIONS:
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 						host, err := NewHostFromURL(c.Args().First())
 						if err != nil {
@@ -113,7 +117,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						hosts, err := FindHostsByIdOrName(db, c.Args())
@@ -167,7 +171,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						hosts, err := FindHostsByIdOrName(db, c.Args())
@@ -252,7 +256,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						keys, err := FindKeysByIdOrName(db, c.Args())
@@ -297,7 +301,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						keys, err := FindKeysByIdOrName(db, c.Args())
@@ -328,7 +332,7 @@ GLOBAL OPTIONS:
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						email := c.Args().First()
@@ -356,7 +360,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						hosts, err := FindUsersByIdOrEmail(db, c.Args())
@@ -401,7 +405,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
-							return fmt.Errorf("invalid usage")
+							return cli.ShowSubcommandHelp(c)
 						}
 
 						users, err := FindUsersByIdOrEmail(db, c.Args())
