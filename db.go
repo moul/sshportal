@@ -37,6 +37,7 @@ type Host struct {
 type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
+	Email   string // FIXME: govalidator: email
 	Name    string // FIXME: govalidator: min length 3, alphanum
 	SSHKeys []SSHKey
 	Comment string
@@ -48,7 +49,7 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&Host{})
 	db.Exec(`CREATE UNIQUE INDEX uix_keys_name   ON "ssh_keys"("name") WHERE ("deleted_at" IS NULL)`)
 	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name  ON "hosts"("name")    WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("name")    WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("email")   WHERE ("deleted_at" IS NULL)`)
 
 	// create default ssh key
 	var count uint
@@ -159,4 +160,24 @@ func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
 		keys = append(keys, key)
 	}
 	return keys, nil
+}
+
+func FindUserByIdOrEmail(db *gorm.DB, query string) (*User, error) {
+	var user User
+	if err := db.Where("id = ?", query).Or("email = ?", query).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func FindUsersByIdOrEmail(db *gorm.DB, queries []string) ([]*User, error) {
+	var users []*User
+	for _, query := range queries {
+		user, err := FindUserByIdOrEmail(db, query)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }

@@ -52,15 +52,15 @@ GLOBAL OPTIONS:
 	app.Commands = []cli.Command{
 		{
 			Name:  "host",
-			Usage: "Manage hosts",
+			Usage: "Manages hosts",
 			Subcommands: []cli.Command{
 				{
 					Name:        "create",
-					Usage:       "Create a new host",
+					Usage:       "Creates a new host",
 					ArgsUsage:   "<user>[:<password>]@<host>[:<port>]",
 					Description: "$> host create bart@foo.org\n   $> host create bob:marley@example.com:2222",
 					Flags: []cli.Flag{
-						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the host"},
 						cli.StringFlag{Name: "password", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "fingerprint", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment"},
@@ -107,10 +107,9 @@ GLOBAL OPTIONS:
 						fmt.Fprintf(s, "%d\n", host.ID)
 						return nil
 					},
-				},
-				{
+				}, {
 					Name:      "inspect",
-					Usage:     "Display detailed information on one or more hosts",
+					Usage:     "Shows detailed information on one or more hosts",
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -126,10 +125,9 @@ GLOBAL OPTIONS:
 						enc.SetIndent("", "  ")
 						return enc.Encode(hosts)
 					},
-				},
-				{
+				}, {
 					Name:  "ls",
-					Usage: "List hosts",
+					Usage: "Lists hosts",
 					Action: func(c *cli.Context) error {
 						var hosts []Host
 						if err := db.Find(&hosts).Error; err != nil {
@@ -163,10 +161,9 @@ GLOBAL OPTIONS:
 						table.Render()
 						return nil
 					},
-				},
-				{
+				}, {
 					Name:      "rm",
-					Usage:     "Remove one or more hosts",
+					Usage:     "Removes one or more hosts",
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -188,7 +185,7 @@ GLOBAL OPTIONS:
 			},
 		}, {
 			Name:  "info",
-			Usage: "Display system-wide information",
+			Usage: "Shows system-wide information",
 			Action: func(c *cli.Context) error {
 				fmt.Fprintf(s, "Debug mode (server): %v\n", globalContext.Bool("debug"))
 				hostname, _ := os.Hostname()
@@ -213,14 +210,14 @@ GLOBAL OPTIONS:
 			},
 		}, {
 			Name:  "key",
-			Usage: "Manage keys",
+			Usage: "Manages keys",
 			Subcommands: []cli.Command{
 				{
 					Name:        "create",
-					Usage:       "Create a new key",
+					Usage:       "Creates a new key",
 					Description: "$> key create\n   $> key create --name=mykey",
 					Flags: []cli.Flag{
-						cli.StringFlag{Name: "name", Usage: "Assign a name to the host"},
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
 						cli.StringFlag{Name: "type", Value: "rsa"},
 						cli.UintFlag{Name: "length", Value: 2048},
 						cli.StringFlag{Name: "comment"},
@@ -249,10 +246,9 @@ GLOBAL OPTIONS:
 						fmt.Fprintf(s, "%d\n", key.ID)
 						return nil
 					},
-				},
-				{
+				}, {
 					Name:      "inspect",
-					Usage:     "Display detailed information on one or more keys",
+					Usage:     "Shows detailed information on one or more keys",
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -268,10 +264,9 @@ GLOBAL OPTIONS:
 						enc.SetIndent("", "  ")
 						return enc.Encode(keys)
 					},
-				},
-				{
+				}, {
 					Name:  "ls",
-					Usage: "List keys",
+					Usage: "Lists keys",
 					Action: func(c *cli.Context) error {
 						var keys []SSHKey
 						if err := db.Find(&keys).Error; err != nil {
@@ -296,10 +291,9 @@ GLOBAL OPTIONS:
 						table.Render()
 						return nil
 					},
-				},
-				{
+				}, {
 					Name:      "rm",
-					Usage:     "Remove one or more keys",
+					Usage:     "Removes one or more keys",
 					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -321,32 +315,111 @@ GLOBAL OPTIONS:
 			},
 		}, {
 			Name:  "user",
-			Usage: "Manage users",
+			Usage: "Manages users",
 			Subcommands: []cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Create a new user",
-					Action: func(c *cli.Context) error { return nil },
-				},
-				{
-					Name:   "inspect",
-					Usage:  "Display detailed information on one or more users",
-					Action: func(c *cli.Context) error { return nil },
-				},
-				{
-					Name:   "ls",
-					Usage:  "List users",
-					Action: func(c *cli.Context) error { return nil },
-				},
-				{
-					Name:   "rm",
-					Usage:  "Remove one or more users",
-					Action: func(c *cli.Context) error { return nil },
+					Name:        "create",
+					ArgsUsage:   "<email>",
+					Usage:       "Creates a new user",
+					Description: "$> user create bob\n   $> user create --name=mykey",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
+						cli.StringFlag{Name: "comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						email := c.Args().First()
+						name := strings.Split(email, "@")[0]
+						if c.String("name") != "" {
+							name = c.String("name")
+						}
+
+						user := User{
+							Name:    name,
+							Email:   email,
+							Comment: c.String("comment"),
+						}
+
+						// save the user in database
+						if err := db.Create(&user).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", user.ID)
+						return nil
+					},
+				}, {
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more users",
+					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						hosts, err := FindUsersByIdOrEmail(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(hosts)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists users",
+					Action: func(c *cli.Context) error {
+						var users []User
+						if err := db.Find(&users).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "Name", "Email", "Keys", "Comment"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
+						for _, user := range users {
+							keys := len(user.SSHKeys)
+							table.Append([]string{
+								fmt.Sprintf("%d", user.ID),
+								user.Name,
+								user.Email,
+								fmt.Sprintf("%d", keys),
+								user.Comment,
+								//FIXME: add some stats about last access time etc
+								//FIXME: add creation date
+							})
+						}
+						table.Render()
+						return nil
+					},
+				}, {
+					Name:      "rm",
+					Usage:     "Removes one or more users",
+					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return fmt.Errorf("invalid usage")
+						}
+
+						users, err := FindUsersByIdOrEmail(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, user := range users {
+							db.Where("id = ?", user.ID).Delete(&User{})
+							fmt.Fprintf(s, "%d\n", user.ID)
+						}
+						return nil
+					},
 				},
 			},
 		}, {
 			Name:  "version",
-			Usage: "Show the SSHPortal version information",
+			Usage: "Shows the SSHPortal version information",
 			Action: func(c *cli.Context) error {
 				fmt.Fprintf(s, "%s\n", version)
 				return nil
