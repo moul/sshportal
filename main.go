@@ -55,7 +55,9 @@ func main() {
 		},
 	}
 	app.Action = server
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatalf("error: %v", err)
+	}
 }
 
 func server(c *cli.Context) error {
@@ -99,7 +101,7 @@ func server(c *cli.Context) error {
 
 	opts := []ssh.Option{}
 	if !c.Bool("demo") {
-		return errors.New("POC: real authentication is not yet implemented")
+		return errors.New("use `--demo` for now")
 	}
 
 	log.Printf("SSH Server accepting connections on %s", c.String("bind-address"))
