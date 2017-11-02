@@ -29,17 +29,9 @@ type Host struct {
 	User        string
 	Password    string
 	SSHKey      *SSHKey
-	SSHKeyID    uint    `gorm:"index"`
-	Fingerprint string  // FIXME: replace with hostkey ?
-	Groups      []Group `gorm:"many2many:host_groups;"`
+	SSHKeyID    uint   `gorm:"index"`
+	Fingerprint string // FIXME: replace with hostkey ?
 	Comment     string
-}
-
-type Group struct {
-	// FIXME: use uuid for ID
-	gorm.Model
-	Name    string // FIXME: govalidator: min length 3, alphanum
-	Comment string
 }
 
 type User struct {
@@ -47,7 +39,6 @@ type User struct {
 	gorm.Model
 	Name    string // FIXME: govalidator: min length 3, alphanum
 	SSHKeys []SSHKey
-	Groups  []Group `gorm:"many2many:user_groups;"`
 	Comment string
 }
 
@@ -55,11 +46,9 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&SSHKey{})
 	db.AutoMigrate(&Host{})
-	db.AutoMigrate(&Group{})
-	db.Exec(`CREATE UNIQUE INDEX uix_keys_name   ON "keys"("name")   WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name  ON "hosts"("name")  WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("name")  WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_groups_name ON "groups"("name") WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_keys_name   ON "ssh_keys"("name") WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name  ON "hosts"("name")    WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("name")    WHERE ("deleted_at" IS NULL)`)
 
 	// create default ssh key
 	var count uint
