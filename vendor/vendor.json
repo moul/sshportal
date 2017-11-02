@@ -1,0 +1,127 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "HuynI+iQ+RiV7jgtPXA2gTVLcQw=",
+			"path": "github.com/anmitsu/go-shlex",
+			"revision": "648efa622239a2f6ff949fed78ee37b48d499ba4",
+			"revisionTime": "2016-10-02T11:37:05Z"
+		},
+		{
+			"checksumSHA1": "3z3RDSBixjg5A0XPPwAfrpoajoQ=",
+			"path": "github.com/gliderlabs/ssh",
+			"revision": "0c9c3575f476a0c2779aafb89d1838ca4ab7ac16",
+			"revisionTime": "2017-11-01T23:11:58Z"
+		},
+		{
+			"checksumSHA1": "os4jdoOUjr86qvOwri8Ut1rXDrg=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "fade21009797158e7b79e04c340118a9220c6f9e",
+			"revisionTime": "2017-10-17T18:16:16Z"
+		},
+		{
+			"checksumSHA1": "KBZAPkgG/bO26yf2KYKLZPyQw9k=",
+			"path": "github.com/jinzhu/gorm",
+			"revision": "0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e",
+			"revisionTime": "2017-10-10T13:28:39Z"
+		},
+		{
+			"checksumSHA1": "eECxSkwh0WmhLwaxHfkvcLOWS08=",
+			"path": "github.com/jinzhu/gorm/dialects/mysql",
+			"revision": "0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e",
+			"revisionTime": "2017-10-10T13:28:39Z"
+		},
+		{
+			"checksumSHA1": "4VZ1gLZHMumRjV3fclS1aX8S1aQ=",
+			"path": "github.com/jinzhu/gorm/dialects/sqlite",
+			"revision": "0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e",
+			"revisionTime": "2017-10-10T13:28:39Z"
+		},
+		{
+			"checksumSHA1": "VIp1lZm6joWhlNdwhady8u//qRw=",
+			"path": "github.com/jinzhu/inflection",
+			"revision": "1c35d901db3da928c72a72d8458480cc9ade058f",
+			"revisionTime": "2017-01-02T12:52:26Z"
+		},
+		{
+			"checksumSHA1": "cJE7dphDlam/i7PhnsyosNWtbd4=",
+			"path": "github.com/mattn/go-runewidth",
+			"revision": "97311d9f7767e3d6f422ea06661bc2c7a19e8a5d",
+			"revisionTime": "2017-05-10T07:48:58Z"
+		},
+		{
+			"checksumSHA1": "vJOfjdXbjymKpuay2nyRnGncJUw=",
+			"path": "github.com/mattn/go-sqlite3",
+			"revision": "615c193e01d8d462eef7ee390171506f531a1c9a",
+			"revisionTime": "2017-10-24T02:57:10Z"
+		},
+		{
+			"checksumSHA1": "14LZ4g2c1lkJyGBl7h18Ji/aW5c=",
+			"path": "github.com/moby/moby/pkg/namesgenerator",
+			"revision": "76531ccdeb5850156150b88c6a4a56bb8c35dc44",
+			"revisionTime": "2017-11-02T07:39:02Z"
+		},
+		{
+			"checksumSHA1": "xOuDLNlycARp+sA0Ob/1oWT0mYs=",
+			"path": "github.com/olekukonko/tablewriter",
+			"revision": "a7a4c189eb47ed33ce7b35f2880070a0c82a67d4",
+			"revisionTime": "2017-09-25T23:40:30Z"
+		},
+		{
+			"checksumSHA1": "zRAcxJW8WNDMryOBS4VE03V6ivw=",
+			"path": "github.com/urfave/cli",
+			"revision": "7f4b273a05858e05b96b6adf0a7907b7b695c352",
+			"revisionTime": "2017-10-31T02:55:34Z"
+		},
+		{
+			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
+			"path": "golang.org/x/crypto/curve25519",
+			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
+			"revisionTime": "2017-10-31T10:16:35Z"
+		},
+		{
+			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
+			"path": "golang.org/x/crypto/ed25519",
+			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
+			"revisionTime": "2017-10-31T10:16:35Z"
+		},
+		{
+			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
+			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
+			"revisionTime": "2017-10-31T10:16:35Z"
+		},
+		{
+			"checksumSHA1": "EGImhmIP401D+CChQfTscz2RuGE=",
+			"path": "golang.org/x/crypto/ssh",
+			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
+			"revisionTime": "2017-10-31T10:16:35Z"
+		},
+		{
+			"checksumSHA1": "nqWNlnMmVpt628zzvyo6Yv2CX5Q=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
+			"revisionTime": "2017-10-31T10:16:35Z"
+		},
+		{
+			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
+			"path": "golang.org/x/net/context",
+			"revision": "ea0da6f35caf3ff91581c800469e22eef75076f4",
+			"revisionTime": "2017-11-01T22:18:28Z"
+		},
+		{
+			"checksumSHA1": "6ws9uckd33muPlD8IRR8IsNGfA0=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "95c6576299259db960f6c5b9b69ea52422860fce",
+			"revisionTime": "2017-10-30T10:08:44Z"
+		},
+		{
+			"checksumSHA1": "8BcMOi8XTSigDtV2npDc8vMrS60=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "95c6576299259db960f6c5b9b69ea52422860fce",
+			"revisionTime": "2017-10-30T10:08:44Z"
+		}
+	],
+	"rootPath": "github.com/moul/sshportal"
+}
