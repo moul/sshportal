@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +11,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/urfave/cli"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var version = "0.0.1"
@@ -75,11 +75,6 @@ func server(c *cli.Context) error {
 	if err := dbInit(db); err != nil {
 		return err
 	}
-	if c.Bool("demo") {
-		if err := dbDemo(db); err != nil {
-			return err
-		}
-	}
 
 	ssh.Handle(func(s ssh.Session) {
 		currentUser := s.Context().Value(userContextKey).(User)
@@ -113,8 +108,12 @@ func server(c *cli.Context) error {
 	})
 
 	opts := []ssh.Option{}
-	if !c.Bool("demo") {
-		return errors.New("use `--demo` for now")
+	if c.Bool("demo") {
+		if c.Bool("demo") {
+			if err := dbDemo(db); err != nil {
+				return err
+			}
+		}
 	}
 
 	opts = append(opts, ssh.PublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
@@ -156,6 +155,19 @@ func server(c *cli.Context) error {
 		// always returning true to display a custom message for invalid users
 		return true
 	}))
+
+	opts = append(opts, func(srv *ssh.Server) error {
+		key, err := FindKeyByIdOrName(db, "host")
+		if err != nil {
+			return err
+		}
+		signer, err := gossh.ParsePrivateKey([]byte(key.PrivKey))
+		if err != nil {
+			return err
+		}
+		srv.AddHostKey(signer)
+		return nil
+	})
 
 	log.Printf("SSH Server accepting connections on %s", c.String("bind-address"))
 	return ssh.ListenAndServe(c.String("bind-address"), nil, opts...)

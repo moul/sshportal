@@ -75,6 +75,22 @@ func dbInit(db *gorm.DB) error {
 			return err
 		}
 	}
+
+	// create host ssh key
+	if err := db.Table("ssh_keys").Where("name = ?", "host").Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		key, err := NewSSHKey("rsa", 2048)
+		if err != nil {
+			return err
+		}
+		key.Name = "host"
+		key.Comment = "created by sshportal"
+		if err := db.Create(&key).Error; err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
