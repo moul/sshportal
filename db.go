@@ -34,12 +34,19 @@ type Host struct {
 	Comment     string
 }
 
+type UserKey struct {
+	gorm.Model
+	Key    []byte
+	UserID uint
+}
+
 type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
+	IsAdmin bool
 	Email   string // FIXME: govalidator: email
 	Name    string // FIXME: govalidator: min length 3, alphanum
-	SSHKeys []SSHKey
+	Keys    []UserKey
 	Comment string
 }
 
@@ -47,6 +54,7 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&SSHKey{})
 	db.AutoMigrate(&Host{})
+	db.AutoMigrate(&UserKey{})
 	db.Exec(`CREATE UNIQUE INDEX uix_keys_name   ON "ssh_keys"("name") WHERE ("deleted_at" IS NULL)`)
 	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name  ON "hosts"("name")    WHERE ("deleted_at" IS NULL)`)
 	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("email")   WHERE ("deleted_at" IS NULL)`)
@@ -164,7 +172,7 @@ func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
 
 func FindUserByIdOrEmail(db *gorm.DB, query string) (*User, error) {
 	var user User
-	if err := db.Where("id = ?", query).Or("email = ?", query).First(&user).Error; err != nil {
+	if err := db.Preload("Keys").Where("id = ?", query).Or("email = ?", query).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

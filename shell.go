@@ -377,7 +377,7 @@ GLOBAL OPTIONS:
 					Usage: "Lists users",
 					Action: func(c *cli.Context) error {
 						var users []User
-						if err := db.Find(&users).Error; err != nil {
+						if err := db.Preload("Keys").Find(&users).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -385,7 +385,7 @@ GLOBAL OPTIONS:
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
-							keys := len(user.SSHKeys)
+							keys := len(user.Keys)
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,

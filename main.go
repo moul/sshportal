@@ -17,6 +17,10 @@ import (
 
 var version = "0.0.1"
 
+type sshportalContextKey string
+
+var userContextKey = sshportalContextKey("user")
+
 func main() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
@@ -103,6 +107,45 @@ func server(c *cli.Context) error {
 	if !c.Bool("demo") {
 		return errors.New("use `--demo` for now")
 	}
+
+	opts = append(opts, ssh.PublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+		var (
+			userKey UserKey
+			user    User
+			count   uint
+		)
+
+		// lookup user by key
+		db.Where("key = ?", key.Marshal()).First(&userKey)
+		if userKey.UserID > 0 {
+			db.Where("id = ?", userKey.UserID).First(&user)
+			ctx.SetValue(userContextKey, user)
+			return true
+		}
+
+		// check if there are users in DB
+		db.Table("users").Count(&count)
+		if count == 0 { // create an admin user
+			// if no admin, create an account for the first connection
+			user = User{
+				Name:    "Administrator",
+				Email:   "admin@sshportal",
+				Comment: "created by sshportal",
+				IsAdmin: true,
+			}
+			db.Create(&user)
+			userKey = UserKey{
+				UserID: user.ID,
+				Key:    key.Marshal(),
+			}
+			db.Create(&userKey)
+
+			ctx.SetValue(userContextKey, user)
+			return true
+		}
+
+		return false
+	}))
 
 	log.Printf("SSH Server accepting connections on %s", c.String("bind-address"))
 	return ssh.ListenAndServe(c.String("bind-address"), nil, opts...)
