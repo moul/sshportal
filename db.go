@@ -36,8 +36,10 @@ type Host struct {
 
 type UserKey struct {
 	gorm.Model
-	Key    []byte
-	UserID uint
+	Key     []byte
+	UserID  uint
+	User    *User
+	Comment string
 }
 
 type User struct {
@@ -204,4 +206,24 @@ func FindUsersByIdOrEmail(db *gorm.DB, queries []string) ([]*User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func FindUserkeyById(db *gorm.DB, query string) (*UserKey, error) {
+	var userkey UserKey
+	if err := db.Preload("User").Where("id = ?", query).First(&userkey).Error; err != nil {
+		return nil, err
+	}
+	return &userkey, nil
+}
+
+func FindUserkeysById(db *gorm.DB, queries []string) ([]*UserKey, error) {
+	var userkeys []*UserKey
+	for _, query := range queries {
+		userkey, err := FindUserkeyById(db, query)
+		if err != nil {
+			return nil, err
+		}
+		userkeys = append(userkeys, userkey)
+	}
+	return userkeys, nil
 }

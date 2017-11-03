@@ -143,8 +143,9 @@ func server(c *cli.Context) error {
 			}
 			db.Create(&user)
 			userKey = UserKey{
-				UserID: user.ID,
-				Key:    key.Marshal(),
+				UserID:  user.ID,
+				Key:     key.Marshal(),
+				Comment: "created by sshportal",
 			}
 			db.Create(&userKey)
 

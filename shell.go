@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -363,14 +364,14 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hosts, err := FindUsersByIdOrEmail(db, c.Args())
+						users, err := FindUsersByIdOrEmail(db, c.Args())
 						if err != nil {
 							return nil
 						}
 
 						enc := json.NewEncoder(s)
 						enc.SetIndent("", "  ")
-						return enc.Encode(hosts)
+						return enc.Encode(users)
 					},
 				}, {
 					Name:  "ls",
@@ -416,6 +417,117 @@ GLOBAL OPTIONS:
 						for _, user := range users {
 							db.Where("id = ?", user.ID).Delete(&User{})
 							fmt.Fprintf(s, "%d\n", user.ID)
+						}
+						return nil
+					},
+				},
+			},
+		}, {
+			Name:  "userkey",
+			Usage: "Manages userkeys",
+			Subcommands: []cli.Command{
+				{
+					Name:        "create",
+					ArgsUsage:   "<user ID or email>",
+					Usage:       "Creates a new userkey",
+					Description: "$> userkey create bob\n   $> user create --name=mykey bob",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						user, err := FindUserByIdOrEmail(db, c.Args().First())
+						if err != nil {
+							return err
+						}
+
+						fmt.Fprintf(s, "Enter key:\n")
+						reader := bufio.NewReader(s)
+						text, _ := reader.ReadString('\n')
+						fmt.Println(text)
+
+						key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(text))
+						if err != nil {
+							return err
+						}
+
+						userkey := UserKey{
+							UserID:  user.ID,
+							Key:     key.Marshal(),
+							Comment: comment,
+						}
+						if c.String("comment") != "" {
+							userkey.Comment = c.String("comment")
+						}
+
+						// save the userkey in database
+						if err := db.Create(&userkey).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", userkey.ID)
+						return nil
+					},
+				}, {
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more userkeys",
+					ArgsUsage: "<id> [<id> [<id>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						userkeys, err := FindUserkeysById(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(userkeys)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists userkeys",
+					Action: func(c *cli.Context) error {
+						var userkeys []UserKey
+						if err := db.Preload("User").Find(&userkeys).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "User", "Comment"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userkeys)))
+						for _, userkey := range userkeys {
+							table.Append([]string{
+								fmt.Sprintf("%d", userkey.ID),
+								userkey.User.Email,
+								// FIXME: add fingerprint
+								userkey.Comment,
+							})
+						}
+						table.Render()
+						return nil
+					},
+				}, {
+					Name:      "rm",
+					Usage:     "Removes one or more userkeys",
+					ArgsUsage: "<id> [<id> [<id>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						userkeys, err := FindUserkeysById(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, userkey := range userkeys {
+							db.Where("id = ?", userkey.ID).Delete(&UserKey{})
+							fmt.Fprintf(s, "%d\n", userkey.ID)
 						}
 						return nil
 					},
