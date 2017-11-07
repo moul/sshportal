@@ -323,39 +323,6 @@ GLOBAL OPTIONS:
 			Usage: "Manages users",
 			Subcommands: []cli.Command{
 				{
-					Name:        "create",
-					ArgsUsage:   "<email>",
-					Usage:       "Creates a new user",
-					Description: "$> user create bob\n   $> user create --name=mykey",
-					Flags: []cli.Flag{
-						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
-						cli.StringFlag{Name: "comment"},
-					},
-					Action: func(c *cli.Context) error {
-						if c.NArg() != 1 {
-							return cli.ShowSubcommandHelp(c)
-						}
-
-						email := c.Args().First()
-						name := strings.Split(email, "@")[0]
-						if c.String("name") != "" {
-							name = c.String("name")
-						}
-
-						user := User{
-							Name:    name,
-							Email:   email,
-							Comment: c.String("comment"),
-						}
-
-						// save the user in database
-						if err := db.Create(&user).Error; err != nil {
-							return err
-						}
-						fmt.Fprintf(s, "%d\n", user.ID)
-						return nil
-					},
-				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more users",
 					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
@@ -372,6 +339,42 @@ GLOBAL OPTIONS:
 						enc := json.NewEncoder(s)
 						enc.SetIndent("", "  ")
 						return enc.Encode(users)
+					},
+				}, {
+					Name:        "invite",
+					ArgsUsage:   "<email>",
+					Usage:       "Invites a new user",
+					Description: "$> user invite bob@example.com\n   $> user invite --name=Robert bob@example.com",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
+						cli.StringFlag{Name: "comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						// FIXME: validate email
+
+						email := c.Args().First()
+						name := strings.Split(email, "@")[0]
+						if c.String("name") != "" {
+							name = c.String("name")
+						}
+
+						user := User{
+							Name:        name,
+							Email:       email,
+							Comment:     c.String("comment"),
+							InviteToken: RandStringBytes(16),
+						}
+
+						// save the user in database
+						if err := db.Create(&user).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "User %d created.\nTo associate this account with a key, use the following SSH user: 'invite-%s'.\n", user.ID, user.InviteToken)
+						return nil
 					},
 				}, {
 					Name:  "ls",

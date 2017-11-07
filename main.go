@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
@@ -18,7 +20,11 @@ var version = "0.0.1"
 
 type sshportalContextKey string
 
-var userContextKey = sshportalContextKey("user")
+var (
+	userContextKey    = sshportalContextKey("user")
+	messageContextKey = sshportalContextKey("message")
+	errorContextKey   = sshportalContextKey("error")
+)
 
 func main() {
 	app := cli.NewApp()
@@ -80,20 +86,26 @@ func server(c *cli.Context) error {
 		currentUser := s.Context().Value(userContextKey).(User)
 		log.Printf("New connection: sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
 
-		if currentUser.ID < 1 {
-			fmt.Fprintf(s, "You are not authorized to access this server.\n")
+		if err := s.Context().Value(errorContextKey); err != nil {
+			fmt.Fprintf(s, "error: %v\n", err)
 			return
 		}
 
-		switch s.User() {
-		case c.String("config-user"):
+		if msg := s.Context().Value(messageContextKey); msg != nil {
+			fmt.Fprint(s, msg.(string))
+		}
+
+		switch username := s.User(); {
+		case username == c.String("config-user"):
 			if !currentUser.IsAdmin {
-				fmt.Fprintf(s, "You are not an administrator.\n")
+				fmt.Fprintf(s, "You are not an administrator, permission denied.\n")
 				return
 			}
 			if err := shell(c, s, s.Command(), db); err != nil {
 				fmt.Fprintf(s, "error: %v\n", err)
 			}
+		case strings.HasPrefix(username, "invite:"):
+			return
 		default:
 			host, err := RemoteHostFromSession(s, db)
 			if err != nil {
@@ -118,42 +130,52 @@ func server(c *cli.Context) error {
 
 	opts = append(opts, ssh.PublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 		var (
-			userKey UserKey
-			user    User
-			count   uint
+			userKey  UserKey
+			user     User
+			username = ctx.User()
 		)
 
 		// lookup user by key
 		db.Where("key = ?", key.Marshal()).First(&userKey)
 		if userKey.UserID > 0 {
 			db.Where("id = ?", userKey.UserID).First(&user)
+			if strings.HasPrefix(username, "invite:") {
+				ctx.SetValue(errorContextKey, fmt.Errorf("invites are only supported for ney SSH keys; your ssh key is already associated with the user %q.", user.Email))
+			}
 			ctx.SetValue(userContextKey, user)
 			return true
 		}
 
-		// check if there are users in DB
-		db.Table("users").Count(&count)
-		if count == 0 { // create an admin user
-			// if no admin, create an account for the first connection
-			user = User{
-				Name:    "Administrator",
-				Email:   "admin@sshportal",
-				Comment: "created by sshportal",
-				IsAdmin: true,
+		// handle invite "links"
+		if strings.HasPrefix(username, "invite:") {
+			inputToken := strings.Split(username, ":")[1]
+			if len(inputToken) == 16 {
+				db.Where("invite_token = ?", inputToken).First(&user)
 			}
-			db.Create(&user)
-			userKey = UserKey{
-				UserID:  user.ID,
-				Key:     key.Marshal(),
-				Comment: "created by sshportal",
-			}
-			db.Create(&userKey)
+			if user.ID > 0 {
+				userKey = UserKey{
+					UserID:  user.ID,
+					Key:     key.Marshal(),
+					Comment: "created by sshportal",
+				}
+				db.Create(&userKey)
 
-			ctx.SetValue(userContextKey, user)
+				// token is only usable once
+				user.InviteToken = ""
+				db.Update(&user)
+
+				ctx.SetValue(messageContextKey, fmt.Sprintf("Welcome %s!\n\nYour key is now associated with the user %q.\n", user.Name, user.Email))
+				ctx.SetValue(userContextKey, user)
+			} else {
+				ctx.SetValue(userContextKey, User{Name: "Anonymous"})
+				ctx.SetValue(errorContextKey, errors.New("your token is invalid or expired"))
+			}
 			return true
 		}
 
-		// always returning true to display a custom message for invalid users
+		// fallback
+		ctx.SetValue(errorContextKey, errors.New("unknown ssh key"))
+		ctx.SetValue(userContextKey, User{Name: "Anonymous"})
 		return true
 	}))
 

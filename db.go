@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 
@@ -45,11 +46,12 @@ type UserKey struct {
 type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	IsAdmin bool
-	Email   string // FIXME: govalidator: email
-	Name    string // FIXME: govalidator: min length 3, alphanum
-	Keys    []UserKey
-	Comment string
+	IsAdmin     bool
+	Email       string // FIXME: govalidator: email
+	Name        string // FIXME: govalidator: min length 3, alphanum
+	Keys        []UserKey
+	Comment     string
+	InviteToken string
 }
 
 func dbInit(db *gorm.DB) error {
@@ -76,6 +78,21 @@ func dbInit(db *gorm.DB) error {
 		if err := db.Create(&key).Error; err != nil {
 			return err
 		}
+	}
+
+	// create admin user
+	db.Table("users").Count(&count)
+	if count == 0 {
+		// if no admin, create an account for the first connection
+		user := User{
+			Name:        "Administrator",
+			Email:       "admin@sshportal",
+			Comment:     "created by sshportal",
+			IsAdmin:     true,
+			InviteToken: RandStringBytes(16),
+		}
+		db.Create(&user)
+		log.Printf("Admin user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
 	}
 
 	// create host ssh key
