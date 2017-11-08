@@ -25,13 +25,14 @@ type SSHKey struct {
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string // FIXME: govalidator: min length 3, alphanum
+	Name        string `gorm:"size:63"` // FIXME: govalidator: min length 3, alphanum
 	Addr        string
 	User        string
 	Password    string
 	SSHKey      *SSHKey
-	SSHKeyID    uint   `gorm:"index"`
-	Fingerprint string // FIXME: replace with hostkey ?
+	SSHKeyID    uint        `gorm:"index"`
+	Groups      []HostGroup `gorm:"many2many:host_host_groups;"`
+	Fingerprint string      // FIXME: replace with hostkey ?
 	Comment     string
 }
 
@@ -50,8 +51,23 @@ type User struct {
 	Email       string // FIXME: govalidator: email
 	Name        string // FIXME: govalidator: min length 3, alphanum
 	Keys        []UserKey
+	Groups      []UserGroup `gorm:"many2many:user_user_groups;"`
 	Comment     string
 	InviteToken string
+}
+
+type UserGroup struct {
+	gorm.Model
+	Name    string
+	Users   []User `gorm:"many2many:user_user_groups;"`
+	Comment string
+}
+
+type HostGroup struct {
+	gorm.Model
+	Name    string
+	Hosts   []Host `gorm:"many2many:host_host_groups;"`
+	Comment string
 }
 
 func dbInit(db *gorm.DB) error {
@@ -59,6 +75,9 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&SSHKey{})
 	db.AutoMigrate(&Host{})
 	db.AutoMigrate(&UserKey{})
+	db.AutoMigrate(&UserGroup{})
+	db.AutoMigrate(&HostGroup{})
+	// FIXME: check if indexes exist to avoid gorm warns
 	db.Exec(`CREATE UNIQUE INDEX uix_keys_name   ON "ssh_keys"("name") WHERE ("deleted_at" IS NULL)`)
 	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name  ON "hosts"("name")    WHERE ("deleted_at" IS NULL)`)
 	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("email")   WHERE ("deleted_at" IS NULL)`)
@@ -80,7 +99,35 @@ func dbInit(db *gorm.DB) error {
 		}
 	}
 
+	// create default host group
+	if err := db.Table("host_groups").Where("name = ?", "default").Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		hostGroup := HostGroup{
+			Name: "default",
+		}
+		if err := db.Create(&hostGroup).Error; err != nil {
+			return err
+		}
+	}
+
+	// create default user group
+	if err := db.Table("user_groups").Where("name = ?", "default").Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		userGroup := UserGroup{
+			Name: "default",
+		}
+		if err := db.Create(&userGroup).Error; err != nil {
+			return err
+		}
+	}
+
 	// create admin user
+	var defaultUserGroup UserGroup
+	db.Where("name = ?", "default").First(&defaultUserGroup)
 	db.Table("users").Count(&count)
 	if count == 0 {
 		// if no admin, create an account for the first connection
@@ -90,6 +137,7 @@ func dbInit(db *gorm.DB) error {
 			Comment:     "created by sshportal",
 			IsAdmin:     true,
 			InviteToken: RandStringBytes(16),
+			Groups:      []UserGroup{defaultUserGroup},
 		}
 		db.Create(&user)
 		log.Printf("Admin user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
@@ -114,15 +162,26 @@ func dbInit(db *gorm.DB) error {
 }
 
 func dbDemo(db *gorm.DB) error {
+	hostGroup, err := FindHostGroupByIdOrName(db, "default")
+	if err != nil {
+		return err
+	}
+
 	key, err := FindKeyByIdOrName(db, "default")
 	if err != nil {
 		return err
 	}
 
-	var host1, host2, host3 Host
-	db.FirstOrCreate(&host1, &Host{Name: "sdf", Addr: "sdf.org:22", User: "new", SSHKeyID: key.ID})
-	db.FirstOrCreate(&host2, &Host{Name: "whoami", Addr: "whoami.filippo.io:22", User: "test", SSHKeyID: key.ID})
-	db.FirstOrCreate(&host3, &Host{Name: "ssh-chat", Addr: "chat.shazow.net:22", User: "test", SSHKeyID: key.ID, Fingerprint: "MD5:e5:d5:d1:75:90:38:42:f6:c7:03:d7:d0:56:7d:6a:db"})
+	var (
+		host1 = Host{Name: "sdf", Addr: "sdf.org:22", User: "new", SSHKeyID: key.ID, Groups: []HostGroup{*hostGroup}}
+		host2 = Host{Name: "whoami", Addr: "whoami.filippo.io:22", User: "test", SSHKeyID: key.ID, Groups: []HostGroup{*hostGroup}}
+		host3 = Host{Name: "ssh-chat", Addr: "chat.shazow.net:22", User: "test", SSHKeyID: key.ID, Fingerprint: "MD5:e5:d5:d1:75:90:38:42:f6:c7:03:d7:d0:56:7d:6a:db", Groups: []HostGroup{*hostGroup}}
+	)
+
+	// FIXME: check if hosts exist to avoid `UNIQUE constraint` error
+	db.Create(&host1)
+	db.Create(&host2)
+	db.Create(&host3)
 	return nil
 }
 
@@ -165,14 +224,15 @@ func (host *Host) Hostname() string {
 	return strings.Split(host.Addr, ":")[0]
 }
 
+// Host helpers
+
 func FindHostByIdOrName(db *gorm.DB, query string) (*Host, error) {
 	var host Host
-	if err := db.Preload("SSHKey").Where("id = ?", query).Or("name = ?", query).First(&host).Error; err != nil {
+	if err := db.Preload("Groups").Preload("SSHKey").Where("id = ?", query).Or("name = ?", query).First(&host).Error; err != nil {
 		return nil, err
 	}
 	return &host, nil
 }
-
 func FindHostsByIdOrName(db *gorm.DB, queries []string) ([]*Host, error) {
 	var hosts []*Host
 	for _, query := range queries {
@@ -185,6 +245,8 @@ func FindHostsByIdOrName(db *gorm.DB, queries []string) ([]*Host, error) {
 	return hosts, nil
 }
 
+// SSHKey helpers
+
 func FindKeyByIdOrName(db *gorm.DB, query string) (*SSHKey, error) {
 	var key SSHKey
 	if err := db.Where("id = ?", query).Or("name = ?", query).First(&key).Error; err != nil {
@@ -192,7 +254,6 @@ func FindKeyByIdOrName(db *gorm.DB, query string) (*SSHKey, error) {
 	}
 	return &key, nil
 }
-
 func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
 	var keys []*SSHKey
 	for _, query := range queries {
@@ -205,14 +266,57 @@ func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
 	return keys, nil
 }
 
+// HostGroup helpers
+
+func FindHostGroupByIdOrName(db *gorm.DB, query string) (*HostGroup, error) {
+	var hostGroup HostGroup
+	if err := db.Where("id = ?", query).Or("name = ?", query).First(&hostGroup).Error; err != nil {
+		return nil, err
+	}
+	return &hostGroup, nil
+}
+func FindHostGroupsByIdOrName(db *gorm.DB, queries []string) ([]*HostGroup, error) {
+	var hostGroups []*HostGroup
+	for _, query := range queries {
+		hostGroup, err := FindHostGroupByIdOrName(db, query)
+		if err != nil {
+			return nil, err
+		}
+		hostGroups = append(hostGroups, hostGroup)
+	}
+	return hostGroups, nil
+}
+
+// UserGroup heleprs
+
+func FindUserGroupByIdOrName(db *gorm.DB, query string) (*UserGroup, error) {
+	var userGroup UserGroup
+	if err := db.Where("id = ?", query).Or("name = ?", query).First(&userGroup).Error; err != nil {
+		return nil, err
+	}
+	return &userGroup, nil
+}
+func FindUserGroupsByIdOrName(db *gorm.DB, queries []string) ([]*UserGroup, error) {
+	var userGroups []*UserGroup
+	for _, query := range queries {
+		userGroup, err := FindUserGroupByIdOrName(db, query)
+		if err != nil {
+			return nil, err
+		}
+		userGroups = append(userGroups, userGroup)
+	}
+	return userGroups, nil
+}
+
+// User helpers
+
 func FindUserByIdOrEmail(db *gorm.DB, query string) (*User, error) {
 	var user User
-	if err := db.Preload("Keys").Where("id = ?", query).Or("email = ?", query).First(&user).Error; err != nil {
+	if err := db.Preload("Groups").Preload("Keys").Where("id = ?", query).Or("email = ?", query).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
-
 func FindUsersByIdOrEmail(db *gorm.DB, queries []string) ([]*User, error) {
 	var users []*User
 	for _, query := range queries {
@@ -225,6 +329,8 @@ func FindUsersByIdOrEmail(db *gorm.DB, queries []string) ([]*User, error) {
 	return users, nil
 }
 
+// UserKey helpers
+
 func FindUserkeyById(db *gorm.DB, query string) (*UserKey, error) {
 	var userkey UserKey
 	if err := db.Preload("User").Where("id = ?", query).First(&userkey).Error; err != nil {
@@ -232,7 +338,6 @@ func FindUserkeyById(db *gorm.DB, query string) (*UserKey, error) {
 	}
 	return &userkey, nil
 }
-
 func FindUserkeysById(db *gorm.DB, queries []string) ([]*UserKey, error) {
 	var userkeys []*UserKey
 	for _, query := range queries {

@@ -70,6 +70,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "fingerprint", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment"},
 						cli.StringFlag{Name: "key", Usage: "ID or name of the key to use for authentication"},
+						cli.StringFlag{Name: "group", Usage: "Name or ID of the host group", Value: "default"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -105,6 +106,13 @@ GLOBAL OPTIONS:
 							}
 							host.SSHKeyID = key.ID
 						}
+
+						// host group
+						hostGroup, err := FindHostGroupByIdOrName(db, c.String("group"))
+						if err != nil {
+							return err
+						}
+						host.Groups = []HostGroup{*hostGroup}
 
 						if err := db.Create(&host).Error; err != nil {
 							return err
@@ -348,6 +356,7 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
 						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "group", Usage: "Name or ID of the user group", Value: "default"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -368,6 +377,13 @@ GLOBAL OPTIONS:
 							Comment:     c.String("comment"),
 							InviteToken: RandStringBytes(16),
 						}
+
+						// user group
+						userGroup, err := FindUserGroupByIdOrName(db, c.String("group"))
+						if err != nil {
+							return err
+						}
+						user.Groups = []UserGroup{*userGroup}
 
 						// save the user in database
 						if err := db.Create(&user).Error; err != nil {
