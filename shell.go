@@ -283,7 +283,7 @@ GLOBAL OPTIONS:
 						}
 
 						for _, hostGroup := range hostGroups {
-							db.Where("id = ?", hostGroup.ID).Delete(&Host{})
+							db.Where("id = ?", hostGroup.ID).Delete(&HostGroup{})
 							fmt.Fprintf(s, "%d\n", hostGroup.ID)
 						}
 						return nil
@@ -308,6 +308,10 @@ GLOBAL OPTIONS:
 				fmt.Fprintf(s, "Go routines: %d\n", runtime.NumGoroutine())
 				fmt.Fprintf(s, "Go version (build): %v\n", runtime.Version())
 				fmt.Fprintf(s, "Uptime: %v\n", time.Since(startTime))
+
+				myself := s.Context().Value(userContextKey).(User)
+				fmt.Fprintf(s, "User email: %v\n", myself.ID)
+				fmt.Fprintf(s, "User email: %s\n", myself.Email)
 				// FIXME: add version
 				// FIXME: add info about current server (network, cpu, ram, OS)
 				// FIXME: add info about current user
@@ -530,6 +534,105 @@ GLOBAL OPTIONS:
 						for _, user := range users {
 							db.Where("id = ?", user.ID).Delete(&User{})
 							fmt.Fprintf(s, "%d\n", user.ID)
+						}
+						return nil
+					},
+				},
+			},
+		}, {
+			Name:  "usergroup",
+			Usage: "Manages user groups",
+			Subcommands: []cli.Command{
+				{
+					Name:        "create",
+					Usage:       "Creates a new user group",
+					Description: "$> usergroup create --name=prod",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user group"},
+						cli.StringFlag{Name: "comment"},
+					},
+					Action: func(c *cli.Context) error {
+						userGroup := UserGroup{
+							Name: c.String("name"),
+						}
+						if userGroup.Name == "" {
+							userGroup.Name = namesgenerator.GetRandomName(0)
+						}
+						if !isNameValid(userGroup.Name) {
+							return fmt.Errorf("invalid name %q", userGroup.Name)
+						}
+						// FIXME: check if name already exists
+						userGroup.Comment = c.String("comment")
+
+						// add myself to the new group
+						myself := s.Context().Value(userContextKey).(User)
+						// FIXME: use foreign key with ID to avoid updating the user with the context
+						userGroup.Users = []User{myself}
+
+						if err := db.Create(&userGroup).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", userGroup.ID)
+						return nil
+					},
+				}, {
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more user groups",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						userGroups, err := FindUserGroupsByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(userGroups)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists user groups",
+					Action: func(c *cli.Context) error {
+						var userGroups []UserGroup
+						if err := db.Find(&userGroups).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "Name", "Comment"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d user groups.", len(userGroups)))
+						for _, userGroup := range userGroups {
+							// FIXME: add more stats (amount of users, linked usergroups, ...)
+							table.Append([]string{
+								fmt.Sprintf("%d", userGroup.ID),
+								userGroup.Name,
+								userGroup.Comment,
+							})
+						}
+						table.Render()
+						return nil
+					},
+				}, {
+					Name:      "rm",
+					Usage:     "Removes one or more user groups",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						userGroups, err := FindUserGroupsByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, userGroup := range userGroups {
+							db.Where("id = ?", userGroup.ID).Delete(&UserGroup{})
+							fmt.Fprintf(s, "%d\n", userGroup.ID)
 						}
 						return nil
 					},

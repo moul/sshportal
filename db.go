@@ -295,7 +295,7 @@ func FindHostGroupsByIdOrName(db *gorm.DB, queries []string) ([]*HostGroup, erro
 
 func FindUserGroupByIdOrName(db *gorm.DB, query string) (*UserGroup, error) {
 	var userGroup UserGroup
-	if err := db.Where("id = ?", query).Or("name = ?", query).First(&userGroup).Error; err != nil {
+	if err := db.Preload("Users").Where("id = ?", query).Or("name = ?", query).First(&userGroup).Error; err != nil {
 		return nil, err
 	}
 	return &userGroup, nil
