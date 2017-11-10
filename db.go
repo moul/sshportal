@@ -19,6 +19,7 @@ type SSHKey struct {
 	Fingerprint string
 	PrivKey     string `sql:"size:10000;"`
 	PubKey      string `sql:"size:10000;"`
+	Hosts       []Host
 	Comment     string
 }
 
@@ -253,7 +254,7 @@ func FindHostsByIdOrName(db *gorm.DB, queries []string) ([]*Host, error) {
 
 func FindKeyByIdOrName(db *gorm.DB, query string) (*SSHKey, error) {
 	var key SSHKey
-	if err := db.Where("id = ?", query).Or("name = ?", query).First(&key).Error; err != nil {
+	if err := db.Preload("Hosts").Where("id = ?", query).Or("name = ?", query).First(&key).Error; err != nil {
 		return nil, err
 	}
 	return &key, nil

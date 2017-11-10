@@ -143,11 +143,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists hosts",
 					Action: func(c *cli.Context) error {
 						var hosts []Host
-						if err := db.Find(&hosts).Error; err != nil {
+						if err := db.Preload("Groups").Find(&hosts).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Groups", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
@@ -166,6 +166,7 @@ GLOBAL OPTIONS:
 								host.URL(),
 								authKey,
 								authPass,
+								fmt.Sprintf("%d", len(host.Groups)),
 								host.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
@@ -250,11 +251,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists host groups",
 					Action: func(c *cli.Context) error {
 						var hostGroups []HostGroup
-						if err := db.Find(&hostGroups).Error; err != nil {
+						if err := db.Preload("Hosts").Find(&hostGroups).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Hosts", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d host groups.", len(hostGroups)))
 						for _, hostGroup := range hostGroups {
@@ -262,6 +263,7 @@ GLOBAL OPTIONS:
 							table.Append([]string{
 								fmt.Sprintf("%d", hostGroup.ID),
 								hostGroup.Name,
+								fmt.Sprintf("%d", len(hostGroup.Hosts)),
 								hostGroup.Comment,
 							})
 						}
@@ -380,11 +382,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists keys",
 					Action: func(c *cli.Context) error {
 						var keys []SSHKey
-						if err := db.Find(&keys).Error; err != nil {
+						if err := db.Preload("Hosts").Find(&keys).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Hosts", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d keys.", len(keys)))
 						for _, key := range keys {
@@ -394,6 +396,7 @@ GLOBAL OPTIONS:
 								key.Type,
 								fmt.Sprintf("%d", key.Length),
 								//key.Fingerprint,
+								fmt.Sprintf("%d", len(key.Hosts)),
 								key.Comment,
 								//FIXME: add some stats
 								//FIXME: add creation date
@@ -495,20 +498,20 @@ GLOBAL OPTIONS:
 					Usage: "Lists users",
 					Action: func(c *cli.Context) error {
 						var users []User
-						if err := db.Preload("Keys").Find(&users).Error; err != nil {
+						if err := db.Preload("Groups").Preload("Keys").Find(&users).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Email", "Keys", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Email", "Keys", "Groups", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
-							keys := len(user.Keys)
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,
 								user.Email,
-								fmt.Sprintf("%d", keys),
+								fmt.Sprintf("%d", len(user.Keys)),
+								fmt.Sprintf("%d", len(user.Groups)),
 								user.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
@@ -598,11 +601,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists user groups",
 					Action: func(c *cli.Context) error {
 						var userGroups []UserGroup
-						if err := db.Find(&userGroups).Error; err != nil {
+						if err := db.Preload("Users").Find(&userGroups).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Users", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d user groups.", len(userGroups)))
 						for _, userGroup := range userGroups {
@@ -610,6 +613,7 @@ GLOBAL OPTIONS:
 							table.Append([]string{
 								fmt.Sprintf("%d", userGroup.ID),
 								userGroup.Name,
+								fmt.Sprintf("%d", len(userGroup.Users)),
 								userGroup.Comment,
 							})
 						}
