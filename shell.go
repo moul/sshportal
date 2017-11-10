@@ -56,6 +56,137 @@ GLOBAL OPTIONS:
 	app.HideVersion = true
 	app.Commands = []cli.Command{
 		{
+			Name:  "acl",
+			Usage: "Manages acls",
+			Subcommands: []cli.Command{
+				{
+					Name:        "create",
+					Usage:       "Creates a new ACL",
+					Description: "$> acl create -",
+					Flags: []cli.Flag{
+						cli.StringSliceFlag{Name: "hostgroup, hg", Usage: "Assigns host groups to the acl"},
+						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns host groups to the acl"},
+						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
+						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: "allow"},
+						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
+					},
+					Action: func(c *cli.Context) error {
+						acl := ACL{
+							Comment:     c.String("comment"),
+							HostPattern: c.String("pattern"),
+							UserGroups:  []UserGroup{},
+							HostGroups:  []HostGroup{},
+							Weight:      c.Uint("weight"),
+							Action:      c.String("action"),
+						}
+						if acl.Action != "allow" && acl.Action != "deny" {
+							return fmt.Errorf("invalid action %q, allowed values: allow, deny", acl.Action)
+						}
+
+						for _, name := range c.StringSlice("usergroup") {
+							userGroup, err := FindUserGroupByIdOrName(db, name)
+							if err != nil {
+								return fmt.Errorf("unknown user group %q: %v", name, err)
+							}
+							acl.UserGroups = append(acl.UserGroups, *userGroup)
+						}
+						for _, name := range c.StringSlice("hostgroup") {
+							hostGroup, err := FindHostGroupByIdOrName(db, name)
+							if err != nil {
+								return fmt.Errorf("unknown host group %q: %v", name, err)
+							}
+							acl.HostGroups = append(acl.HostGroups, *hostGroup)
+						}
+
+						if len(acl.UserGroups) == 0 {
+							return fmt.Errorf("an ACL must have at least one user group")
+						}
+						if len(acl.HostGroups) == 0 && acl.HostPattern == "" {
+							return fmt.Errorf("an ACL must have at least one host group or host pattern")
+						}
+
+						if err := db.Create(&acl).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", acl.ID)
+						return nil
+					},
+				}, {
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more acls",
+					ArgsUsage: "<id> [<id> [<id>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						acls, err := FindACLsById(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(acls)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists acls",
+					Action: func(c *cli.Context) error {
+						var acls []ACL
+						if err := db.Preload("UserGroups").Preload("HostGroups").Find(&acls).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "User groups", "Host groups", "Host pattern", "Action", "Comment"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d acls.", len(acls)))
+						for _, acl := range acls {
+							userGroups := []string{}
+							hostGroups := []string{}
+							for _, entity := range acl.UserGroups {
+								userGroups = append(userGroups, entity.Name)
+							}
+							for _, entity := range acl.HostGroups {
+								hostGroups = append(hostGroups, entity.Name)
+							}
+
+							table.Append([]string{
+								fmt.Sprintf("%d", acl.ID),
+								strings.Join(userGroups, ", "),
+								strings.Join(hostGroups, ", "),
+								acl.HostPattern,
+								acl.Action,
+								acl.Comment,
+							})
+						}
+						table.Render()
+						return nil
+					},
+				}, {
+					Name:      "rm",
+					Usage:     "Removes one or more acls",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						acls, err := FindACLsById(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, acl := range acls {
+							db.Where("id = ?", acl.ID).Delete(&ACL{})
+							fmt.Fprintf(s, "%d\n", acl.ID)
+						}
+						return nil
+					},
+				},
+			},
+		}, {
 			Name:  "host",
 			Usage: "Manages hosts",
 			Subcommands: []cli.Command{
@@ -123,7 +254,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more hosts",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -178,7 +309,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more hosts",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -231,7 +362,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more host groups",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -273,7 +404,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more host groups",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -362,7 +493,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more keys",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -408,7 +539,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more keys",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -434,7 +565,7 @@ GLOBAL OPTIONS:
 				{
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more users",
-					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
+					ArgsUsage: "<id or email> [<id or email> [<id or email>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -523,7 +654,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more users",
-					ArgsUsage: "<id or email> [<id or email> [<ir or email>...]]",
+					ArgsUsage: "<id or email> [<id or email> [<id or email>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -581,7 +712,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more user groups",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -623,7 +754,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more user groups",
-					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)

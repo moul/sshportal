@@ -369,6 +369,27 @@ func FindUsersByIdOrEmail(db *gorm.DB, queries []string) ([]*User, error) {
 	return users, nil
 }
 
+// ACL helpers
+
+func FindACLById(db *gorm.DB, query string) (*ACL, error) {
+	var acl ACL
+	if err := db.Preload("UserGroups").Preload("HostGroups").Where("id = ?", query).First(&acl).Error; err != nil {
+		return nil, err
+	}
+	return &acl, nil
+}
+func FindACLsById(db *gorm.DB, queries []string) ([]*ACL, error) {
+	var acls []*ACL
+	for _, query := range queries {
+		acl, err := FindACLById(db, query)
+		if err != nil {
+			return nil, err
+		}
+		acls = append(acls, acl)
+	}
+	return acls, nil
+}
+
 // UserKey helpers
 
 func FindUserkeyById(db *gorm.DB, query string) (*UserKey, error) {
