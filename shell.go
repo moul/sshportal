@@ -382,11 +382,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists host groups",
 					Action: func(c *cli.Context) error {
 						var hostGroups []HostGroup
-						if err := db.Preload("Hosts").Find(&hostGroups).Error; err != nil {
+						if err := db.Preload("ACLs").Preload("Hosts").Find(&hostGroups).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Hosts", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Hosts", "ACLs", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d host groups.", len(hostGroups)))
 						for _, hostGroup := range hostGroups {
@@ -395,6 +395,7 @@ GLOBAL OPTIONS:
 								fmt.Sprintf("%d", hostGroup.ID),
 								hostGroup.Name,
 								fmt.Sprintf("%d", len(hostGroup.Hosts)),
+								fmt.Sprintf("%d", len(hostGroup.ACLs)),
 								hostGroup.Comment,
 							})
 						}
@@ -732,11 +733,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists user groups",
 					Action: func(c *cli.Context) error {
 						var userGroups []UserGroup
-						if err := db.Preload("Users").Find(&userGroups).Error; err != nil {
+						if err := db.Preload("ACLs").Preload("Users").Find(&userGroups).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Users", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Users", "ACLs", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d user groups.", len(userGroups)))
 						for _, userGroup := range userGroups {
@@ -745,6 +746,7 @@ GLOBAL OPTIONS:
 								fmt.Sprintf("%d", userGroup.ID),
 								userGroup.Name,
 								fmt.Sprintf("%d", len(userGroup.Users)),
+								fmt.Sprintf("%d", len(userGroup.ACLs)),
 								userGroup.Comment,
 							})
 						}
