@@ -61,6 +61,7 @@ type UserGroup struct {
 	gorm.Model
 	Name    string
 	Users   []User `gorm:"many2many:user_user_groups;"`
+	ACLs    []ACL  `gorm:"many2many:user_group_acls;"`
 	Comment string
 }
 
@@ -68,7 +69,18 @@ type HostGroup struct {
 	gorm.Model
 	Name    string
 	Hosts   []Host `gorm:"many2many:host_host_groups;"`
+	ACLs    []ACL  `gorm:"many2many:host_group_acls;"`
 	Comment string
+}
+
+type ACL struct {
+	gorm.Model
+	HostGroups  []HostGroup `gorm:"many2many:host_group_acls;"`
+	UserGroups  []UserGroup `gorm:"many2many:user_group_acls;"`
+	HostPattern string
+	Action      string
+	Weight      uint
+	Comment     string
 }
 
 func dbInit(db *gorm.DB) error {
@@ -78,6 +90,7 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&UserKey{})
 	db.AutoMigrate(&UserGroup{})
 	db.AutoMigrate(&HostGroup{})
+	db.AutoMigrate(&ACL{})
 	// FIXME: check if indexes exist to avoid gorm warns
 	db.Exec(`CREATE UNIQUE INDEX uix_keys_name        ON "ssh_keys"("name")      WHERE ("deleted_at" IS NULL)`)
 	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name       ON "hosts"("name")         WHERE ("deleted_at" IS NULL)`)
@@ -126,6 +139,28 @@ func dbInit(db *gorm.DB) error {
 			Comment: "created by sshportal",
 		}
 		if err := db.Create(&userGroup).Error; err != nil {
+			return err
+		}
+	}
+
+	// create default acl
+	if err := db.Table("acls").Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		var defaultUserGroup UserGroup
+		db.Where("name = ?", "default").First(&defaultUserGroup)
+		var defaultHostGroup HostGroup
+		db.Where("name = ?", "default").First(&defaultHostGroup)
+		acl := ACL{
+			UserGroups: []UserGroup{defaultUserGroup},
+			HostGroups: []HostGroup{defaultHostGroup},
+			Action:     "allow",
+			//HostPattern: "",
+			//Weight:      0,
+			Comment: "created by sshportal",
+		}
+		if err := db.Create(&acl).Error; err != nil {
 			return err
 		}
 	}
@@ -275,7 +310,7 @@ func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
 
 func FindHostGroupByIdOrName(db *gorm.DB, query string) (*HostGroup, error) {
 	var hostGroup HostGroup
-	if err := db.Preload("Hosts").Where("id = ?", query).Or("name = ?", query).First(&hostGroup).Error; err != nil {
+	if err := db.Preload("ACLs").Preload("Hosts").Where("id = ?", query).Or("name = ?", query).First(&hostGroup).Error; err != nil {
 		return nil, err
 	}
 	return &hostGroup, nil
@@ -296,7 +331,7 @@ func FindHostGroupsByIdOrName(db *gorm.DB, queries []string) ([]*HostGroup, erro
 
 func FindUserGroupByIdOrName(db *gorm.DB, query string) (*UserGroup, error) {
 	var userGroup UserGroup
-	if err := db.Preload("Users").Where("id = ?", query).Or("name = ?", query).First(&userGroup).Error; err != nil {
+	if err := db.Preload("ACLs").Preload("Users").Where("id = ?", query).Or("name = ?", query).First(&userGroup).Error; err != nil {
 		return nil, err
 	}
 	return &userGroup, nil
