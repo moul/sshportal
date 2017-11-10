@@ -17,8 +17,8 @@ type SSHKey struct {
 	Type        string
 	Length      uint
 	Fingerprint string
-	PrivKey     string
-	PubKey      string
+	PrivKey     string `sql:"size:10000;"`
+	PubKey      string `sql:"size:10000;"`
 	Comment     string
 }
 
@@ -38,7 +38,7 @@ type Host struct {
 
 type UserKey struct {
 	gorm.Model
-	Key     []byte
+	Key     []byte `sql:"size:10000;"`
 	UserID  uint
 	User    *User
 	Comment string
@@ -78,9 +78,11 @@ func dbInit(db *gorm.DB) error {
 	db.AutoMigrate(&UserGroup{})
 	db.AutoMigrate(&HostGroup{})
 	// FIXME: check if indexes exist to avoid gorm warns
-	db.Exec(`CREATE UNIQUE INDEX uix_keys_name   ON "ssh_keys"("name") WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name  ON "hosts"("name")    WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_users_name  ON "users"("email")   WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_keys_name        ON "ssh_keys"("name")      WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name       ON "hosts"("name")         WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_users_name       ON "users"("email")        WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_usergroups_name  ON "user_groups"("name")   WHERE ("deleted_at" IS NULL)`)
+	db.Exec(`CREATE UNIQUE INDEX uix_hostgroups_name  ON "host_groups"("name")   WHERE ("deleted_at" IS NULL)`)
 
 	// create default ssh key
 	var count uint
