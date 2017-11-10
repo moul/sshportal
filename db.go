@@ -107,7 +107,8 @@ func dbInit(db *gorm.DB) error {
 	}
 	if count == 0 {
 		hostGroup := HostGroup{
-			Name: "default",
+			Name:    "default",
+			Comment: "created by sshportal",
 		}
 		if err := db.Create(&hostGroup).Error; err != nil {
 			return err
@@ -120,7 +121,8 @@ func dbInit(db *gorm.DB) error {
 	}
 	if count == 0 {
 		userGroup := UserGroup{
-			Name: "default",
+			Name:    "default",
+			Comment: "created by sshportal",
 		}
 		if err := db.Create(&userGroup).Error; err != nil {
 			return err
@@ -272,7 +274,7 @@ func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
 
 func FindHostGroupByIdOrName(db *gorm.DB, query string) (*HostGroup, error) {
 	var hostGroup HostGroup
-	if err := db.Where("id = ?", query).Or("name = ?", query).First(&hostGroup).Error; err != nil {
+	if err := db.Preload("Hosts").Where("id = ?", query).Or("name = ?", query).First(&hostGroup).Error; err != nil {
 		return nil, err
 	}
 	return &hostGroup, nil

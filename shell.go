@@ -197,6 +197,100 @@ GLOBAL OPTIONS:
 				},
 			},
 		}, {
+			Name:  "hostgroup",
+			Usage: "Manages host groups",
+			Subcommands: []cli.Command{
+				{
+					Name:        "create",
+					Usage:       "Creates a new host group",
+					Description: "$> hostgroup create --name=prod",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the host group"},
+						cli.StringFlag{Name: "comment"},
+					},
+					Action: func(c *cli.Context) error {
+						hostGroup := HostGroup{
+							Name: c.String("name"),
+						}
+						if hostGroup.Name == "" {
+							hostGroup.Name = namesgenerator.GetRandomName(0)
+						}
+						if !isNameValid(hostGroup.Name) {
+							return fmt.Errorf("invalid name %q", hostGroup.Name)
+						}
+						// FIXME: check if name already exists
+						hostGroup.Comment = c.String("comment")
+
+						if err := db.Create(&hostGroup).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", hostGroup.ID)
+						return nil
+					},
+				}, {
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more host groups",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						hostGroups, err := FindHostGroupsByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(hostGroups)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists host groups",
+					Action: func(c *cli.Context) error {
+						var hostGroups []HostGroup
+						if err := db.Find(&hostGroups).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "Name", "Comment"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d host groups.", len(hostGroups)))
+						for _, hostGroup := range hostGroups {
+							// FIXME: add more stats (amount of hosts, linked usergroups, ...)
+							table.Append([]string{
+								fmt.Sprintf("%d", hostGroup.ID),
+								hostGroup.Name,
+								hostGroup.Comment,
+							})
+						}
+						table.Render()
+						return nil
+					},
+				}, {
+					Name:      "rm",
+					Usage:     "Removes one or more host groups",
+					ArgsUsage: "<id or name> [<id or name> [<ir or name>...]]",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						hostGroups, err := FindHostGroupsByIdOrName(db, c.Args())
+						if err != nil {
+							return nil
+						}
+
+						for _, hostGroup := range hostGroups {
+							db.Where("id = ?", hostGroup.ID).Delete(&Host{})
+							fmt.Fprintf(s, "%d\n", hostGroup.ID)
+						}
+						return nil
+					},
+				},
+			},
+		}, {
 			Name:  "info",
 			Usage: "Shows system-wide information",
 			Action: func(c *cli.Context) error {
