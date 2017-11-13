@@ -134,7 +134,6 @@ ssh admin@portal.example.org host inspect toto
 
 You can enter in interactive mode using this syntax: `ssh admin@portal.example.org`
 
-
 ### Synopsis
 
 ```sh
@@ -198,4 +197,28 @@ Get the latest version using GO (recommended way):
 
 ```sh
 go get -u github.com/moul/sshportal
+```
+
+## Backup / Restore
+
+sshportal embeds built-in backup/restore methods which basically import/export JSON objects:
+
+```sh
+# Backup
+ssh admin@sshportal config backup > sshportal.bkp
+
+# Restore
+ssh admin@sshportal config restore < sshporta.bkp
+```
+
+This method is particularly useful as it should be resistant against future DB schema changes (expected during development phase).
+
+I suggest you to be careful during this development phase, and use an additional backup method, for example:
+
+```sh
+# sqlite dump
+sqlite3 sshportal.db .dump > sshportal.sql.bkp
+
+# or just the immortal cp
+cp sshportal.db sshportal.db.bkp
 ```
