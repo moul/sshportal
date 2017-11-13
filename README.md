@@ -120,6 +120,72 @@ To associate this account with a key, use the following SSH user: 'invite-NfHK5a
 config>
 ```
 
+## CLI
+
+sshportal embeds a configuration CLI.
+
+By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server.
+
+Each commands can be run directly by using this syntax: `ssh admin@portal.example.org <command> [args]`:
+
+```
+ssh admin@portal.example.org host inspect toto
+```
+
+You can enter in interactive mode using this syntax: `ssh admin@portal.example.org`
+
+
+### Synopsis
+
+```sh
+# acl management
+acl help
+acl create [-h] [--hostgroup=<value>...] [--usergroup=<value>...] [--pattern=<value>] [--comment=<value>] [--action=<value>] [--weight=value]
+acl inspect [-h] <id> [<id> [<id>...]]
+acl ls [-h]
+acl rm [-h] <id> [<id> [<id>...]]
+
+# host management
+host help
+host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=<value>] [--group=<value>] <user>[:<password>]@<host>[:<port>]
+host inspect [-h] <id or name> [<id or name> [<id or name>...]]
+host ls [-h]
+host rm [-h] <id or name> [<id or name> [<id or name>...]]
+
+# hostgroup management
+hostgroup help
+hostgroup create [-h] [--name=<value>] [--comment=<value>]
+hostgroup inspect [-h] <id or name> [<id or name> [<id or name>...]]
+hostgroup ls [-h]
+hostgroup rm [-h] <id or name> [<id or name> [<id or name>...]]
+
+# key management
+key help
+key create [-h] [--name=<value>] [--type=<value>] [--length=<value>] [--comment=<value>]
+key inspect [-h] <id or name> [<id or name> [<id or name>...]]
+key ls [-h]
+key rm [-h] <id or name> [<id or name> [<id or name>...]]
+
+# user management
+user help
+user invite [-h] [--name=<value>] [--comment=<value>] [--group=<value>] <email>
+user inspect [-h] <id or email> [<id or email> [<id or email>...]]
+user ls [-h]
+user rm [-h] <id or email> [<id or email> [<id or email>...]]
+
+# usergroup management
+usergroup help
+hostgroup create [-h] [--name=<value>] [--comment=<value>]
+usergroup inspect [-h] <id or name> [<id or name> [<id or name>...]]
+usergroup ls [-h]
+usergroup rm [-h] <id or name> [<id or name> [<id or name>...]]
+
+# other
+help, h
+info [-h]
+version [-h]
+```
+
 ## Install
 
 Get the latest version using GO (recommended way):
