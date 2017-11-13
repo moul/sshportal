@@ -191,9 +191,19 @@ info [-h]
 version [-h]
 ```
 
-## Install
+## Docker
 
-Get the latest version using GO (recommended way):
+An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/sshportal/tags/).
+
+```console
+# Start a server in background
+#   mount `pwd` to persist the sqlite database file
+docker run -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.0.0
+```
+
+## Manual Install
+
+Get the latest version using GO.
 
 ```sh
 go get -u github.com/moul/sshportal
