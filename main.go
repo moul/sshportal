@@ -75,6 +75,7 @@ func server(c *cli.Context) error {
 		return err
 	}
 	defer db.Close()
+
 	if c.Bool("debug") {
 		db.LogMode(true)
 	}
@@ -113,9 +114,37 @@ func server(c *cli.Context) error {
 				// FIXME: print available hosts
 				return
 			}
-			if err := proxy(s, host); err != nil {
+
+			// load up-to-date objects
+			// FIXME: cache them or try not to load them
+			var tmpUser User
+			if err := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", currentUser.ID).First(&tmpUser).Error; err != nil {
+				fmt.Fprintf(s, "error: %v\n", err)
+				return
+			}
+			var tmpHost Host
+			if err := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err != nil {
+				fmt.Fprintf(s, "error: %v\n", err)
+				return
+			}
+
+			action, err := CheckACLs(tmpUser, tmpHost)
+			if err != nil {
+				fmt.Fprintf(s, "error: %v\n", err)
+				return
+			}
+
+			switch action {
+			case "allow":
+				if err := proxy(s, host); err != nil {
+					fmt.Fprintf(s, "error: %v\n", err)
+				}
+			case "deny":
+				fmt.Fprintf(s, "You don't have permission to that host.\n")
+			default:
 				fmt.Fprintf(s, "error: %v\n", err)
 			}
+
 		}
 	})
 
