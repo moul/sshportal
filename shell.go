@@ -44,8 +44,7 @@ GLOBAL OPTIONS:
    {{end}}{{end}}
 `
 	cli.OsExiter = func(c int) {
-		// FIXME: forward valid exit code
-		io.WriteString(s, fmt.Sprintf("exit: %d\n", c))
+		return
 	}
 	cli.HelpFlag = cli.BoolFlag{
 		Name:   "help, h",
@@ -893,6 +892,12 @@ GLOBAL OPTIONS:
 				fmt.Fprintf(s, "%s\n", version)
 				return nil
 			},
+		}, {
+			Name:  "exit",
+			Usage: "Exit",
+			Action: func(c *cli.Context) error {
+				return cli.NewExitError("", 0)
+			},
 		},
 	}
 
@@ -909,13 +914,31 @@ GLOBAL OPTIONS:
 				io.WriteString(s, "syntax error.\n")
 				continue
 			}
+			if len(words) == 1 && strings.ToLower(words[0]) == "exit" {
+				s.Exit(0)
+				return nil
+			}
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
-				io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+				if cliErr, ok := err.(*cli.ExitError); ok {
+					if cliErr.ExitCode() != 0 {
+						io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+					}
+					//s.Exit(cliErr.ExitCode())
+				} else {
+					io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+				}
 			}
 		}
 	} else { // oneshot mode
 		if err := app.Run(append([]string{"config"}, sshCommand...)); err != nil {
-			io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+			if errMsg := err.Error(); errMsg != "" {
+				io.WriteString(s, fmt.Sprintf("error: %s\n", errMsg))
+			}
+			if cliErr, ok := err.(*cli.ExitError); ok {
+				s.Exit(cliErr.ExitCode())
+			} else {
+				s.Exit(1)
+			}
 		}
 	}
 

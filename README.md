@@ -181,6 +181,7 @@ usergroup ls [-h]
 usergroup rm [-h] <id or name> [<id or name> [<id or name>...]]
 
 # other
+exit [-h]
 help, h
 info [-h]
 version [-h]
