@@ -1,6 +1,12 @@
+PACKAGE ?=	github.com/moul/sshportal
+GIT_SHA ?=	$(shell git rev-parse HEAD)
+GIT_TAG ?=	$(shell git describe --tags --always)
+GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
+LDFLAGS ?=	"-X $(PACKAGE)/main.GIT_SHA=$(GIT_SHA) -X $(PACKAGE)/main.GIT_TAG=$(GIT_TAG) -X $(PACKAGE)/main.GIT_BRANCH=$(GIT_BRANCH)"
+
 .PHONY: install
 install:
-	go install .
+	go install -ldflags $(LDFLAGS) .
 
 .PHONY: dev
 dev:

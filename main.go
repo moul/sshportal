@@ -16,7 +16,16 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-var version = "0.0.1"
+var (
+	// VERSION should be updated by hand at each release
+	VERSION = "1.0.0"
+	// GIT_TAG will be overwritten automatically by the build system
+	GIT_TAG = ""
+	// GIT_SHA will be overwritten automatically by the build system
+	GIT_SHA = ""
+	// GIT_BRANCH will be overwritten automatically by the build system
+	GIT_BRANCH = ""
+)
 
 type sshportalContextKey string
 
@@ -30,7 +39,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
-	app.Version = version
+	app.Version = VERSION + "(" + GIT_SHA + ")"
 	app.Email = "https://github.com/moul/sshportal"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

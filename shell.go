@@ -580,7 +580,11 @@ GLOBAL OPTIONS:
 				myself := s.Context().Value(userContextKey).(User)
 				fmt.Fprintf(s, "User email: %v\n", myself.ID)
 				fmt.Fprintf(s, "User email: %s\n", myself.Email)
-				// FIXME: add version
+				fmt.Fprintf(s, "Version: %s\n", VERSION)
+				fmt.Fprintf(s, "GIT SHA: %s\n", GIT_SHA)
+				fmt.Fprintf(s, "GIT Branch: %s\n", GIT_BRANCH)
+				fmt.Fprintf(s, "GIT Tag: %s\n", GIT_TAG)
+
 				// FIXME: add info about current server (network, cpu, ram, OS)
 				// FIXME: add info about current user
 				// FIXME: add active connections
@@ -1023,7 +1027,7 @@ GLOBAL OPTIONS:
 			Name:  "version",
 			Usage: "Shows the SSHPortal version information",
 			Action: func(c *cli.Context) error {
-				fmt.Fprintf(s, "%s\n", version)
+				fmt.Fprintf(s, "%s\n", VERSION)
 				return nil
 			},
 		}, {
