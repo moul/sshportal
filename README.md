@@ -148,6 +148,7 @@ acl rm [-h] <id> [<id> [<id>...]]
 # config management
 config help
 config backup [-h] [--indent]
+config restore [-h] [--confirm]
 
 # host management
 host help

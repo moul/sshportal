@@ -5,19 +5,21 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
 )
 
 type Config struct {
-	SSHKeys    []SSHKey
-	Hosts      []Host
-	UserKeys   []UserKey
-	Users      []User
-	UserGroups []UserGroup
-	HostGroups []HostGroup
-	ACLs       []ACL
+	SSHKeys    []SSHKey    `json:"keys"`
+	Hosts      []Host      `json:"hosts"`
+	UserKeys   []UserKey   `json:"user_keys"`
+	Users      []User      `json:"users"`
+	UserGroups []UserGroup `json:"user_groups"`
+	HostGroups []HostGroup `json:"host_groups"`
+	ACLs       []ACL       `json:"acls"`
+	Date       time.Time   `json:"date"`
 }
 
 type SSHKey struct {

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -195,6 +196,7 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.BoolFlag{Name: "indent", Usage: "uses indented JSON"},
 					},
+					Description: "ssh admin@portal config backup > sshportal.bkp",
 					Action: func(c *cli.Context) error {
 						config := Config{}
 						if err := db.Find(&config.Hosts).Error; err != nil {
@@ -221,11 +223,100 @@ GLOBAL OPTIONS:
 						if err := db.Find(&config.ACLs).Error; err != nil {
 							return err
 						}
+						config.Date = time.Now()
 						enc := json.NewEncoder(s)
 						if c.Bool("indent") {
 							enc.SetIndent("", "  ")
 						}
 						return enc.Encode(config)
+					},
+				}, {
+					Name:        "restore",
+					Usage:       "Restores a backup",
+					Description: "ssh admin@portal config restore < sshportal.bkp",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "confirm", Usage: "automatically confirms"},
+					},
+					Action: func(c *cli.Context) error {
+						config := Config{}
+
+						dec := json.NewDecoder(s)
+						if err := dec.Decode(&config); err != nil {
+							return err
+						}
+
+						fmt.Fprintf(s, "Loaded backup file (date=%v)\n", config.Date)
+						fmt.Fprintf(s, "* %d ACLs\n", len(config.ACLs))
+						fmt.Fprintf(s, "* %d HostGroups\n", len(config.HostGroups))
+						fmt.Fprintf(s, "* %d Hosts\n", len(config.Hosts))
+						fmt.Fprintf(s, "* %d Keys\n", len(config.SSHKeys))
+						fmt.Fprintf(s, "* %d UserGroups\n", len(config.UserGroups))
+						fmt.Fprintf(s, "* %d Userkeys\n", len(config.UserKeys))
+						fmt.Fprintf(s, "* %d Users\n", len(config.Users))
+
+						if !c.Bool("confirm") {
+							fmt.Fprintf(s, "restore will erase and replace everything in the database.\nIf you are ok, add the '--confirm' to the restore command\n")
+							return errors.New("")
+						}
+
+						tx := db.Begin()
+
+						// FIXME: do everything in a transaction
+						for _, tableName := range []string{"hosts", "users", "acls", "host_groups", "user_groups", "ssh_keys", "user_keys"} {
+							if err := tx.Exec(fmt.Sprintf("DELETE FROM %s;", tableName)).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, host := range config.Hosts {
+							if err := tx.Create(&host).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, user := range config.Users {
+							if err := tx.Create(&user).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, acl := range config.ACLs {
+							if err := tx.Create(&acl).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, hostGroup := range config.HostGroups {
+							if err := tx.Create(&hostGroup).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, userGroup := range config.UserGroups {
+							if err := tx.Create(&userGroup).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, sshKey := range config.SSHKeys {
+							if err := tx.Create(&sshKey).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, userKey := range config.UserKeys {
+							if err := tx.Create(&userKey).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+
+						if err := tx.Commit().Error; err != nil {
+							return err
+						}
+
+						fmt.Fprintf(s, "Import done.\n")
+						return nil
 					},
 				},
 			},
@@ -843,7 +934,6 @@ GLOBAL OPTIONS:
 						fmt.Fprintf(s, "Enter key:\n")
 						reader := bufio.NewReader(s)
 						text, _ := reader.ReadString('\n')
-						fmt.Println(text)
 
 						key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(text))
 						if err != nil {
