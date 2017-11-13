@@ -186,6 +186,50 @@ GLOBAL OPTIONS:
 				},
 			},
 		}, {
+			Name:  "config",
+			Usage: "Manages global configuration",
+			Subcommands: []cli.Command{
+				{
+					Name:  "backup",
+					Usage: "Dumps a backup",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "indent", Usage: "uses indented JSON"},
+					},
+					Action: func(c *cli.Context) error {
+						config := Config{}
+						if err := db.Find(&config.Hosts).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.SSHKeys).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.Hosts).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.UserKeys).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.Users).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.UserGroups).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.HostGroups).Error; err != nil {
+							return err
+						}
+						if err := db.Find(&config.ACLs).Error; err != nil {
+							return err
+						}
+						enc := json.NewEncoder(s)
+						if c.Bool("indent") {
+							enc.SetIndent("", "  ")
+						}
+						return enc.Encode(config)
+					},
+				},
+			},
+		}, {
 			Name:  "host",
 			Usage: "Manages hosts",
 			Subcommands: []cli.Command{

@@ -10,6 +10,16 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type Config struct {
+	SSHKeys    []SSHKey
+	Hosts      []Host
+	UserKeys   []UserKey
+	Users      []User
+	UserGroups []UserGroup
+	HostGroups []HostGroup
+	ACLs       []ACL
+}
+
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model

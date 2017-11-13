@@ -145,6 +145,10 @@ acl inspect [-h] <id> [<id> [<id>...]]
 acl ls [-h]
 acl rm [-h] <id> [<id> [<id>...]]
 
+# config management
+config help
+config backup [-h] [--indent]
+
 # host management
 host help
 host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=<value>] [--group=<value>] <user>[:<password>]@<host>[:<port>]
