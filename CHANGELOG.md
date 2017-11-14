@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.1.0 (2017-11-15)
+## master (unreleased)
+
+* No entry
+
+## v1.1.0 (2017-11-15)
 
 * Improve versionning (static VERSION + dynamic GIT_* info)
 * Configuration management (backup + restore)
@@ -8,7 +12,7 @@
 * Disable mysql support (not fully working right now)
 * Set random seed properly
 
-## 1.0.0 (2017-11-14)
+## v1.0.0 (2017-11-14)
 
 Initial version
 
