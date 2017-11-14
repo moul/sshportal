@@ -52,11 +52,11 @@ func main() {
 			Name:  "demo",
 			Usage: "*unsafe* - demo mode: accept all connections",
 		},
-		cli.StringFlag{
+		/*cli.StringFlag{
 			Name:  "db-driver",
 			Value: "sqlite3",
-			Usage: "GORM driver (sqlite3, mysql)",
-		},
+			Usage: "GORM driver (sqlite3)",
+		},*/
 		cli.StringFlag{
 			Name:  "db-conn",
 			Value: "./sshportal.db",
@@ -79,7 +79,7 @@ func main() {
 }
 
 func server(c *cli.Context) error {
-	db, err := gorm.Open(c.String("db-driver"), c.String("db-conn"))
+	db, err := gorm.Open("sqlite3", c.String("db-conn"))
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@
 * Improve versionning (static VERSION + dynamic GIT_* info)
 * Configuration management (backup + restore)
 * Implement Exit (fix [#6](https://github.com/moul/sshportal/pull/6))
+* Disable mysql support (not fully working right now)
 
 ## 1.0.0 (2017-11-14)
 
