@@ -20,11 +20,11 @@ var (
 	// VERSION should be updated by hand at each release
 	VERSION = "1.0.0"
 	// GIT_TAG will be overwritten automatically by the build system
-	GIT_TAG = ""
+	GIT_TAG string
 	// GIT_SHA will be overwritten automatically by the build system
-	GIT_SHA = ""
+	GIT_SHA string
 	// GIT_BRANCH will be overwritten automatically by the build system
-	GIT_BRANCH = ""
+	GIT_BRANCH string
 )
 
 type sshportalContextKey string
@@ -39,7 +39,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
-	app.Version = VERSION + "(" + GIT_SHA + ")"
+	app.Version = VERSION + " (" + GIT_SHA + ")"
 	app.Email = "https://github.com/moul/sshportal"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

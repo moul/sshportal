@@ -1,12 +1,15 @@
-PACKAGE ?=	github.com/moul/sshportal
 GIT_SHA ?=	$(shell git rev-parse HEAD)
 GIT_TAG ?=	$(shell git describe --tags --always)
 GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
-LDFLAGS ?=	"-X $(PACKAGE)/main.GIT_SHA=$(GIT_SHA) -X $(PACKAGE)/main.GIT_TAG=$(GIT_TAG) -X $(PACKAGE)/main.GIT_BRANCH=$(GIT_BRANCH)"
+LDFLAGS ?=	-X main.GIT_SHA=$(GIT_SHA) -X main.GIT_TAG=$(GIT_TAG) -X main.GIT_BRANCH=$(GIT_BRANCH)
 
 .PHONY: install
 install:
-	go install -ldflags $(LDFLAGS) .
+	go install -ldflags '$(LDFLAGS)' .
+
+.PHONY: _docker_install
+_docker_install:
+	CGO_ENABLED=1 go build -ldflags '-extldflags "-static" $(LDFLAGS)' -tags netgo -v -o /go/bin/sshportal
 
 .PHONY: dev
 dev:

@@ -2,7 +2,7 @@
 FROM            golang:1.9 as builder
 COPY            . /go/src/github.com/moul/sshportal
 WORKDIR         /go/src/github.com/moul/sshportal
-RUN             CGO_ENABLED=1 go build -tags netgo -ldflags '-extldflags "-static"' -v -o /go/bin/sshportal
+RUN             make _docker_install
 
 # minimal runtime
 FROM            scratch
