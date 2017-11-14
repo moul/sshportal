@@ -193,12 +193,46 @@ version [-h]
 
 ## Docker
 
+Docker is the recommended way to run sshportal.
+
 An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/sshportal/tags/).
 
 ```console
 # Start a server in background
 #   mount `pwd` to persist the sqlite database file
-docker run -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.1.0
+docker run -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.1.0
+
+# check logs (mandatory on first run to get the administrator invite token)
+docker logs -f sshportal
+```
+
+The easier way to upgrade sshportal is to do the following:
+
+```sh
+# we consider you were using the version v1.0.0 and you want to use the new version v1.1.0
+
+# stop and rename the last working container + backup the database
+docker stop sshportal
+docker rename sshportal sshportal_old
+cp sshportal.db sshportal.db.bkp
+
+# run the new version
+docker run -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.1.0
+# check the logs for migration or cross-version incompabitility errors
+docker logs -f sshportal
+```
+
+Now you can test ssh-ing to sshportal to check if everything looks OK.
+
+In case of problem, you can rollback to the latest working version with the latest working backup, using:
+
+```sh
+docker stop sshportal
+docker rm sshportal
+cp sshportal.db.bkp sshportal.db
+docker rename sshportal_old sshportal
+docker start sshportal
+docker logs -f sshportal
 ```
 
 ## Manual Install
