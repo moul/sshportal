@@ -6,6 +6,7 @@
 * Configuration management (backup + restore)
 * Implement Exit (fix [#6](https://github.com/moul/sshportal/pull/6))
 * Disable mysql support (not fully working right now)
+* Set random seed properly
 
 ## 1.0.0 (2017-11-14)
 

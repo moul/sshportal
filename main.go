@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
@@ -36,6 +38,8 @@ var (
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
