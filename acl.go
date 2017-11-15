@@ -2,7 +2,7 @@ package main
 
 import "sort"
 
-type ByWeight []ACL
+type ByWeight []*ACL
 
 func (a ByWeight) Len() int           { return len(a) }
 func (a ByWeight) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -10,7 +10,7 @@ func (a ByWeight) Less(i, j int) bool { return a[i].Weight < a[j].Weight }
 
 func CheckACLs(user User, host Host) (string, error) {
 	// shared ACLs between user and host
-	aclMap := map[uint]ACL{}
+	aclMap := map[uint]*ACL{}
 	for _, userGroup := range user.Groups {
 		for _, userGroupACL := range userGroup.ACLs {
 			for _, hostGroup := range host.Groups {
@@ -30,7 +30,7 @@ func CheckACLs(user User, host Host) (string, error) {
 	}
 
 	// transofrm map to slice and sort it
-	acls := []ACL{}
+	acls := []*ACL{}
 	for _, acl := range aclMap {
 		acls = append(acls, acl)
 	}

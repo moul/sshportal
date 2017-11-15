@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* Support adding multiple `--group` links on `host create` and `user create`
 
 ## v1.1.0 (2017-11-15)
 

@@ -12,14 +12,14 @@ import (
 )
 
 type Config struct {
-	SSHKeys    []SSHKey    `json:"keys"`
-	Hosts      []Host      `json:"hosts"`
-	UserKeys   []UserKey   `json:"user_keys"`
-	Users      []User      `json:"users"`
-	UserGroups []UserGroup `json:"user_groups"`
-	HostGroups []HostGroup `json:"host_groups"`
-	ACLs       []ACL       `json:"acls"`
-	Date       time.Time   `json:"date"`
+	SSHKeys    []*SSHKey    `json:"keys"`
+	Hosts      []*Host      `json:"hosts"`
+	UserKeys   []*UserKey   `json:"user_keys"`
+	Users      []*User      `json:"users"`
+	UserGroups []*UserGroup `json:"user_groups"`
+	HostGroups []*HostGroup `json:"host_groups"`
+	ACLs       []*ACL       `json:"acls"`
+	Date       time.Time    `json:"date"`
 }
 
 type SSHKey struct {
@@ -29,9 +29,9 @@ type SSHKey struct {
 	Type        string
 	Length      uint
 	Fingerprint string
-	PrivKey     string `sql:"size:10000;"`
-	PubKey      string `sql:"size:10000;"`
-	Hosts       []Host
+	PrivKey     string  `sql:"size:10000;"`
+	PubKey      string  `sql:"size:10000;"`
+	Hosts       []*Host `gorm:"ForeignKey:SSHKeyID"`
 	Comment     string
 }
 
@@ -42,10 +42,10 @@ type Host struct {
 	Addr        string
 	User        string
 	Password    string
-	SSHKey      *SSHKey
-	SSHKeyID    uint        `gorm:"index"`
-	Groups      []HostGroup `gorm:"many2many:host_host_groups;"`
-	Fingerprint string      // FIXME: replace with hostkey ?
+	SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
+	SSHKeyID    uint         `gorm:"index"`
+	Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
+	Fingerprint string       // FIXME: replace with hostkey ?
 	Comment     string
 }
 
@@ -53,7 +53,7 @@ type UserKey struct {
 	gorm.Model
 	Key     []byte `sql:"size:10000;"`
 	UserID  uint
-	User    *User
+	User    *User `gorm:"ForeignKey:UserID"`
 	Comment string
 }
 
@@ -61,10 +61,10 @@ type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
 	IsAdmin     bool
-	Email       string // FIXME: govalidator: email
-	Name        string // FIXME: govalidator: min length 3, alphanum
-	Keys        []UserKey
-	Groups      []UserGroup `gorm:"many2many:user_user_groups;"`
+	Email       string       // FIXME: govalidator: email
+	Name        string       // FIXME: govalidator: min length 3, alphanum
+	Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
+	Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
 	Comment     string
 	InviteToken string
 }
@@ -72,23 +72,23 @@ type User struct {
 type UserGroup struct {
 	gorm.Model
 	Name    string
-	Users   []User `gorm:"many2many:user_user_groups;"`
-	ACLs    []ACL  `gorm:"many2many:user_group_acls;"`
+	Users   []*User `gorm:"many2many:user_user_groups;"`
+	ACLs    []*ACL  `gorm:"many2many:user_group_acls;"`
 	Comment string
 }
 
 type HostGroup struct {
 	gorm.Model
 	Name    string
-	Hosts   []Host `gorm:"many2many:host_host_groups;"`
-	ACLs    []ACL  `gorm:"many2many:host_group_acls;"`
+	Hosts   []*Host `gorm:"many2many:host_host_groups;"`
+	ACLs    []*ACL  `gorm:"many2many:host_group_acls;"`
 	Comment string
 }
 
 type ACL struct {
 	gorm.Model
-	HostGroups  []HostGroup `gorm:"many2many:host_group_acls;"`
-	UserGroups  []UserGroup `gorm:"many2many:user_group_acls;"`
+	HostGroups  []*HostGroup `gorm:"many2many:host_group_acls;"`
+	UserGroups  []*UserGroup `gorm:"many2many:user_group_acls;"`
 	HostPattern string
 	Action      string
 	Weight      uint
@@ -165,8 +165,8 @@ func dbInit(db *gorm.DB) error {
 		var defaultHostGroup HostGroup
 		db.Where("name = ?", "default").First(&defaultHostGroup)
 		acl := ACL{
-			UserGroups: []UserGroup{defaultUserGroup},
-			HostGroups: []HostGroup{defaultHostGroup},
+			UserGroups: []*UserGroup{&defaultUserGroup},
+			HostGroups: []*HostGroup{&defaultHostGroup},
 			Action:     "allow",
 			//HostPattern: "",
 			//Weight:      0,
@@ -189,7 +189,7 @@ func dbInit(db *gorm.DB) error {
 			Comment:     "created by sshportal",
 			IsAdmin:     true,
 			InviteToken: RandStringBytes(16),
-			Groups:      []UserGroup{defaultUserGroup},
+			Groups:      []*UserGroup{&defaultUserGroup},
 		}
 		db.Create(&user)
 		log.Printf("Admin user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
@@ -225,9 +225,9 @@ func dbDemo(db *gorm.DB) error {
 	}
 
 	var (
-		host1 = Host{Name: "sdf", Addr: "sdf.org:22", User: "new", SSHKeyID: key.ID, Groups: []HostGroup{*hostGroup}}
-		host2 = Host{Name: "whoami", Addr: "whoami.filippo.io:22", User: "test", SSHKeyID: key.ID, Groups: []HostGroup{*hostGroup}}
-		host3 = Host{Name: "ssh-chat", Addr: "chat.shazow.net:22", User: "test", SSHKeyID: key.ID, Fingerprint: "MD5:e5:d5:d1:75:90:38:42:f6:c7:03:d7:d0:56:7d:6a:db", Groups: []HostGroup{*hostGroup}}
+		host1 = Host{Name: "sdf", Addr: "sdf.org:22", User: "new", SSHKeyID: key.ID, Groups: []*HostGroup{hostGroup}}
+		host2 = Host{Name: "whoami", Addr: "whoami.filippo.io:22", User: "test", SSHKeyID: key.ID, Groups: []*HostGroup{hostGroup}}
+		host3 = Host{Name: "ssh-chat", Addr: "chat.shazow.net:22", User: "test", SSHKeyID: key.ID, Fingerprint: "MD5:e5:d5:d1:75:90:38:42:f6:c7:03:d7:d0:56:7d:6a:db", Groups: []*HostGroup{hostGroup}}
 	)
 
 	// FIXME: check if hosts exist to avoid `UNIQUE constraint` error

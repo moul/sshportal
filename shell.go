@@ -75,8 +75,8 @@ GLOBAL OPTIONS:
 						acl := ACL{
 							Comment:     c.String("comment"),
 							HostPattern: c.String("pattern"),
-							UserGroups:  []UserGroup{},
-							HostGroups:  []HostGroup{},
+							UserGroups:  []*UserGroup{},
+							HostGroups:  []*HostGroup{},
 							Weight:      c.Uint("weight"),
 							Action:      c.String("action"),
 						}
@@ -89,14 +89,14 @@ GLOBAL OPTIONS:
 							if err != nil {
 								return fmt.Errorf("unknown user group %q: %v", name, err)
 							}
-							acl.UserGroups = append(acl.UserGroups, *userGroup)
+							acl.UserGroups = append(acl.UserGroups, userGroup)
 						}
 						for _, name := range c.StringSlice("hostgroup") {
 							hostGroup, err := FindHostGroupByIdOrName(db, name)
 							if err != nil {
 								return fmt.Errorf("unknown host group %q: %v", name, err)
 							}
-							acl.HostGroups = append(acl.HostGroups, *hostGroup)
+							acl.HostGroups = append(acl.HostGroups, hostGroup)
 						}
 
 						if len(acl.UserGroups) == 0 {
@@ -330,12 +330,12 @@ GLOBAL OPTIONS:
 					ArgsUsage:   "<user>[:<password>]@<host>[:<port>]",
 					Description: "$> host create bart@foo.org\n   $> host create bob:marley@example.com:2222",
 					Flags: []cli.Flag{
-						cli.StringFlag{Name: "name", Usage: "Assigns a name to the host"},
-						cli.StringFlag{Name: "password", Usage: "If present, sshportal will use password-based authentication"},
-						cli.StringFlag{Name: "fingerprint", Usage: "SSH host key fingerprint"},
-						cli.StringFlag{Name: "comment"},
-						cli.StringFlag{Name: "key", Usage: "ID or name of the key to use for authentication"},
-						cli.StringFlag{Name: "group", Usage: "Name or ID of the host group", Value: "default"},
+						cli.StringFlag{Name: "name, n", Usage: "Assigns a name to the host"},
+						cli.StringFlag{Name: "password, p", Usage: "If present, sshportal will use password-based authentication"},
+						cli.StringFlag{Name: "fingerprint, f", Usage: "SSH host key fingerprint"},
+						cli.StringFlag{Name: "comment, c"},
+						cli.StringFlag{Name: "key, k", Usage: "ID or name of the key to use for authentication"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of host groups (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -373,11 +373,15 @@ GLOBAL OPTIONS:
 						}
 
 						// host group
-						hostGroup, err := FindHostGroupByIdOrName(db, c.String("group"))
+						inputGroups := c.StringSlice("group")
+						if len(inputGroups) == 0 {
+							inputGroups = []string{"default"}
+						}
+						hostGroups, err := FindHostGroupsByIdOrName(db, inputGroups)
 						if err != nil {
 							return err
 						}
-						host.Groups = []HostGroup{*hostGroup}
+						host.Groups = hostGroups
 
 						if err := db.Create(&host).Error; err != nil {
 							return err
@@ -407,7 +411,7 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists hosts",
 					Action: func(c *cli.Context) error {
-						var hosts []Host
+						var hosts []*Host
 						if err := db.Preload("Groups").Find(&hosts).Error; err != nil {
 							return err
 						}
@@ -515,7 +519,7 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists host groups",
 					Action: func(c *cli.Context) error {
-						var hostGroups []HostGroup
+						var hostGroups []*HostGroup
 						if err := db.Preload("ACLs").Preload("Hosts").Find(&hostGroups).Error; err != nil {
 							return err
 						}
@@ -727,7 +731,7 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
 						cli.StringFlag{Name: "comment"},
-						cli.StringFlag{Name: "group", Usage: "Name or ID of the user group", Value: "default"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of user groups (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -750,11 +754,15 @@ GLOBAL OPTIONS:
 						}
 
 						// user group
-						userGroup, err := FindUserGroupByIdOrName(db, c.String("group"))
+						inputGroups := c.StringSlice("group")
+						if len(inputGroups) == 0 {
+							inputGroups = []string{"default"}
+						}
+						userGroups, err := FindUserGroupsByIdOrName(db, inputGroups)
 						if err != nil {
 							return err
 						}
-						user.Groups = []UserGroup{*userGroup}
+						user.Groups = userGroups
 
 						// save the user in database
 						if err := db.Create(&user).Error; err != nil {
@@ -840,7 +848,7 @@ GLOBAL OPTIONS:
 						// add myself to the new group
 						myself := s.Context().Value(userContextKey).(User)
 						// FIXME: use foreign key with ID to avoid updating the user with the context
-						userGroup.Users = []User{myself}
+						userGroup.Users = []*User{&myself}
 
 						if err := db.Create(&userGroup).Error; err != nil {
 							return err
@@ -870,7 +878,7 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists user groups",
 					Action: func(c *cli.Context) error {
-						var userGroups []UserGroup
+						var userGroups []*UserGroup
 						if err := db.Preload("ACLs").Preload("Users").Find(&userGroups).Error; err != nil {
 							return err
 						}

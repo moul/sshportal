@@ -140,9 +140,9 @@ You can enter in interactive mode using this syntax: `ssh admin@portal.example.o
 # acl management
 acl help
 acl create [-h] [--hostgroup=<value>...] [--usergroup=<value>...] [--pattern=<value>] [--comment=<value>] [--action=<value>] [--weight=value]
-acl inspect [-h] <id> [<id> [<id>...]]
+acl inspect [-h] <id>...
 acl ls [-h]
-acl rm [-h] <id> [<id> [<id>...]]
+acl rm [-h] <id>...
 
 # config management
 config help
@@ -151,38 +151,38 @@ config restore [-h] [--confirm]
 
 # host management
 host help
-host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=<value>] [--group=<value>] <user>[:<password>]@<host>[:<port>]
-host inspect [-h] <id or name> [<id or name> [<id or name>...]]
+host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=<value>] [--group=<value>...] <user>[:<password>]@<host>[:<port>]
+host inspect [-h] <id or name>...
 host ls [-h]
-host rm [-h] <id or name> [<id or name> [<id or name>...]]
+host rm [-h] <id or name>...
 
 # hostgroup management
 hostgroup help
 hostgroup create [-h] [--name=<value>] [--comment=<value>]
-hostgroup inspect [-h] <id or name> [<id or name> [<id or name>...]]
+hostgroup inspect [-h] <id or name>...
 hostgroup ls [-h]
-hostgroup rm [-h] <id or name> [<id or name> [<id or name>...]]
+hostgroup rm [-h] <id or name>...
 
 # key management
 key help
 key create [-h] [--name=<value>] [--type=<value>] [--length=<value>] [--comment=<value>]
-key inspect [-h] <id or name> [<id or name> [<id or name>...]]
+key inspect [-h] <id or name>...
 key ls [-h]
-key rm [-h] <id or name> [<id or name> [<id or name>...]]
+key rm [-h] <id or name>...
 
 # user management
 user help
-user invite [-h] [--name=<value>] [--comment=<value>] [--group=<value>] <email>
-user inspect [-h] <id or email> [<id or email> [<id or email>...]]
+user invite [-h] [--name=<value>] [--comment=<value>] [--group=<value>...] <email>
+user inspect [-h] <id or email>...
 user ls [-h]
-user rm [-h] <id or email> [<id or email> [<id or email>...]]
+user rm [-h] <id or email>...
 
 # usergroup management
 usergroup help
 hostgroup create [-h] [--name=<value>] [--comment=<value>]
-usergroup inspect [-h] <id or name> [<id or name> [<id or name>...]]
+usergroup inspect [-h] <id or name>...
 usergroup ls [-h]
-usergroup rm [-h] <id or name> [<id or name> [<id or name>...]]
+usergroup rm [-h] <id or name>...
 
 # other
 exit [-h]
