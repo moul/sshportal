@@ -27,13 +27,32 @@ xssh() {
     echo "+ ssh {sshportal} $@"
     ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no localhost -p ${PORT} $@
 }
+# legin
 xssh -l invite:integration
+
+# hostgroup/usergroup/acl
+xssh -l admin hostgroup create
+xssh -l admin hostgroup create --name=hg1
+xssh -l admin hostgroup create --name=hg2 --comment=test
+xssh -l admin usergroup inspect hg1 hg2
+xssh -l admin hostgroup ls
+
+xssh -l admin usergroup create
+xssh -l admin usergroup create --name=ug1
+xssh -l admin usergroup create --name=ug2 --comment=test
+xssh -l admin usergroup inspect ug1 ug2
+xssh -l admin usergroup ls
+
+xssh -l admin acl create --ug=ug1 --ug=ug2 --hg=hg1 --hg=hg2 --comment=test --action=allow --weight=42
+xssh -l admin acl inspect 2
+xssh -l admin acl ls
+
+# basic host create
 xssh -l admin host create bob@example.org:1234
-xssh -l admin host inspect example
 xssh -l admin host create test42
-xssh -l admin host inspect test42
 xssh -l admin host create --name=testtest --comment=test --password=test test@test.test
-xssh -l admin host inspect testtest
+xssh -l admin host create --group=hg1 --group=hg2 hostwithgroups.org
+xssh -l admin host inspect example test42 testtest hostwithgroups
 xssh -l admin host ls
 
 # post cleanup
