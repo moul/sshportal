@@ -191,7 +191,7 @@ func server(c *cli.Context) error {
 		// handle invite "links"
 		if strings.HasPrefix(username, "invite:") {
 			inputToken := strings.Split(username, ":")[1]
-			if len(inputToken) == 16 {
+			if len(inputToken) > 0 {
 				db.Where("invite_token = ?", inputToken).First(&user)
 			}
 			if user.ID > 0 {

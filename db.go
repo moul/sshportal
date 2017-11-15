@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -183,12 +184,16 @@ func dbInit(db *gorm.DB) error {
 	db.Table("users").Count(&count)
 	if count == 0 {
 		// if no admin, create an account for the first connection
+		inviteToken := RandStringBytes(16)
+		if os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN") != "" {
+			inviteToken = os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN")
+		}
 		user := User{
 			Name:        "Administrator",
 			Email:       "admin@sshportal",
 			Comment:     "created by sshportal",
 			IsAdmin:     true,
-			InviteToken: RandStringBytes(16),
+			InviteToken: inviteToken,
 			Groups:      []*UserGroup{&defaultUserGroup},
 		}
 		db.Create(&user)
