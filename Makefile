@@ -8,6 +8,14 @@ VERSION ?=	$(shell grep 'VERSION =' main.go | cut -d'"' -f2)
 install:
 	go install -ldflags '$(LDFLAGS)' .
 
+.PHONY: docker.build
+docker.build:
+	docker build -t moul/sshportal .
+
+.PHONY: integration
+integration:
+	bash ./examples/integration/test.sh
+
 .PHONY: _docker_install
 _docker_install:
 	CGO_ENABLED=1 go build -ldflags '-extldflags "-static" $(LDFLAGS)' -tags netgo -v -o /go/bin/sshportal
