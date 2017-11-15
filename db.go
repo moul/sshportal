@@ -23,6 +23,12 @@ type Config struct {
 	Date       time.Time    `json:"date"`
 }
 
+type Setting struct {
+	gorm.Model
+	Name  string
+	Value string
+}
+
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model
@@ -97,19 +103,34 @@ type ACL struct {
 }
 
 func dbInit(db *gorm.DB) error {
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&SSHKey{})
-	db.AutoMigrate(&Host{})
-	db.AutoMigrate(&UserKey{})
-	db.AutoMigrate(&UserGroup{})
-	db.AutoMigrate(&HostGroup{})
-	db.AutoMigrate(&ACL{})
-	// FIXME: check if indexes exist to avoid gorm warns
-	db.Exec(`CREATE UNIQUE INDEX uix_keys_name        ON "ssh_keys"("name")      WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_hosts_name       ON "hosts"("name")         WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_users_name       ON "users"("email")        WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_usergroups_name  ON "user_groups"("name")   WHERE ("deleted_at" IS NULL)`)
-	db.Exec(`CREATE UNIQUE INDEX uix_hostgroups_name  ON "host_groups"("name")   WHERE ("deleted_at" IS NULL)`)
+	// version checking
+	db.AutoMigrate(&Setting{})
+	db.Exec(`CREATE UNIQUE INDEX uix_settings_name ON "settings"("name") WHERE ("deleted_at" IS NULL)`)
+	var versionSetting Setting
+	if db.Where("name = ?", "version").First(&versionSetting).RecordNotFound() {
+		db.Create(&Setting{Name: "version", Value: VERSION})
+	}
+	if versionSetting.Value != VERSION {
+		log.Printf("database is not sync, applying migrations.\n")
+		// other models
+		db.AutoMigrate(&User{})
+		db.AutoMigrate(&SSHKey{})
+		db.AutoMigrate(&Host{})
+		db.AutoMigrate(&UserKey{})
+		db.AutoMigrate(&UserGroup{})
+		db.AutoMigrate(&HostGroup{})
+		db.AutoMigrate(&ACL{})
+		// FIXME: check if indexes exist to avoid gorm warns
+		db.Exec(`CREATE UNIQUE INDEX uix_keys_name        ON "ssh_keys"("name")      WHERE ("deleted_at" IS NULL)`)
+		db.Exec(`CREATE UNIQUE INDEX uix_hosts_name       ON "hosts"("name")         WHERE ("deleted_at" IS NULL)`)
+		db.Exec(`CREATE UNIQUE INDEX uix_users_name       ON "users"("email")        WHERE ("deleted_at" IS NULL)`)
+		db.Exec(`CREATE UNIQUE INDEX uix_usergroups_name  ON "user_groups"("name")   WHERE ("deleted_at" IS NULL)`)
+		db.Exec(`CREATE UNIQUE INDEX uix_hostgroups_name  ON "host_groups"("name")   WHERE ("deleted_at" IS NULL)`)
+		versionSetting.Value = VERSION
+		if err := db.Update(&versionSetting).Error; err != nil {
+			return err
+		}
+	}
 
 	// create default ssh key
 	var count uint
