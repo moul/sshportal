@@ -9,6 +9,12 @@
 			"revisionTime": "2016-10-02T11:37:05Z"
 		},
 		{
+			"checksumSHA1": "qe14CYEIsrbHmel1u0gsdZNFPLQ=",
+			"path": "github.com/asaskevich/govalidator",
+			"revision": "2c14e1cca90af49b3b21fe2d7aaa8cc7f9da2ff8",
+			"revisionTime": "2017-04-02T15:00:40Z"
+		},
+		{
 			"checksumSHA1": "3z3RDSBixjg5A0XPPwAfrpoajoQ=",
 			"path": "github.com/gliderlabs/ssh",
 			"revision": "0c9c3575f476a0c2779aafb89d1838ca4ab7ac16",
