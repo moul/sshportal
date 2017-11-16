@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"runtime"
 	"strings"
 	"time"
 
 	shlex "github.com/anmitsu/go-shlex"
+	"github.com/asaskevich/govalidator"
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
 	"github.com/moby/moby/pkg/namesgenerator"
@@ -30,7 +30,6 @@ var banner = `
 
 
 `
-var isNameValid = regexp.MustCompile(`^[A-Za-z0-9_-]+$`).MatchString
 var startTime = time.Now()
 
 func shell(globalContext *cli.Context, s ssh.Session, sshCommand []string, db *gorm.DB) error {
@@ -82,6 +81,9 @@ GLOBAL OPTIONS:
 						}
 						if acl.Action != "allow" && acl.Action != "deny" {
 							return fmt.Errorf("invalid action %q, allowed values: allow, deny", acl.Action)
+						}
+						if _, err := govalidator.ValidateStruct(acl); err != nil {
+							return err
 						}
 
 						for _, name := range c.StringSlice("usergroup") {
@@ -354,12 +356,13 @@ GLOBAL OPTIONS:
 						if c.String("name") != "" {
 							host.Name = c.String("name")
 						}
-						if !isNameValid(host.Name) {
-							return fmt.Errorf("invalid name %q", host.Name)
-						}
 						// FIXME: check if name already exists
-
 						host.Comment = c.String("comment")
+
+						if _, err := govalidator.ValidateStruct(host); err != nil {
+							return err
+						}
+
 						inputKey := c.String("key")
 						if inputKey == "" && host.Password == "" {
 							inputKey = "default"
@@ -480,16 +483,16 @@ GLOBAL OPTIONS:
 					},
 					Action: func(c *cli.Context) error {
 						hostGroup := HostGroup{
-							Name: c.String("name"),
+							Name:    c.String("name"),
+							Comment: c.String("comment"),
 						}
 						if hostGroup.Name == "" {
 							hostGroup.Name = namesgenerator.GetRandomName(0)
 						}
-						if !isNameValid(hostGroup.Name) {
-							return fmt.Errorf("invalid name %q", hostGroup.Name)
+						if _, err := govalidator.ValidateStruct(hostGroup); err != nil {
+							return err
 						}
 						// FIXME: check if name already exists
-						hostGroup.Comment = c.String("comment")
 
 						if err := db.Create(&hostGroup).Error; err != nil {
 							return err
@@ -614,10 +617,6 @@ GLOBAL OPTIONS:
 						if c.String("name") != "" {
 							name = c.String("name")
 						}
-						if name == "" || !isNameValid(name) {
-							return fmt.Errorf("invalid name %q", name)
-						}
-						// FIXME: check if name already exists
 
 						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
 						if err != nil {
@@ -625,6 +624,11 @@ GLOBAL OPTIONS:
 						}
 						key.Name = name
 						key.Comment = c.String("comment")
+
+						if _, err := govalidator.ValidateStruct(key); err != nil {
+							return err
+						}
+						// FIXME: check if name already exists
 
 						// save the key in database
 						if err := db.Create(&key).Error; err != nil {
@@ -753,6 +757,10 @@ GLOBAL OPTIONS:
 							InviteToken: RandStringBytes(16),
 						}
 
+						if _, err := govalidator.ValidateStruct(user); err != nil {
+							return err
+						}
+
 						// user group
 						inputGroups := c.StringSlice("group")
 						if len(inputGroups) == 0 {
@@ -834,16 +842,17 @@ GLOBAL OPTIONS:
 					},
 					Action: func(c *cli.Context) error {
 						userGroup := UserGroup{
-							Name: c.String("name"),
+							Name:    c.String("name"),
+							Comment: c.String("comment"),
 						}
 						if userGroup.Name == "" {
 							userGroup.Name = namesgenerator.GetRandomName(0)
 						}
-						if !isNameValid(userGroup.Name) {
-							return fmt.Errorf("invalid name %q", userGroup.Name)
+
+						if _, err := govalidator.ValidateStruct(userGroup); err != nil {
+							return err
 						}
 						// FIXME: check if name already exists
-						userGroup.Comment = c.String("comment")
 
 						// add myself to the new group
 						myself := s.Context().Value(userContextKey).(User)
@@ -959,6 +968,10 @@ GLOBAL OPTIONS:
 						}
 						if c.String("comment") != "" {
 							userkey.Comment = c.String("comment")
+						}
+
+						if _, err := govalidator.ValidateStruct(userkey); err != nil {
+							return err
 						}
 
 						// save the userkey in database

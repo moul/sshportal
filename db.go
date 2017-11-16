@@ -5,12 +5,26 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
 )
+
+func init() {
+	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
+
+	govalidator.CustomTypeTagMap.Set("unix_user", govalidator.CustomTypeValidator(func(i interface{}, context interface{}) bool {
+		name, ok := i.(string)
+		if !ok {
+			return false
+		}
+		return unixUserRegexp.MatchString(name)
+	}))
+}
 
 type Config struct {
 	SSHKeys    []*SSHKey    `json:"keys"`
@@ -25,81 +39,81 @@ type Config struct {
 
 type Setting struct {
 	gorm.Model
-	Name  string
-	Value string
+	Name  string `valid:"required"`
+	Value string `valid:"required"`
 }
 
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string // FIXME: govalidator: min length 3, alphanum
-	Type        string
-	Length      uint
-	Fingerprint string
-	PrivKey     string  `sql:"size:10000;"`
-	PubKey      string  `sql:"size:10000;"`
+	Name        string  `valid:"required,length(1|32),unix_user"`
+	Type        string  `valid:"required"`
+	Length      uint    `valid:"required"`
+	Fingerprint string  `valid:"optional"`
+	PrivKey     string  `sql:"size:10000" valid:"required"`
+	PubKey      string  `sql:"size:10000" valid:"optional"`
 	Hosts       []*Host `gorm:"ForeignKey:SSHKeyID"`
-	Comment     string
+	Comment     string  `valid:"optional"`
 }
 
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string `gorm:"size:63"` // FIXME: govalidator: min length 3, alphanum
-	Addr        string
-	User        string
-	Password    string
+	Name        string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+	Addr        string       `gorm:"required,host"`
+	User        string       `gorm:"optional"`
+	Password    string       `gorm:"optional"`
 	SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
 	SSHKeyID    uint         `gorm:"index"`
 	Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
-	Fingerprint string       // FIXME: replace with hostkey ?
-	Comment     string
+	Fingerprint string       `gorm:"optional"` // FIXME: replace with hostKey ?
+	Comment     string       `gorm:"optional"`
 }
 
 type UserKey struct {
 	gorm.Model
-	Key     []byte `sql:"size:10000;"`
-	UserID  uint
-	User    *User `gorm:"ForeignKey:UserID"`
-	Comment string
+	Key     []byte `sql:"size:10000" valid:"required,length(1|10000)"`
+	UserID  uint   ``
+	User    *User  `gorm:"ForeignKey:UserID"`
+	Comment string `valid:"optional"`
 }
 
 type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
 	IsAdmin     bool
-	Email       string       // FIXME: govalidator: email
-	Name        string       // FIXME: govalidator: min length 3, alphanum
+	Email       string       `valid:"required,email"`
+	Name        string       `valid:"required,length(1|32),unix_user"`
 	Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
 	Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
-	Comment     string
-	InviteToken string
+	Comment     string       `valid:"optional"`
+	InviteToken string       `valid:"optional,length(10|60)"`
 }
 
 type UserGroup struct {
 	gorm.Model
-	Name    string
+	Name    string  `valid:"required,length(1|32),unix_user"`
 	Users   []*User `gorm:"many2many:user_user_groups;"`
 	ACLs    []*ACL  `gorm:"many2many:user_group_acls;"`
-	Comment string
+	Comment string  `valid:"optional"`
 }
 
 type HostGroup struct {
 	gorm.Model
-	Name    string
+	Name    string  `valid:"required,length(1|32),unix_user"`
 	Hosts   []*Host `gorm:"many2many:host_host_groups;"`
 	ACLs    []*ACL  `gorm:"many2many:host_group_acls;"`
-	Comment string
+	Comment string  `valid:"optional"`
 }
 
 type ACL struct {
 	gorm.Model
 	HostGroups  []*HostGroup `gorm:"many2many:host_group_acls;"`
 	UserGroups  []*UserGroup `gorm:"many2many:user_group_acls;"`
-	HostPattern string
-	Action      string
-	Weight      uint
-	Comment     string
+	HostPattern string       `valid:"optional"`
+	Action      string       `valid:"required"`
+	Weight      uint         ``
+	Comment     string       `valid:"optional"`
 }
 
 func dbInit(db *gorm.DB) error {
