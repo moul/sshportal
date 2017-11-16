@@ -4,6 +4,7 @@
 
 * Support adding multiple `--group` links on `host create` and `user create`
 * Store and compare version in database
+* Use govalidator to perform more consistent input validation
 
 ## v1.1.0 (2017-11-15)
 
