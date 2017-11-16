@@ -21,6 +21,12 @@
 			"revisionTime": "2017-11-01T23:11:58Z"
 		},
 		{
+			"checksumSHA1": "fI9spYCCgBl19GMD/JsW+znBHkw=",
+			"path": "github.com/go-gormigrate/gormigrate",
+			"revision": "21b0b93e8253d575d9185974835423f98d30158d",
+			"revisionTime": "2017-07-12T16:00:52Z"
+		},
+		{
 			"checksumSHA1": "os4jdoOUjr86qvOwri8Ut1rXDrg=",
 			"path": "github.com/go-sql-driver/mysql",
 			"revision": "fade21009797158e7b79e04c340118a9220c6f9e",
