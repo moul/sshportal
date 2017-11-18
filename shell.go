@@ -225,6 +225,9 @@ GLOBAL OPTIONS:
 						if err := db.Find(&config.ACLs).Error; err != nil {
 							return err
 						}
+						if err := db.Find(&config.Settings).Error; err != nil {
+							return err
+						}
 						config.Date = time.Now()
 						enc := json.NewEncoder(s)
 						if c.Bool("indent") {
@@ -255,6 +258,7 @@ GLOBAL OPTIONS:
 						fmt.Fprintf(s, "* %d UserGroups\n", len(config.UserGroups))
 						fmt.Fprintf(s, "* %d Userkeys\n", len(config.UserKeys))
 						fmt.Fprintf(s, "* %d Users\n", len(config.Users))
+						fmt.Fprintf(s, "* %d Settings\n", len(config.Settings))
 
 						if !c.Bool("confirm") {
 							fmt.Fprintf(s, "restore will erase and replace everything in the database.\nIf you are ok, add the '--confirm' to the restore command\n")
@@ -264,7 +268,7 @@ GLOBAL OPTIONS:
 						tx := db.Begin()
 
 						// FIXME: do everything in a transaction
-						for _, tableName := range []string{"hosts", "users", "acls", "host_groups", "user_groups", "ssh_keys", "user_keys"} {
+						for _, tableName := range []string{"hosts", "users", "acls", "host_groups", "user_groups", "ssh_keys", "user_keys", "settings"} {
 							if err := tx.Exec(fmt.Sprintf("DELETE FROM %s;", tableName)).Error; err != nil {
 								tx.Rollback()
 								return err
@@ -308,6 +312,12 @@ GLOBAL OPTIONS:
 						}
 						for _, userKey := range config.UserKeys {
 							if err := tx.Create(&userKey).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, setting := range config.Settings {
+							if err := tx.Create(&setting).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
