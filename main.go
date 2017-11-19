@@ -83,19 +83,28 @@ func main() {
 }
 
 func server(c *cli.Context) error {
+	// db
 	db, err := gorm.Open("sqlite3", c.String("db-conn"))
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-
+	if err = db.DB().Ping(); err != nil {
+		return err
+	}
 	if c.Bool("debug") {
 		db.LogMode(true)
 	}
 	if err := dbInit(db); err != nil {
 		return err
 	}
+	if c.Bool("demo") {
+		if err := dbDemo(db); err != nil {
+			return err
+		}
+	}
 
+	// ssh server
 	ssh.Handle(func(s ssh.Session) {
 		currentUser := s.Context().Value(userContextKey).(User)
 		log.Printf("New connection: sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
@@ -162,14 +171,6 @@ func server(c *cli.Context) error {
 	})
 
 	opts := []ssh.Option{}
-	if c.Bool("demo") {
-		if c.Bool("demo") {
-			if err := dbDemo(db); err != nil {
-				return err
-			}
-		}
-	}
-
 	opts = append(opts, ssh.PublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 		var (
 			userKey  UserKey

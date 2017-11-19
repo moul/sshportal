@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -14,18 +12,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func init() {
-	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
-
-	govalidator.CustomTypeTagMap.Set("unix_user", govalidator.CustomTypeValidator(func(i interface{}, context interface{}) bool {
-		name, ok := i.(string)
-		if !ok {
-			return false
-		}
-		return unixUserRegexp.MatchString(name)
-	}))
-}
-
 type Config struct {
 	SSHKeys    []*SSHKey    `json:"keys"`
 	Hosts      []*Host      `json:"hosts"`
@@ -34,6 +20,7 @@ type Config struct {
 	UserGroups []*UserGroup `json:"user_groups"`
 	HostGroups []*HostGroup `json:"host_groups"`
 	ACLs       []*ACL       `json:"acls"`
+	Settings   []*Setting   `json:"settings"`
 	Date       time.Time    `json:"date"`
 }
 
@@ -66,8 +53,8 @@ type Host struct {
 	SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
 	SSHKeyID    uint         `gorm:"index"`
 	Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
-	Fingerprint string       `gorm:"optional"` // FIXME: replace with hostKey ?
-	Comment     string       `gorm:"optional"`
+	Fingerprint string       `valid:"optional"` // FIXME: replace with hostKey ?
+	Comment     string       `valid:"optional"`
 }
 
 type UserKey struct {
@@ -116,165 +103,16 @@ type ACL struct {
 	Comment     string       `valid:"optional"`
 }
 
-func dbInit(db *gorm.DB) error {
-	// version checking
-	db.AutoMigrate(&Setting{})
-	db.Exec(`CREATE UNIQUE INDEX uix_settings_name ON "settings"("name") WHERE ("deleted_at" IS NULL)`)
-	var versionSetting Setting
-	if db.Where("name = ?", "version").First(&versionSetting).RecordNotFound() {
-		db.Create(&Setting{Name: "version", Value: VERSION})
-	}
-	if versionSetting.Value != VERSION {
-		log.Printf("database is not sync, applying migrations.\n")
-		// other models
-		db.AutoMigrate(&User{})
-		db.AutoMigrate(&SSHKey{})
-		db.AutoMigrate(&Host{})
-		db.AutoMigrate(&UserKey{})
-		db.AutoMigrate(&UserGroup{})
-		db.AutoMigrate(&HostGroup{})
-		db.AutoMigrate(&ACL{})
-		// FIXME: check if indexes exist to avoid gorm warns
-		db.Exec(`CREATE UNIQUE INDEX uix_keys_name        ON "ssh_keys"("name")      WHERE ("deleted_at" IS NULL)`)
-		db.Exec(`CREATE UNIQUE INDEX uix_hosts_name       ON "hosts"("name")         WHERE ("deleted_at" IS NULL)`)
-		db.Exec(`CREATE UNIQUE INDEX uix_users_name       ON "users"("email")        WHERE ("deleted_at" IS NULL)`)
-		db.Exec(`CREATE UNIQUE INDEX uix_usergroups_name  ON "user_groups"("name")   WHERE ("deleted_at" IS NULL)`)
-		db.Exec(`CREATE UNIQUE INDEX uix_hostgroups_name  ON "host_groups"("name")   WHERE ("deleted_at" IS NULL)`)
-		versionSetting.Value = VERSION
-		if err := db.Update(&versionSetting).Error; err != nil {
-			return err
-		}
-	}
+func init() {
+	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
 
-	// create default ssh key
-	var count uint
-	if err := db.Table("ssh_keys").Where("name = ?", "default").Count(&count).Error; err != nil {
-		return err
-	}
-	if count == 0 {
-		key, err := NewSSHKey("rsa", 2048)
-		if err != nil {
-			return err
+	govalidator.CustomTypeTagMap.Set("unix_user", govalidator.CustomTypeValidator(func(i interface{}, context interface{}) bool {
+		name, ok := i.(string)
+		if !ok {
+			return false
 		}
-		key.Name = "default"
-		key.Comment = "created by sshportal"
-		if err := db.Create(&key).Error; err != nil {
-			return err
-		}
-	}
-
-	// create default host group
-	if err := db.Table("host_groups").Where("name = ?", "default").Count(&count).Error; err != nil {
-		return err
-	}
-	if count == 0 {
-		hostGroup := HostGroup{
-			Name:    "default",
-			Comment: "created by sshportal",
-		}
-		if err := db.Create(&hostGroup).Error; err != nil {
-			return err
-		}
-	}
-
-	// create default user group
-	if err := db.Table("user_groups").Where("name = ?", "default").Count(&count).Error; err != nil {
-		return err
-	}
-	if count == 0 {
-		userGroup := UserGroup{
-			Name:    "default",
-			Comment: "created by sshportal",
-		}
-		if err := db.Create(&userGroup).Error; err != nil {
-			return err
-		}
-	}
-
-	// create default acl
-	if err := db.Table("acls").Count(&count).Error; err != nil {
-		return err
-	}
-	if count == 0 {
-		var defaultUserGroup UserGroup
-		db.Where("name = ?", "default").First(&defaultUserGroup)
-		var defaultHostGroup HostGroup
-		db.Where("name = ?", "default").First(&defaultHostGroup)
-		acl := ACL{
-			UserGroups: []*UserGroup{&defaultUserGroup},
-			HostGroups: []*HostGroup{&defaultHostGroup},
-			Action:     "allow",
-			//HostPattern: "",
-			//Weight:      0,
-			Comment: "created by sshportal",
-		}
-		if err := db.Create(&acl).Error; err != nil {
-			return err
-		}
-	}
-
-	// create admin user
-	var defaultUserGroup UserGroup
-	db.Where("name = ?", "default").First(&defaultUserGroup)
-	db.Table("users").Count(&count)
-	if count == 0 {
-		// if no admin, create an account for the first connection
-		inviteToken := RandStringBytes(16)
-		if os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN") != "" {
-			inviteToken = os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN")
-		}
-		user := User{
-			Name:        "Administrator",
-			Email:       "admin@sshportal",
-			Comment:     "created by sshportal",
-			IsAdmin:     true,
-			InviteToken: inviteToken,
-			Groups:      []*UserGroup{&defaultUserGroup},
-		}
-		db.Create(&user)
-		log.Printf("Admin user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
-	}
-
-	// create host ssh key
-	if err := db.Table("ssh_keys").Where("name = ?", "host").Count(&count).Error; err != nil {
-		return err
-	}
-	if count == 0 {
-		key, err := NewSSHKey("rsa", 2048)
-		if err != nil {
-			return err
-		}
-		key.Name = "host"
-		key.Comment = "created by sshportal"
-		if err := db.Create(&key).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func dbDemo(db *gorm.DB) error {
-	hostGroup, err := FindHostGroupByIdOrName(db, "default")
-	if err != nil {
-		return err
-	}
-
-	key, err := FindKeyByIdOrName(db, "default")
-	if err != nil {
-		return err
-	}
-
-	var (
-		host1 = Host{Name: "sdf", Addr: "sdf.org:22", User: "new", SSHKeyID: key.ID, Groups: []*HostGroup{hostGroup}}
-		host2 = Host{Name: "whoami", Addr: "whoami.filippo.io:22", User: "test", SSHKeyID: key.ID, Groups: []*HostGroup{hostGroup}}
-		host3 = Host{Name: "ssh-chat", Addr: "chat.shazow.net:22", User: "test", SSHKeyID: key.ID, Fingerprint: "MD5:e5:d5:d1:75:90:38:42:f6:c7:03:d7:d0:56:7d:6a:db", Groups: []*HostGroup{hostGroup}}
-	)
-
-	// FIXME: check if hosts exist to avoid `UNIQUE constraint` error
-	db.Create(&host1)
-	db.Create(&host2)
-	db.Create(&host3)
-	return nil
+		return unixUserRegexp.MatchString(name)
+	}))
 }
 
 func RemoteHostFromSession(s ssh.Session, db *gorm.DB) (*Host, error) {

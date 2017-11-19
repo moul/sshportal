@@ -3,8 +3,8 @@
 ## master (unreleased)
 
 * Support adding multiple `--group` links on `host create` and `user create`
-* Store and compare version in database
 * Use govalidator to perform more consistent input validation
+* Use a database migration system
 
 ## v1.1.0 (2017-11-15)
 
