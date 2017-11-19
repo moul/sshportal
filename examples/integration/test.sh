@@ -17,9 +17,12 @@ cleanup
        -e SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN=${SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN} \
        --name=sshportal-integration \
        -p${PORT}:2222 \
-       moul/sshportal
+       moul/sshportal --debug
 )
-sleep 3 # FIXME: replace with port checker
+while ! nc -z localhost ${PORT}; do
+    sleep 1
+done
+sleep 3
 
 # integration suite
 xssh() {
@@ -27,7 +30,7 @@ xssh() {
     echo "+ ssh {sshportal} $@"
     ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no localhost -p ${PORT} $@
 }
-# legin
+# login
 xssh -l invite:integration
 
 # hostgroup/usergroup/acl
