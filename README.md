@@ -249,10 +249,10 @@ sshportal embeds built-in backup/restore methods which basically import/export J
 
 ```sh
 # Backup
-ssh admin@sshportal config backup > sshportal.bkp
+ssh admin@sshportal config backup  > sshportal.bkp
 
 # Restore
-ssh admin@sshportal config restore < sshporta.bkp
+ssh admin@sshportal config restore < sshportal.bkp
 ```
 
 This method is particularly useful as it should be resistant against future DB schema changes (expected during development phase).
