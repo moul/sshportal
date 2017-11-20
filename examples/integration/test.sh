@@ -4,11 +4,25 @@
 PORT=${PORT:-2222}
 SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN=integration
 
+# tempdir
+WORK_DIR=`mktemp -d`
+if [[ ! "$WORK_DIR" || ! -d "$WORK_DIR" ]]; then
+  echo "Could not create temp dir"
+  exit 1
+fi
+cd "${WORK_DIR}"
+
 # pre cleanup
-cleanup() {
-    docker rm -f -v sshportal-integration 2>/dev/null >/dev/null || true
+docker_cleanup() {
+    ( set -x
+      docker rm -f -v sshportal-integration 2>/dev/null >/dev/null || true
+    )
 }
-cleanup
+tempdir_cleanup() {
+    rm -rf "${WORK_DIR}"
+}
+docker_cleanup
+trap tempdir_cleanup EXIT
 
 # start server
 ( set -xe;
@@ -27,7 +41,7 @@ sleep 3
 # integration suite
 xssh() {
     set -e
-    echo "+ ssh {sshportal} $@"
+    echo "+ ssh {sshportal} $@" >&2
     ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no localhost -p ${PORT} $@
 }
 # login
@@ -57,6 +71,12 @@ xssh -l admin host create --name=testtest --comment=test --password=test test@te
 xssh -l admin host create --group=hg1 --group=hg2 hostwithgroups.org
 xssh -l admin host inspect example test42 testtest hostwithgroups
 xssh -l admin host ls
+
+# backup/restore
+xssh -l admin config backup --indent > backup-1
+xssh -l admin config restore --confirm < backup-1
+xssh -l admin config backup --indent > backup-2
+diff <(cat backup-1 | grep -v '"date":') <(cat backup-2 | grep -v '"date":')
 
 # post cleanup
 #cleanup
