@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.2.0 (2017-11-22)
 
 * Support adding multiple `--group` links on `host create` and `user create`
