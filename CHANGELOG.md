@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.2.0 (2017-11-22)
 
 * Support adding multiple `--group` links on `host create` and `user create`
 * Use govalidator to perform more consistent input validation
