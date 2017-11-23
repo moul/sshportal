@@ -284,6 +284,14 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
 			},
+		}, {
+			ID: "20",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.Create(&UserRole{Name: "listhosts"}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Where("name = ?", "listhosts").Delete(&UserRole{}).Error
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {

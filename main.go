@@ -120,10 +120,6 @@ func server(c *cli.Context) error {
 
 		switch username := s.User(); {
 		case username == currentUser.Name || username == currentUser.Email || username == c.String("config-user"):
-			if !UserHasRole(currentUser, "admin") {
-				fmt.Fprintf(s, "You are not an administrator, permission denied.\n")
-				return
-			}
 			if err := shell(c, s, s.Command(), db); err != nil {
 				fmt.Fprintf(s, "error: %v\n", err)
 			}

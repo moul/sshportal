@@ -207,6 +207,19 @@ func UserHasRole(user User, name string) bool {
 	}
 	return false
 }
+func UserCheckRoles(user User, names []string) error {
+	ok := false
+	for _, name := range names {
+		if UserHasRole(user, name) {
+			ok = true
+			break
+		}
+	}
+	if ok {
+		return nil
+	}
+	return fmt.Errorf("you don't have permission to access this feature (requires any of these roles: '%s')", strings.Join(names, "', '"))
+}
 
 // ACL helpers
 func ACLsPreload(db *gorm.DB) *gorm.DB {
