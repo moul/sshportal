@@ -3,6 +3,7 @@ GIT_TAG ?=	$(shell git describe --tags --always)
 GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
 LDFLAGS ?=	-X main.GIT_SHA=$(GIT_SHA) -X main.GIT_TAG=$(GIT_TAG) -X main.GIT_BRANCH=$(GIT_BRANCH)
 VERSION ?=	$(shell grep 'VERSION =' main.go | cut -d'"' -f2)
+PORT ?=		2222
 
 .PHONY: install
 install:
@@ -14,7 +15,7 @@ docker.build:
 
 .PHONY: integration
 integration:
-	bash ./examples/integration/test.sh
+	PORT="$(PORT)" bash ./examples/integration/test.sh
 
 .PHONY: _docker_install
 _docker_install:
@@ -23,7 +24,7 @@ _docker_install:
 .PHONY: dev
 dev:
 	-go get github.com/githubnemo/CompileDaemon
-	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug" .
+	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug --port=$(PORT)" .
 
 .PHONY: test
 test:

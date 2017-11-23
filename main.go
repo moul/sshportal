@@ -223,8 +223,8 @@ func server(c *cli.Context) error {
 	}))
 
 	opts = append(opts, func(srv *ssh.Server) error {
-		key, err := FindKeyByIdOrName(db, "host")
-		if err != nil {
+		var key SSHKey
+		if err := SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
 			return err
 		}
 		signer, err := gossh.ParsePrivateKey([]byte(key.PrivKey))

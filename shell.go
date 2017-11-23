@@ -63,10 +63,10 @@ GLOBAL OPTIONS:
 					Usage:       "Creates a new ACL",
 					Description: "$> acl create -",
 					Flags: []cli.Flag{
-						cli.StringSliceFlag{Name: "hostgroup, hg", Usage: "Assigns host groups to the acl"},
-						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns host groups to the acl"},
+						cli.StringSliceFlag{Name: "hostgroup, hg", Usage: "Assigns `HOSTGROUPS` to the acl"},
+						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `HOSTGROUPS` to the acl"},
 						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: "allow"},
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
@@ -86,20 +86,16 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						for _, name := range c.StringSlice("usergroup") {
-							userGroup, err := FindUserGroupByIdOrName(db, name)
-							if err != nil {
-								return fmt.Errorf("unknown user group %q: %v", name, err)
-							}
-							acl.UserGroups = append(acl.UserGroups, userGroup)
+						var userGroups []*UserGroup
+						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.StringSlice("usergroup"))).Find(&userGroups).Error; err != nil {
+							return err
 						}
-						for _, name := range c.StringSlice("hostgroup") {
-							hostGroup, err := FindHostGroupByIdOrName(db, name)
-							if err != nil {
-								return fmt.Errorf("unknown host group %q: %v", name, err)
-							}
-							acl.HostGroups = append(acl.HostGroups, hostGroup)
+						acl.UserGroups = append(acl.UserGroups, userGroups...)
+						var hostGroups []*HostGroup
+						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.StringSlice("hostgroup"))).Find(&hostGroups).Error; err != nil {
+							return err
 						}
+						acl.HostGroups = append(acl.HostGroups, hostGroups...)
 
 						if len(acl.UserGroups) == 0 {
 							return fmt.Errorf("an ACL must have at least one user group")
@@ -117,15 +113,15 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more acls",
-					ArgsUsage: "<id> [<id> [<id>...]]",
+					ArgsUsage: "ACL...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						acls, err := FindACLsById(db, c.Args())
-						if err != nil {
-							return nil
+						var acls []ACL
+						if err := ACLsPreload(ACLsByIdentifiers(db, c.Args())).Find(&acls).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -169,22 +165,13 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more acls",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "ACL...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						acls, err := FindACLsById(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, acl := range acls {
-							db.Where("id = ?", acl.ID).Delete(&ACL{})
-							fmt.Fprintf(s, "%d\n", acl.ID)
-						}
-						return nil
+						return ACLsByIdentifiers(db, c.Args()).Delete(&ACL{}).Error
 					},
 				},
 			},
@@ -240,7 +227,7 @@ GLOBAL OPTIONS:
 					Usage:       "Restores a backup",
 					Description: "ssh admin@portal config restore < sshportal.bkp",
 					Flags: []cli.Flag{
-						cli.BoolFlag{Name: "confirm", Usage: "automatically confirms"},
+						cli.BoolFlag{Name: "confirm", Usage: "yes, I want to replace everything with this backup!"},
 					},
 					Action: func(c *cli.Context) error {
 						config := Config{}
@@ -346,8 +333,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "password, p", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "fingerprint, f", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment, c"},
-						cli.StringFlag{Name: "key, k", Usage: "ID or name of the key to use for authentication"},
-						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of host groups (default: \"default\")"},
+						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `HOSTGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -378,8 +365,8 @@ GLOBAL OPTIONS:
 							inputKey = "default"
 						}
 						if inputKey != "" {
-							key, err := FindKeyByIdOrName(db, inputKey)
-							if err != nil {
+							var key SSHKey
+							if err := SSHKeysByIdentifiers(db, []string{inputKey}).First(&key).Error; err != nil {
 								return err
 							}
 							host.SSHKeyID = key.ID
@@ -390,11 +377,9 @@ GLOBAL OPTIONS:
 						if len(inputGroups) == 0 {
 							inputGroups = []string{"default"}
 						}
-						hostGroups, err := FindHostGroupsByIdOrName(db, inputGroups)
-						if err != nil {
+						if err := HostGroupsByIdentifiers(db, inputGroups).Find(&host.Groups).Error; err != nil {
 							return err
 						}
-						host.Groups = hostGroups
 
 						if err := db.Create(&host).Error; err != nil {
 							return err
@@ -405,15 +390,15 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more hosts",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOST...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hosts, err := FindHostsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var hosts []Host
+						if err := HostsPreload(HostsByIdentifiers(db, c.Args())).Find(&hosts).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -435,12 +420,16 @@ GLOBAL OPTIONS:
 						for _, host := range hosts {
 							authKey, authPass := "", ""
 							if host.Password != "" {
-								authPass = "X"
+								authPass = "yes"
 							}
 							if host.SSHKeyID > 0 {
 								var key SSHKey
 								db.Model(&host).Related(&key)
 								authKey = key.Name
+							}
+							groupNames := []string{}
+							for _, hostGroup := range host.Groups {
+								groupNames = append(groupNames, hostGroup.Name)
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
@@ -448,7 +437,7 @@ GLOBAL OPTIONS:
 								host.URL(),
 								authKey,
 								authPass,
-								fmt.Sprintf("%d", len(host.Groups)),
+								strings.Join(groupNames, ", "),
 								host.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
@@ -460,22 +449,83 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more hosts",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOST...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hosts, err := FindHostsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						return HostsByIdentifiers(db, c.Args()).Delete(&Host{}).Error
+					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates an existing host",
+					ArgsUsage: "HOST",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name, n", Usage: "Rename the host"},
+						cli.StringFlag{Name: "password, p", Usage: "Update/set a password, use \"none\" to unset"},
+						cli.StringFlag{Name: "fingerprint, f", Usage: "Update/set a host fingerprint, use \"none\" to unset"},
+						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
+						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
+						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
+						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `HOSTGROUPS`"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
 						}
 
-						for _, host := range hosts {
-							db.Where("id = ?", host.ID).Delete(&Host{})
-							fmt.Fprintf(s, "%d\n", host.ID)
+						var hosts []Host
+						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
+							return err
 						}
-						return nil
+
+						if len(hosts) > 1 && c.String("name") != "" {
+							return fmt.Errorf("cannot set --name when editing multiple hosts at once")
+						}
+
+						tx := db.Begin()
+						for _, host := range hosts {
+							model := tx.Model(&host)
+							// simple fields
+							for _, fieldname := range []string{"name", "comment", "password", "fingerprint"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+
+							// associations
+							if c.String("key") != "" {
+								var key SSHKey
+								if err := SSHKeysByIdentifiers(db, []string{c.String("key")}).First(&key).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+								if err := model.Association("SSHKey").Replace(&key).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+							var appendGroups []HostGroup
+							var deleteGroups []HostGroup
+							if err := HostGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := HostGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+
+						return tx.Commit().Error
 					},
 				},
 			},
@@ -489,7 +539,7 @@ GLOBAL OPTIONS:
 					Description: "$> hostgroup create --name=prod",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the host group"},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						hostGroup := HostGroup{
@@ -513,15 +563,15 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more host groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOSTGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hostGroups, err := FindHostGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var hostGroups []HostGroup
+						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.Args())).Find(&hostGroups).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -556,22 +606,13 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more host groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOSTGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hostGroups, err := FindHostGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, hostGroup := range hostGroups {
-							db.Where("id = ?", hostGroup.ID).Delete(&HostGroup{})
-							fmt.Fprintf(s, "%d\n", hostGroup.ID)
-						}
-						return nil
+						return HostGroupsByIdentifiers(db, c.Args()).Delete(&HostGroup{}).Error
 					},
 				},
 			},
@@ -620,7 +661,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
 						cli.StringFlag{Name: "type", Value: "rsa"},
 						cli.UintFlag{Name: "length", Value: 2048},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						name := namesgenerator.GetRandomName(0)
@@ -650,15 +691,15 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more keys",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "KEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						keys, err := FindKeysByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var keys []SSHKey
+						if err := SSHKeysByIdentifiers(db, c.Args()).Find(&keys).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -696,22 +737,13 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more keys",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "KEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						keys, err := FindKeysByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, key := range keys {
-							db.Where("id = ?", key.ID).Delete(&SSHKey{})
-							fmt.Fprintf(s, "%d\n", key.ID)
-						}
-						return nil
+						return SSHKeysByIdentifiers(db, c.Args()).Delete(&SSHKey{}).Error
 					},
 				},
 			},
@@ -722,15 +754,15 @@ GLOBAL OPTIONS:
 				{
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more users",
-					ArgsUsage: "<id or email> [<id or email> [<id or email>...]]",
+					ArgsUsage: "USER...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						users, err := FindUsersByIdOrEmail(db, c.Args())
-						if err != nil {
-							return nil
+						var users []User
+						if err := UsersPreload(UsersByIdentifiers(db, c.Args())).Find(&users).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -744,8 +776,8 @@ GLOBAL OPTIONS:
 					Description: "$> user invite bob@example.com\n   $> user invite --name=Robert bob@example.com",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
-						cli.StringFlag{Name: "comment"},
-						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of user groups (default: \"default\")"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of `USERGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -776,11 +808,9 @@ GLOBAL OPTIONS:
 						if len(inputGroups) == 0 {
 							inputGroups = []string{"default"}
 						}
-						userGroups, err := FindUserGroupsByIdOrName(db, inputGroups)
-						if err != nil {
+						if err := UserGroupsByIdentifiers(db, inputGroups).Find(&user.Groups).Error; err != nil {
 							return err
 						}
-						user.Groups = userGroups
 
 						// save the user in database
 						if err := db.Create(&user).Error; err != nil {
@@ -802,12 +832,16 @@ GLOBAL OPTIONS:
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
+							groupNames := []string{}
+							for _, userGroup := range user.Groups {
+								groupNames = append(groupNames, userGroup.Name)
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,
 								user.Email,
 								fmt.Sprintf("%d", len(user.Keys)),
-								fmt.Sprintf("%d", len(user.Groups)),
+								strings.Join(groupNames, ", "),
 								user.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
@@ -819,22 +853,13 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more users",
-					ArgsUsage: "<id or email> [<id or email> [<id or email>...]]",
+					ArgsUsage: "USER...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						users, err := FindUsersByIdOrEmail(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, user := range users {
-							db.Where("id = ?", user.ID).Delete(&User{})
-							fmt.Fprintf(s, "%d\n", user.ID)
-						}
-						return nil
+						return UsersByIdentifiers(db, c.Args()).Delete(&User{}).Error
 					},
 				},
 			},
@@ -848,7 +873,7 @@ GLOBAL OPTIONS:
 					Description: "$> usergroup create --name=prod",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user group"},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						userGroup := UserGroup{
@@ -878,15 +903,15 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more user groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "USERGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userGroups, err := FindUserGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var userGroups []UserGroup
+						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.Args())).Find(&userGroups).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -921,22 +946,13 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more user groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "USERGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userGroups, err := FindUserGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, userGroup := range userGroups {
-							db.Where("id = ?", userGroup.ID).Delete(&UserGroup{})
-							fmt.Fprintf(s, "%d\n", userGroup.ID)
-						}
-						return nil
+						return UserGroupsByIdentifiers(db, c.Args()).Delete(&UserGroup{}).Error
 					},
 				},
 			},
@@ -950,15 +966,15 @@ GLOBAL OPTIONS:
 					Usage:       "Creates a new userkey",
 					Description: "$> userkey create bob\n   $> user create --name=mykey bob",
 					Flags: []cli.Flag{
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						user, err := FindUserByIdOrEmail(db, c.Args().First())
-						if err != nil {
+						var user User
+						if err := UsersByIdentifiers(db, c.Args()).First(&user).Error; err != nil {
 							return err
 						}
 
@@ -972,7 +988,7 @@ GLOBAL OPTIONS:
 						}
 
 						userkey := UserKey{
-							UserID:  user.ID,
+							User:    &user,
 							Key:     key.Marshal(),
 							Comment: comment,
 						}
@@ -994,20 +1010,20 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more userkeys",
-					ArgsUsage: "<id> [<id> [<id>...]]",
+					ArgsUsage: "USERKEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userkeys, err := FindUserkeysById(db, c.Args())
-						if err != nil {
-							return nil
+						var userKeys []UserKey
+						if err := UserKeysPreload(UserKeysByIdentifiers(db, c.Args())).Find(&userKeys).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
 						enc.SetIndent("", "  ")
-						return enc.Encode(userkeys)
+						return enc.Encode(userKeys)
 					},
 				}, {
 					Name:  "ls",
@@ -1035,22 +1051,13 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more userkeys",
-					ArgsUsage: "<id> [<id> [<id>...]]",
+					ArgsUsage: "USERKEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userkeys, err := FindUserkeysById(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, userkey := range userkeys {
-							db.Where("id = ?", userkey.ID).Delete(&UserKey{})
-							fmt.Fprintf(s, "%d\n", userkey.ID)
-						}
-						return nil
+						return UserKeysByIdentifiers(db, c.Args()).Delete(&UserKey{}).Error
 					},
 				},
 			},
