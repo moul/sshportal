@@ -460,7 +460,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "update",
 					Usage:     "Updates an existing host",
-					ArgsUsage: "HOST",
+					ArgsUsage: "HOST...",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Rename the host"},
 						cli.StringFlag{Name: "password, p", Usage: "Update/set a password, use \"none\" to unset"},
@@ -828,7 +828,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Email", "Keys", "Groups", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Email", "Admin", "Keys", "Groups", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
@@ -836,10 +836,15 @@ GLOBAL OPTIONS:
 							for _, userGroup := range user.Groups {
 								groupNames = append(groupNames, userGroup.Name)
 							}
+							isAdmin := ""
+							if user.IsAdmin {
+								isAdmin = "yes"
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,
 								user.Email,
+								isAdmin,
 								fmt.Sprintf("%d", len(user.Keys)),
 								strings.Join(groupNames, ", "),
 								user.Comment,
@@ -860,6 +865,83 @@ GLOBAL OPTIONS:
 						}
 
 						return UsersByIdentifiers(db, c.Args()).Delete(&User{}).Error
+					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates an existing user",
+					ArgsUsage: "USER...",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name, n", Usage: "Renames the user"},
+						cli.StringFlag{Name: "email, e", Usage: "Updates the email"},
+						cli.BoolFlag{Name: "set-admin", Usage: "Sets admin flag"},
+						cli.BoolFlag{Name: "unset-admin", Usage: "Unsets admin flag"},
+						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to a new `USERGROUPS`"},
+						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the user from a `USERGROUPS`"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						// FIXME: check if unset-admin + user == myself
+						var users []User
+						if err := UsersByIdentifiers(db, c.Args()).Find(&users).Error; err != nil {
+							return err
+						}
+
+						if c.Bool("set-admin") && c.Bool("unset-admin") {
+							return fmt.Errorf("cannot use --set-admin and --unset-admin altogether")
+						}
+
+						if len(users) > 1 && c.String("email") != "" {
+							return fmt.Errorf("cannot set --email when editing multiple users at once")
+						}
+
+						tx := db.Begin()
+						for _, user := range users {
+							model := tx.Model(&user)
+							// simple fields
+							for _, fieldname := range []string{"name", "email", "comment"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+
+							// special fields
+							if c.Bool("set-admin") {
+								if err := model.Updates(User{IsAdmin: true}).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+							if c.Bool("unset-admin") {
+								if err := model.Updates(map[string]interface{}{"is_admin": false}).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+
+							// associations
+							var appendGroups []UserGroup
+							var deleteGroups []UserGroup
+							if err := UserGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := UserGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+
+						return tx.Commit().Error
 					},
 				},
 			},
