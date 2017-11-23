@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* More details in 'ls' commands
 
 ## v1.2.0 (2017-11-22)
 

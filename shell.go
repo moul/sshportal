@@ -420,12 +420,16 @@ GLOBAL OPTIONS:
 						for _, host := range hosts {
 							authKey, authPass := "", ""
 							if host.Password != "" {
-								authPass = "X"
+								authPass = "yes"
 							}
 							if host.SSHKeyID > 0 {
 								var key SSHKey
 								db.Model(&host).Related(&key)
 								authKey = key.Name
+							}
+							groupNames := []string{}
+							for _, hostGroup := range host.Groups {
+								groupNames = append(groupNames, hostGroup.Name)
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
@@ -433,7 +437,7 @@ GLOBAL OPTIONS:
 								host.URL(),
 								authKey,
 								authPass,
-								fmt.Sprintf("%d", len(host.Groups)),
+								strings.Join(groupNames, ", "),
 								host.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
@@ -758,12 +762,16 @@ GLOBAL OPTIONS:
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
+							groupNames := []string{}
+							for _, userGroup := range user.Groups {
+								groupNames = append(groupNames, userGroup.Name)
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,
 								user.Email,
 								fmt.Sprintf("%d", len(user.Keys)),
-								fmt.Sprintf("%d", len(user.Groups)),
+								strings.Join(groupNames, ", "),
 								user.Comment,
 								//FIXME: add some stats about last access time etc
 								//FIXME: add creation date
