@@ -31,6 +31,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * ACL management
 * Connect to host using key or password
 * Admin commands can be run directly or in an interactive shell
+* User Roles
 
 ## Usage
 
