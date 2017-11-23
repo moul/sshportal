@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.3.0 (2017-11-23)
 
 * More details in 'ls' commands

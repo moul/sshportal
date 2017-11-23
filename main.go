@@ -20,7 +20,7 @@ import (
 
 var (
 	// VERSION should be updated by hand at each release
-	VERSION = "1.3.0"
+	VERSION = "1.3.0+dev"
 	// GIT_TAG will be overwritten automatically by the build system
 	GIT_TAG string
 	// GIT_SHA will be overwritten automatically by the build system
