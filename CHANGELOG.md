@@ -6,6 +6,7 @@
 * Add 'host update' command (fix [#2](https://github.com/moul/sshportal/issues/2))
 * Add 'user update' command (fix [#3](https://github.com/moul/sshportal/issues/3))
 * Add 'acl update' command (fix [#4](https://github.com/moul/sshportal/issues/4))
+* Allow connecting to the shell mode with the registered username or email
 
 ## v1.2.0 (2017-11-22)
 
