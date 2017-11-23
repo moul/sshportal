@@ -457,6 +457,76 @@ GLOBAL OPTIONS:
 
 						return HostsByIdentifiers(db, c.Args()).Delete(&Host{}).Error
 					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates an existing host",
+					ArgsUsage: "HOST",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name, n", Usage: "Rename the host"},
+						cli.StringFlag{Name: "password, p", Usage: "Update/set a password, use \"none\" to unset"},
+						cli.StringFlag{Name: "fingerprint, f", Usage: "Update/set a host fingerprint, use \"none\" to unset"},
+						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
+						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
+						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `GROUP`"},
+						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `GROUP`"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						var hosts []Host
+						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
+							return err
+						}
+
+						if len(hosts) > 1 && c.String("name") != "" {
+							return fmt.Errorf("cannot set --name when editing multiple hosts at once")
+						}
+
+						tx := db.Begin()
+						for _, host := range hosts {
+							model := tx.Model(&host)
+							// simple fields
+							for _, fieldname := range []string{"name", "comment", "password", "fingerprint"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+
+							// associations
+							if c.String("key") != "" {
+								var key SSHKey
+								if err := SSHKeysByIdentifiers(db, []string{c.String("key")}).First(&key).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+								if err := model.Association("SSHKey").Replace(&key).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+							var appendGroups []HostGroup
+							var deleteGroups []HostGroup
+							if err := HostGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := HostGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+
+						return tx.Commit().Error
+					},
 				},
 			},
 		}, {

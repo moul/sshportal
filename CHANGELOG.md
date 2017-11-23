@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * More details in 'ls' commands
+* Add 'host update' command (fix [#2](https://github.com/moul/sshportal/pull/2))
 
 ## v1.2.0 (2017-11-22)
 
