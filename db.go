@@ -65,10 +65,16 @@ type UserKey struct {
 	Comment string `valid:"optional"`
 }
 
+type UserRole struct {
+	gorm.Model
+	Name  string  `valid:"required,length(1|32),unix_user"`
+	Users []*User `gorm:"many2many:user_user_roles"`
+}
+
 type User struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	IsAdmin     bool
+	Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
 	Email       string       `valid:"required,email"`
 	Name        string       `valid:"required,length(1|32),unix_user"`
 	Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
@@ -188,10 +194,18 @@ func UserGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 
 // User helpers
 func UsersPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Groups").Preload("Keys")
+	return db.Preload("Groups").Preload("Keys").Preload("Roles")
 }
 func UsersByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("email IN (?)", identifiers)
+	return db.Where("id IN (?)", identifiers).Or("email IN (?)", identifiers).Or("name IN (?)", identifiers)
+}
+func UserHasRole(user User, name string) bool {
+	for _, role := range user.Roles {
+		if role.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // ACL helpers
@@ -208,4 +222,12 @@ func UserKeysPreload(db *gorm.DB) *gorm.DB {
 }
 func UserKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers)
+}
+
+// UserRole helpers
+func UserRolesPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Users")
+}
+func UserRolesByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }

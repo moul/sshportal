@@ -24,7 +24,7 @@ _docker_install:
 .PHONY: dev
 dev:
 	-go get github.com/githubnemo/CompileDaemon
-	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug --port=$(PORT)" .
+	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug --bind-address=:$(PORT)" .
 
 .PHONY: test
 test:

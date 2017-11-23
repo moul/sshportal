@@ -120,7 +120,7 @@ func server(c *cli.Context) error {
 
 		switch username := s.User(); {
 		case username == c.String("config-user"):
-			if !currentUser.IsAdmin {
+			if !UserHasRole(currentUser, "admin") {
 				fmt.Fprintf(s, "You are not an administrator, permission denied.\n")
 				return
 			}
@@ -181,7 +181,7 @@ func server(c *cli.Context) error {
 		// lookup user by key
 		db.Where("key = ?", key.Marshal()).First(&userKey)
 		if userKey.UserID > 0 {
-			db.Where("id = ?", userKey.UserID).First(&user)
+			db.Preload("Roles").Where("id = ?", userKey.UserID).First(&user)
 			if strings.HasPrefix(username, "invite:") {
 				ctx.SetValue(errorContextKey, fmt.Errorf("invites are only supported for ney SSH keys; your ssh key is already associated with the user %q.", user.Email))
 			}

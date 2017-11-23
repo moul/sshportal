@@ -897,11 +897,11 @@ GLOBAL OPTIONS:
 					Usage: "Lists users",
 					Action: func(c *cli.Context) error {
 						var users []User
-						if err := db.Preload("Groups").Preload("Keys").Find(&users).Error; err != nil {
+						if err := db.Preload("Groups").Preload("Roles").Preload("Keys").Find(&users).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Email", "Admin", "Keys", "Groups", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Email", "Roles", "Keys", "Groups", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
@@ -909,15 +909,15 @@ GLOBAL OPTIONS:
 							for _, userGroup := range user.Groups {
 								groupNames = append(groupNames, userGroup.Name)
 							}
-							isAdmin := ""
-							if user.IsAdmin {
-								isAdmin = "yes"
+							roleNames := []string{}
+							for _, role := range user.Roles {
+								roleNames = append(roleNames, role.Name)
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,
 								user.Email,
-								isAdmin,
+								strings.Join(roleNames, ", "),
 								fmt.Sprintf("%d", len(user.Keys)),
 								strings.Join(groupNames, ", "),
 								user.Comment,
@@ -946,10 +946,10 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Renames the user"},
 						cli.StringFlag{Name: "email, e", Usage: "Updates the email"},
-						cli.BoolFlag{Name: "set-admin", Usage: "Sets admin flag"},
-						cli.BoolFlag{Name: "unset-admin", Usage: "Unsets admin flag"},
-						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to a new `USERGROUPS`"},
-						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the user from a `USERGROUPS`"},
+						cli.StringSliceFlag{Name: "assign-role, r", Usage: "Assign the user to new `USERROLES`"},
+						cli.StringSliceFlag{Name: "unassign-role", Usage: "Unassign the user from `USERROLES`"},
+						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to new `USERGROUPS`"},
+						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the user from `USERGROUPS`"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -983,32 +983,33 @@ GLOBAL OPTIONS:
 								}
 							}
 
-							// special fields
-							if c.Bool("set-admin") {
-								if err := model.Updates(User{IsAdmin: true}).Error; err != nil {
-									tx.Rollback()
-									return err
-								}
-							}
-							if c.Bool("unset-admin") {
-								if err := model.Updates(map[string]interface{}{"is_admin": false}).Error; err != nil {
-									tx.Rollback()
-									return err
-								}
-							}
-
 							// associations
 							var appendGroups []UserGroup
-							var deleteGroups []UserGroup
 							if err := UserGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
+							var deleteGroups []UserGroup
 							if err := UserGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+
+							var appendRoles []UserRole
+							if err := UserRolesByIdentifiers(db, c.StringSlice("assign-role")).Find(&appendRoles).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							var deleteRoles []UserRole
+							if err := UserRolesByIdentifiers(db, c.StringSlice("unassign-role")).Find(&deleteRoles).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := model.Association("Roles").Append(&appendRoles).Delete(deleteRoles).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
