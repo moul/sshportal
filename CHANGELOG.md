@@ -5,6 +5,7 @@
 * More details in 'ls' commands
 * Add 'host update' command (fix [#2](https://github.com/moul/sshportal/issues/2))
 * Add 'user update' command (fix [#3](https://github.com/moul/sshportal/issues/3))
+* Add 'acl update' command (fix [#4](https://github.com/moul/sshportal/issues/4))
 
 ## v1.2.0 (2017-11-22)
 
