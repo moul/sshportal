@@ -63,10 +63,10 @@ GLOBAL OPTIONS:
 					Usage:       "Creates a new ACL",
 					Description: "$> acl create -",
 					Flags: []cli.Flag{
-						cli.StringSliceFlag{Name: "hostgroup, hg", Usage: "Assigns host groups to the acl"},
-						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns host groups to the acl"},
+						cli.StringSliceFlag{Name: "hostgroup, hg", Usage: "Assigns `HOSTGROUPS` to the acl"},
+						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `HOSTGROUPS` to the acl"},
 						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: "allow"},
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
@@ -113,7 +113,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more acls",
-					ArgsUsage: "<id> [<id> [<id>...]]",
+					ArgsUsage: "ACL...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -165,7 +165,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more acls",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "ACL...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -227,7 +227,7 @@ GLOBAL OPTIONS:
 					Usage:       "Restores a backup",
 					Description: "ssh admin@portal config restore < sshportal.bkp",
 					Flags: []cli.Flag{
-						cli.BoolFlag{Name: "confirm", Usage: "automatically confirms"},
+						cli.BoolFlag{Name: "confirm", Usage: "yes, I want to replace everything with this backup!"},
 					},
 					Action: func(c *cli.Context) error {
 						config := Config{}
@@ -334,7 +334,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "fingerprint, f", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment, c"},
 						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
-						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `GROUP` (default: \"default\")"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `HOSTGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -390,7 +390,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more hosts",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOST...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -449,7 +449,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more hosts",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOST...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -467,8 +467,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "fingerprint, f", Usage: "Update/set a host fingerprint, use \"none\" to unset"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
 						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
-						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `GROUP`"},
-						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `GROUP`"},
+						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
+						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `HOSTGROUPS`"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -539,7 +539,7 @@ GLOBAL OPTIONS:
 					Description: "$> hostgroup create --name=prod",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the host group"},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						hostGroup := HostGroup{
@@ -563,7 +563,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more host groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOSTGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -606,7 +606,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more host groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "HOSTGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -661,7 +661,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
 						cli.StringFlag{Name: "type", Value: "rsa"},
 						cli.UintFlag{Name: "length", Value: 2048},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						name := namesgenerator.GetRandomName(0)
@@ -691,7 +691,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more keys",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "KEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -737,7 +737,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more keys",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "KEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -754,7 +754,7 @@ GLOBAL OPTIONS:
 				{
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more users",
-					ArgsUsage: "<id or email> [<id or email> [<id or email>...]]",
+					ArgsUsage: "USER...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -776,8 +776,8 @@ GLOBAL OPTIONS:
 					Description: "$> user invite bob@example.com\n   $> user invite --name=Robert bob@example.com",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
-						cli.StringFlag{Name: "comment"},
-						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of user groups (default: \"default\")"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of `USERGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -853,7 +853,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more users",
-					ArgsUsage: "<id or email> [<id or email> [<id or email>...]]",
+					ArgsUsage: "USER...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -873,7 +873,7 @@ GLOBAL OPTIONS:
 					Description: "$> usergroup create --name=prod",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user group"},
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						userGroup := UserGroup{
@@ -903,7 +903,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more user groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "USERGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -946,7 +946,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more user groups",
-					ArgsUsage: "<id or name> [<id or name> [<id or name>...]]",
+					ArgsUsage: "USERGROUP...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -966,7 +966,7 @@ GLOBAL OPTIONS:
 					Usage:       "Creates a new userkey",
 					Description: "$> userkey create bob\n   $> user create --name=mykey bob",
 					Flags: []cli.Flag{
-						cli.StringFlag{Name: "comment"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -1010,7 +1010,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more userkeys",
-					ArgsUsage: "<id> [<id> [<id>...]]",
+					ArgsUsage: "USERKEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -1051,7 +1051,7 @@ GLOBAL OPTIONS:
 				}, {
 					Name:      "rm",
 					Usage:     "Removes one or more userkeys",
-					ArgsUsage: "<id> [<id> [<id>...]]",
+					ArgsUsage: "USERKEY...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
