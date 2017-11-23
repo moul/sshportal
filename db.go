@@ -155,148 +155,57 @@ func (host *Host) Hostname() string {
 }
 
 // Host helpers
-
-func FindHostByIdOrName(db *gorm.DB, query string) (*Host, error) {
-	var host Host
-	if err := db.Preload("Groups").Preload("SSHKey").Where("id = ?", query).Or("name = ?", query).First(&host).Error; err != nil {
-		return nil, err
-	}
-	return &host, nil
+func HostsPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Groups").Preload("SSHKey")
 }
-func FindHostsByIdOrName(db *gorm.DB, queries []string) ([]*Host, error) {
-	var hosts []*Host
-	for _, query := range queries {
-		host, err := FindHostByIdOrName(db, query)
-		if err != nil {
-			return nil, err
-		}
-		hosts = append(hosts, host)
-	}
-	return hosts, nil
+func HostsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
 
 // SSHKey helpers
-
-func FindKeyByIdOrName(db *gorm.DB, query string) (*SSHKey, error) {
-	var key SSHKey
-	if err := db.Preload("Hosts").Where("id = ?", query).Or("name = ?", query).First(&key).Error; err != nil {
-		return nil, err
-	}
-	return &key, nil
+func SSHKeysPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Hosts")
 }
-func FindKeysByIdOrName(db *gorm.DB, queries []string) ([]*SSHKey, error) {
-	var keys []*SSHKey
-	for _, query := range queries {
-		key, err := FindKeyByIdOrName(db, query)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, key)
-	}
-	return keys, nil
+func SSHKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
 
 // HostGroup helpers
-
-func FindHostGroupByIdOrName(db *gorm.DB, query string) (*HostGroup, error) {
-	var hostGroup HostGroup
-	if err := db.Preload("ACLs").Preload("Hosts").Where("id = ?", query).Or("name = ?", query).First(&hostGroup).Error; err != nil {
-		return nil, err
-	}
-	return &hostGroup, nil
+func HostGroupsPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("ACLs").Preload("Hosts")
 }
-func FindHostGroupsByIdOrName(db *gorm.DB, queries []string) ([]*HostGroup, error) {
-	var hostGroups []*HostGroup
-	for _, query := range queries {
-		hostGroup, err := FindHostGroupByIdOrName(db, query)
-		if err != nil {
-			return nil, err
-		}
-		hostGroups = append(hostGroups, hostGroup)
-	}
-	return hostGroups, nil
+func HostGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
 
 // UserGroup heleprs
-
-func FindUserGroupByIdOrName(db *gorm.DB, query string) (*UserGroup, error) {
-	var userGroup UserGroup
-	if err := db.Preload("ACLs").Preload("Users").Where("id = ?", query).Or("name = ?", query).First(&userGroup).Error; err != nil {
-		return nil, err
-	}
-	return &userGroup, nil
+func UserGroupsPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("ACLs").Preload("Users")
 }
-func FindUserGroupsByIdOrName(db *gorm.DB, queries []string) ([]*UserGroup, error) {
-	var userGroups []*UserGroup
-	for _, query := range queries {
-		userGroup, err := FindUserGroupByIdOrName(db, query)
-		if err != nil {
-			return nil, err
-		}
-		userGroups = append(userGroups, userGroup)
-	}
-	return userGroups, nil
+func UserGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
 
 // User helpers
-
-func FindUserByIdOrEmail(db *gorm.DB, query string) (*User, error) {
-	var user User
-	if err := db.Preload("Groups").Preload("Keys").Where("id = ?", query).Or("email = ?", query).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+func UsersPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Groups").Preload("Keys")
 }
-func FindUsersByIdOrEmail(db *gorm.DB, queries []string) ([]*User, error) {
-	var users []*User
-	for _, query := range queries {
-		user, err := FindUserByIdOrEmail(db, query)
-		if err != nil {
-			return nil, err
-		}
-		users = append(users, user)
-	}
-	return users, nil
+func UsersByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers).Or("email IN (?)", identifiers)
 }
 
 // ACL helpers
-
-func FindACLById(db *gorm.DB, query string) (*ACL, error) {
-	var acl ACL
-	if err := db.Preload("UserGroups").Preload("HostGroups").Where("id = ?", query).First(&acl).Error; err != nil {
-		return nil, err
-	}
-	return &acl, nil
+func ACLsPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("UserGroups").Preload("HostGroups")
 }
-func FindACLsById(db *gorm.DB, queries []string) ([]*ACL, error) {
-	var acls []*ACL
-	for _, query := range queries {
-		acl, err := FindACLById(db, query)
-		if err != nil {
-			return nil, err
-		}
-		acls = append(acls, acl)
-	}
-	return acls, nil
+func ACLsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers)
 }
 
 // UserKey helpers
-
-func FindUserkeyById(db *gorm.DB, query string) (*UserKey, error) {
-	var userkey UserKey
-	if err := db.Preload("User").Where("id = ?", query).First(&userkey).Error; err != nil {
-		return nil, err
-	}
-	return &userkey, nil
+func UserKeysPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("User")
 }
-func FindUserkeysById(db *gorm.DB, queries []string) ([]*UserKey, error) {
-	var userkeys []*UserKey
-	for _, query := range queries {
-		userkey, err := FindUserkeyById(db, query)
-		if err != nil {
-			return nil, err
-		}
-		userkeys = append(userkeys, userkey)
-	}
-	return userkeys, nil
+func UserKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers)
 }

@@ -86,20 +86,16 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						for _, name := range c.StringSlice("usergroup") {
-							userGroup, err := FindUserGroupByIdOrName(db, name)
-							if err != nil {
-								return fmt.Errorf("unknown user group %q: %v", name, err)
-							}
-							acl.UserGroups = append(acl.UserGroups, userGroup)
+						var userGroups []*UserGroup
+						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.StringSlice("usergroup"))).Find(&userGroups).Error; err != nil {
+							return err
 						}
-						for _, name := range c.StringSlice("hostgroup") {
-							hostGroup, err := FindHostGroupByIdOrName(db, name)
-							if err != nil {
-								return fmt.Errorf("unknown host group %q: %v", name, err)
-							}
-							acl.HostGroups = append(acl.HostGroups, hostGroup)
+						acl.UserGroups = append(acl.UserGroups, userGroups...)
+						var hostGroups []*HostGroup
+						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.StringSlice("hostgroup"))).Find(&hostGroups).Error; err != nil {
+							return err
 						}
+						acl.HostGroups = append(acl.HostGroups, hostGroups...)
 
 						if len(acl.UserGroups) == 0 {
 							return fmt.Errorf("an ACL must have at least one user group")
@@ -123,9 +119,9 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						acls, err := FindACLsById(db, c.Args())
-						if err != nil {
-							return nil
+						var acls []ACL
+						if err := ACLsPreload(ACLsByIdentifiers(db, c.Args())).Find(&acls).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -175,16 +171,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						acls, err := FindACLsById(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, acl := range acls {
-							db.Where("id = ?", acl.ID).Delete(&ACL{})
-							fmt.Fprintf(s, "%d\n", acl.ID)
-						}
-						return nil
+						return ACLsByIdentifiers(db, c.Args()).Delete(&ACL{}).Error
 					},
 				},
 			},
@@ -346,8 +333,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "password, p", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "fingerprint, f", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment, c"},
-						cli.StringFlag{Name: "key, k", Usage: "ID or name of the key to use for authentication"},
-						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of host groups (default: \"default\")"},
+						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `GROUP` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
@@ -378,8 +365,8 @@ GLOBAL OPTIONS:
 							inputKey = "default"
 						}
 						if inputKey != "" {
-							key, err := FindKeyByIdOrName(db, inputKey)
-							if err != nil {
+							var key SSHKey
+							if err := SSHKeysByIdentifiers(db, []string{inputKey}).First(&key).Error; err != nil {
 								return err
 							}
 							host.SSHKeyID = key.ID
@@ -390,11 +377,9 @@ GLOBAL OPTIONS:
 						if len(inputGroups) == 0 {
 							inputGroups = []string{"default"}
 						}
-						hostGroups, err := FindHostGroupsByIdOrName(db, inputGroups)
-						if err != nil {
+						if err := HostGroupsByIdentifiers(db, inputGroups).Find(&host.Groups).Error; err != nil {
 							return err
 						}
-						host.Groups = hostGroups
 
 						if err := db.Create(&host).Error; err != nil {
 							return err
@@ -411,9 +396,9 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hosts, err := FindHostsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var hosts []Host
+						if err := HostsPreload(HostsByIdentifiers(db, c.Args())).Find(&hosts).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -466,16 +451,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hosts, err := FindHostsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, host := range hosts {
-							db.Where("id = ?", host.ID).Delete(&Host{})
-							fmt.Fprintf(s, "%d\n", host.ID)
-						}
-						return nil
+						return HostsByIdentifiers(db, c.Args()).Delete(&Host{}).Error
 					},
 				},
 			},
@@ -519,9 +495,9 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hostGroups, err := FindHostGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var hostGroups []HostGroup
+						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.Args())).Find(&hostGroups).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -562,16 +538,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						hostGroups, err := FindHostGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, hostGroup := range hostGroups {
-							db.Where("id = ?", hostGroup.ID).Delete(&HostGroup{})
-							fmt.Fprintf(s, "%d\n", hostGroup.ID)
-						}
-						return nil
+						return HostGroupsByIdentifiers(db, c.Args()).Delete(&HostGroup{}).Error
 					},
 				},
 			},
@@ -656,9 +623,9 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						keys, err := FindKeysByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var keys []SSHKey
+						if err := SSHKeysByIdentifiers(db, c.Args()).Find(&keys).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -702,16 +669,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						keys, err := FindKeysByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, key := range keys {
-							db.Where("id = ?", key.ID).Delete(&SSHKey{})
-							fmt.Fprintf(s, "%d\n", key.ID)
-						}
-						return nil
+						return SSHKeysByIdentifiers(db, c.Args()).Delete(&SSHKey{}).Error
 					},
 				},
 			},
@@ -728,9 +686,9 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						users, err := FindUsersByIdOrEmail(db, c.Args())
-						if err != nil {
-							return nil
+						var users []User
+						if err := UsersPreload(UsersByIdentifiers(db, c.Args())).Find(&users).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -776,11 +734,9 @@ GLOBAL OPTIONS:
 						if len(inputGroups) == 0 {
 							inputGroups = []string{"default"}
 						}
-						userGroups, err := FindUserGroupsByIdOrName(db, inputGroups)
-						if err != nil {
+						if err := UserGroupsByIdentifiers(db, inputGroups).Find(&user.Groups).Error; err != nil {
 							return err
 						}
-						user.Groups = userGroups
 
 						// save the user in database
 						if err := db.Create(&user).Error; err != nil {
@@ -825,16 +781,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						users, err := FindUsersByIdOrEmail(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, user := range users {
-							db.Where("id = ?", user.ID).Delete(&User{})
-							fmt.Fprintf(s, "%d\n", user.ID)
-						}
-						return nil
+						return UsersByIdentifiers(db, c.Args()).Delete(&User{}).Error
 					},
 				},
 			},
@@ -884,9 +831,9 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userGroups, err := FindUserGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
+						var userGroups []UserGroup
+						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.Args())).Find(&userGroups).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
@@ -927,16 +874,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userGroups, err := FindUserGroupsByIdOrName(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, userGroup := range userGroups {
-							db.Where("id = ?", userGroup.ID).Delete(&UserGroup{})
-							fmt.Fprintf(s, "%d\n", userGroup.ID)
-						}
-						return nil
+						return UserGroupsByIdentifiers(db, c.Args()).Delete(&UserGroup{}).Error
 					},
 				},
 			},
@@ -957,8 +895,8 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						user, err := FindUserByIdOrEmail(db, c.Args().First())
-						if err != nil {
+						var user User
+						if err := UsersByIdentifiers(db, c.Args()).First(&user).Error; err != nil {
 							return err
 						}
 
@@ -972,7 +910,7 @@ GLOBAL OPTIONS:
 						}
 
 						userkey := UserKey{
-							UserID:  user.ID,
+							User:    &user,
 							Key:     key.Marshal(),
 							Comment: comment,
 						}
@@ -1000,14 +938,14 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userkeys, err := FindUserkeysById(db, c.Args())
-						if err != nil {
-							return nil
+						var userKeys []UserKey
+						if err := UserKeysPreload(UserKeysByIdentifiers(db, c.Args())).Find(&userKeys).Error; err != nil {
+							return err
 						}
 
 						enc := json.NewEncoder(s)
 						enc.SetIndent("", "  ")
-						return enc.Encode(userkeys)
+						return enc.Encode(userKeys)
 					},
 				}, {
 					Name:  "ls",
@@ -1041,16 +979,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						userkeys, err := FindUserkeysById(db, c.Args())
-						if err != nil {
-							return nil
-						}
-
-						for _, userkey := range userkeys {
-							db.Where("id = ?", userkey.ID).Delete(&UserKey{})
-							fmt.Fprintf(s, "%d\n", userkey.ID)
-						}
-						return nil
+						return UserKeysByIdentifiers(db, c.Args()).Delete(&UserKey{}).Error
 					},
 				},
 			},
