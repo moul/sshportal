@@ -53,6 +53,8 @@ GLOBAL OPTIONS:
 	app := cli.NewApp()
 	app.Writer = s
 	app.HideVersion = true
+
+	myself := s.Context().Value(userContextKey).(User)
 	app.Commands = []cli.Command{
 		{
 			Name:  "acl",
@@ -71,6 +73,9 @@ GLOBAL OPTIONS:
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
 						acl := ACL{
 							Comment:     c.String("comment"),
 							HostPattern: c.String("pattern"),
@@ -118,6 +123,9 @@ GLOBAL OPTIONS:
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
 
 						var acls []ACL
 						if err := ACLsPreload(ACLsByIdentifiers(db, c.Args())).Find(&acls).Error; err != nil {
@@ -132,6 +140,9 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists acls",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
 						var acls []ACL
 						if err := db.Preload("UserGroups").Preload("HostGroups").Find(&acls).Error; err != nil {
 							return err
@@ -171,6 +182,9 @@ GLOBAL OPTIONS:
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
 
 						return ACLsByIdentifiers(db, c.Args()).Delete(&ACL{}).Error
 					},
@@ -191,6 +205,9 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						var acls []ACL
@@ -260,6 +277,10 @@ GLOBAL OPTIONS:
 					},
 					Description: "ssh admin@portal config backup > sshportal.bkp",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						config := Config{}
 						if err := db.Find(&config.Hosts).Error; err != nil {
 							return err
@@ -303,6 +324,10 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "confirm", Usage: "yes, I want to replace everything with this backup!"},
 					},
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						config := Config{}
 
 						dec := json.NewDecoder(s)
@@ -413,6 +438,11 @@ GLOBAL OPTIONS:
 						if c.NArg() != 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						host, err := NewHostFromURL(c.Args().First())
 						if err != nil {
 							return err
@@ -469,8 +499,16 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin", "listhosts"}); err != nil {
+							return err
+						}
+
 						var hosts []Host
-						if err := HostsPreload(HostsByIdentifiers(db, c.Args())).Find(&hosts).Error; err != nil {
+						db = db.Preload("Groups")
+						if UserHasRole(myself, "admin") {
+							db = db.Preload("SSHKey")
+						}
+						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
 							return err
 						}
 
@@ -482,6 +520,10 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists hosts",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin", "listhosts"}); err != nil {
+							return err
+						}
+
 						var hosts []*Host
 						if err := db.Preload("Groups").Find(&hosts).Error; err != nil {
 							return err
@@ -528,6 +570,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						return HostsByIdentifiers(db, c.Args()).Delete(&Host{}).Error
 					},
 				}, {
@@ -546,6 +592,10 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						var hosts []Host
@@ -615,6 +665,10 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						hostGroup := HostGroup{
 							Name:    c.String("name"),
 							Comment: c.String("comment"),
@@ -642,6 +696,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var hostGroups []HostGroup
 						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.Args())).Find(&hostGroups).Error; err != nil {
 							return err
@@ -655,6 +713,10 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists host groups",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var hostGroups []*HostGroup
 						if err := db.Preload("ACLs").Preload("Hosts").Find(&hostGroups).Error; err != nil {
 							return err
@@ -685,6 +747,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						return HostGroupsByIdentifiers(db, c.Args()).Delete(&HostGroup{}).Error
 					},
 				},
@@ -693,6 +759,10 @@ GLOBAL OPTIONS:
 			Name:  "info",
 			Usage: "Shows system-wide information",
 			Action: func(c *cli.Context) error {
+				if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+					return err
+				}
+
 				fmt.Fprintf(s, "Debug mode (server): %v\n", globalContext.Bool("debug"))
 				hostname, _ := os.Hostname()
 				fmt.Fprintf(s, "Hostname: %s\n", hostname)
@@ -708,7 +778,6 @@ GLOBAL OPTIONS:
 				fmt.Fprintf(s, "Go version (build): %v\n", runtime.Version())
 				fmt.Fprintf(s, "Uptime: %v\n", time.Since(startTime))
 
-				myself := s.Context().Value(userContextKey).(User)
 				fmt.Fprintf(s, "User email: %v\n", myself.ID)
 				fmt.Fprintf(s, "User email: %s\n", myself.Email)
 				fmt.Fprintf(s, "Version: %s\n", VERSION)
@@ -737,6 +806,10 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						name := namesgenerator.GetRandomName(0)
 						if c.String("name") != "" {
 							name = c.String("name")
@@ -770,6 +843,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var keys []SSHKey
 						if err := SSHKeysByIdentifiers(db, c.Args()).Find(&keys).Error; err != nil {
 							return err
@@ -783,6 +860,10 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists keys",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var keys []SSHKey
 						if err := db.Preload("Hosts").Find(&keys).Error; err != nil {
 							return err
@@ -816,6 +897,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						return SSHKeysByIdentifiers(db, c.Args()).Delete(&SSHKey{}).Error
 					},
 				},
@@ -831,6 +916,10 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						var users []User
@@ -855,6 +944,10 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						// FIXME: validate email
@@ -896,12 +989,16 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists users",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var users []User
-						if err := db.Preload("Groups").Preload("Keys").Find(&users).Error; err != nil {
+						if err := db.Preload("Groups").Preload("Roles").Preload("Keys").Find(&users).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Email", "Admin", "Keys", "Groups", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Email", "Roles", "Keys", "Groups", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
@@ -909,15 +1006,15 @@ GLOBAL OPTIONS:
 							for _, userGroup := range user.Groups {
 								groupNames = append(groupNames, userGroup.Name)
 							}
-							isAdmin := ""
-							if user.IsAdmin {
-								isAdmin = "yes"
+							roleNames := []string{}
+							for _, role := range user.Roles {
+								roleNames = append(roleNames, role.Name)
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", user.ID),
 								user.Name,
 								user.Email,
-								isAdmin,
+								strings.Join(roleNames, ", "),
 								fmt.Sprintf("%d", len(user.Keys)),
 								strings.Join(groupNames, ", "),
 								user.Comment,
@@ -937,6 +1034,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						return UsersByIdentifiers(db, c.Args()).Delete(&User{}).Error
 					},
 				}, {
@@ -946,14 +1047,18 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Renames the user"},
 						cli.StringFlag{Name: "email, e", Usage: "Updates the email"},
-						cli.BoolFlag{Name: "set-admin", Usage: "Sets admin flag"},
-						cli.BoolFlag{Name: "unset-admin", Usage: "Unsets admin flag"},
-						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to a new `USERGROUPS`"},
-						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the user from a `USERGROUPS`"},
+						cli.StringSliceFlag{Name: "assign-role, r", Usage: "Assign the user to new `USERROLES`"},
+						cli.StringSliceFlag{Name: "unassign-role", Usage: "Unassign the user from `USERROLES`"},
+						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to new `USERGROUPS`"},
+						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the user from `USERGROUPS`"},
 					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						// FIXME: check if unset-admin + user == myself
@@ -983,32 +1088,33 @@ GLOBAL OPTIONS:
 								}
 							}
 
-							// special fields
-							if c.Bool("set-admin") {
-								if err := model.Updates(User{IsAdmin: true}).Error; err != nil {
-									tx.Rollback()
-									return err
-								}
-							}
-							if c.Bool("unset-admin") {
-								if err := model.Updates(map[string]interface{}{"is_admin": false}).Error; err != nil {
-									tx.Rollback()
-									return err
-								}
-							}
-
 							// associations
 							var appendGroups []UserGroup
-							var deleteGroups []UserGroup
 							if err := UserGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
+							var deleteGroups []UserGroup
 							if err := UserGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+
+							var appendRoles []UserRole
+							if err := UserRolesByIdentifiers(db, c.StringSlice("assign-role")).Find(&appendRoles).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							var deleteRoles []UserRole
+							if err := UserRolesByIdentifiers(db, c.StringSlice("unassign-role")).Find(&deleteRoles).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+							if err := model.Association("Roles").Append(&appendRoles).Delete(deleteRoles).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -1031,6 +1137,10 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						userGroup := UserGroup{
 							Name:    c.String("name"),
 							Comment: c.String("comment"),
@@ -1043,10 +1153,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 						// FIXME: check if name already exists
+						// FIXME: add myself to the new group
 
-						// add myself to the new group
-						myself := s.Context().Value(userContextKey).(User)
-						// FIXME: use foreign key with ID to avoid updating the user with the context
 						userGroup.Users = []*User{&myself}
 
 						if err := db.Create(&userGroup).Error; err != nil {
@@ -1064,6 +1172,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var userGroups []UserGroup
 						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.Args())).Find(&userGroups).Error; err != nil {
 							return err
@@ -1077,6 +1189,10 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists user groups",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var userGroups []*UserGroup
 						if err := db.Preload("ACLs").Preload("Users").Find(&userGroups).Error; err != nil {
 							return err
@@ -1107,6 +1223,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						return UserGroupsByIdentifiers(db, c.Args()).Delete(&UserGroup{}).Error
 					},
 				},
@@ -1126,6 +1246,10 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error {
 						if c.NArg() != 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						var user User
@@ -1171,6 +1295,10 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var userKeys []UserKey
 						if err := UserKeysPreload(UserKeysByIdentifiers(db, c.Args())).Find(&userKeys).Error; err != nil {
 							return err
@@ -1184,6 +1312,10 @@ GLOBAL OPTIONS:
 					Name:  "ls",
 					Usage: "Lists userkeys",
 					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
 						var userkeys []UserKey
 						if err := db.Preload("User").Find(&userkeys).Error; err != nil {
 							return err
@@ -1210,6 +1342,10 @@ GLOBAL OPTIONS:
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
 						}
 
 						return UserKeysByIdentifiers(db, c.Args()).Delete(&UserKey{}).Error

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -201,6 +202,96 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&HostGroup{}).RemoveIndex("uix_hostgroups_name").Error
 			},
+		}, {
+			ID: "15",
+			Migrate: func(tx *gorm.DB) error {
+				type UserRole struct {
+					gorm.Model
+					Name  string  `valid:"required,length(1|32),unix_user"`
+					Users []*User `gorm:"many2many:user_user_roles"`
+				}
+				return tx.AutoMigrate(&UserRole{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.DropTable("user_roles").Error
+			},
+		}, {
+			ID: "16",
+			Migrate: func(tx *gorm.DB) error {
+				type User struct {
+					gorm.Model
+					IsAdmin     bool
+					Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
+					Email       string       `valid:"required,email"`
+					Name        string       `valid:"required,length(1|32),unix_user"`
+					Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
+					Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
+					Comment     string       `valid:"optional"`
+					InviteToken string       `valid:"optional,length(10|60)"`
+				}
+				return tx.AutoMigrate(&User{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "17",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.Create(&UserRole{Name: "admin"}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Where("name = ?", "admin").Delete(&UserRole{}).Error
+			},
+		}, {
+			ID: "18",
+			Migrate: func(tx *gorm.DB) error {
+				var adminRole UserRole
+				if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
+					return err
+				}
+
+				var users []User
+				if err := db.Preload("Roles").Where("is_admin = ?", true).Find(&users).Error; err != nil {
+					return err
+				}
+
+				for _, user := range users {
+					user.Roles = append(user.Roles, &adminRole)
+					if err := tx.Save(&user).Error; err != nil {
+						return err
+					}
+				}
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "19",
+			Migrate: func(tx *gorm.DB) error {
+				type User struct {
+					gorm.Model
+					Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
+					Email       string       `valid:"required,email"`
+					Name        string       `valid:"required,length(1|32),unix_user"`
+					Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
+					Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
+					Comment     string       `valid:"optional"`
+					InviteToken string       `valid:"optional,length(10|60)"`
+				}
+				return tx.AutoMigrate(&User{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "20",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.Create(&UserRole{Name: "listhosts"}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Where("name = ?", "listhosts").Delete(&UserRole{}).Error
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {
@@ -284,15 +375,21 @@ func dbInit(db *gorm.DB) error {
 		if os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN") != "" {
 			inviteToken = os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN")
 		}
+		var adminRole UserRole
+		if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
+			return err
+		}
 		user := User{
 			Name:        "Administrator",
 			Email:       "admin@sshportal",
 			Comment:     "created by sshportal",
-			IsAdmin:     true,
+			Roles:       []*UserRole{&adminRole},
 			InviteToken: inviteToken,
 			Groups:      []*UserGroup{&defaultUserGroup},
 		}
-		db.Create(&user)
+		if err := db.Create(&user).Error; err != nil {
+			return err
+		}
 		log.Printf("Admin user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
 	}
 
