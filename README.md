@@ -32,6 +32,8 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Connect to host using key or password
 * Admin commands can be run directly or in an interactive shell
 * User Roles
+* User invitations
+* Easy authorized_keys installation
 
 ## Usage
 
@@ -81,28 +83,18 @@ List hosts
 
 ```console
 config> host ls
-  ID | NAME |           URL           |   KEY   | PASS | GROUPS | COMMENT
-+----+------+-------------------------+---------+------+--------+---------+
-   1 | foo  | bart@foo.example.org:22 | default |      |      1 |
+  ID | NAME |           URL           |   KEY   | PASS | GROUPS  | COMMENT
++----+------+-------------------------+---------+------+---------+---------+
+   1 | foo  | bart@foo.example.org:22 | default |      | default |
 Total: 1 hosts.
 config>
 ```
 
-Get the default key in authorized_keys format
+Add the key to the server
 
 ```console
-config> key inspect default
-[...]
-    "PubKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvUP/8FedyIe+a+RWU4KvJ1+iZwtWmY9czJubLwN4RcjKHQMzLqWC7pKZHAABCZjLJjVD/3Zb53jZwbh7mysAkocundMpvUL5+Yb4a8lDiflXkdXT9fZCx+ibJBk4jRnKLGIneSzVtFEerEwQKKnKQoCgPkZwCDaL/jHhDlOmAvxqAJrjiy42HXwppX2UuF8zujs6OKHRYJ/Q1vo0caa6/o1eoyXE9OrOwIk+IcAN3YIQi/B1BOlZOQBzHIZz83AFlD2TcPhyYcbxPyKGih84Zr3rQaaP1WiaiPqxzp3s5OhTLthc5XtCSLzmRSLvgC2eFdNhBDB5KLtO2khBkz5ID",
-[...]
-config>
-```
-
-Add this key to the server
-
-```console
-$ ssh bart@foo.example.org
-> umask 077; mkdir -p .ssh; echo ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvUP/8FedyIe+a+RWU4KvJ1+iZwtWmY9czJubLwN4RcjKHQMzLqWC7pKZHAABCZjLJjVD/3Zb53jZwbh7mysAkocundMpvUL5+Yb4a8lDiflXkdXT9fZCx+ibJBk4jRnKLGIneSzVtFEerEwQKKnKQoCgPkZwCDaL/jHhDlOmAvxqAJrjiy42HXwppX2UuF8zujs6OKHRYJ/Q1vo0caa6/o1eoyXE9OrOwIk+IcAN3YIQi/B1BOlZOQBzHIZz83AFlD2TcPhyYcbxPyKGih84Zr3rQaaP1WiaiPqxzp3s5OhTLthc5XtCSLzmRSLvgC2eFdNhBDB5KLtO2khBkz5ID >> .ssh/authorized_keys
+$ ssh bart@foo.example.org "$(ssh localhost -p 2222 -l admin key setup default)"
+$
 ```
 
 Profit
@@ -172,6 +164,7 @@ key create [-h] [--name=<value>] [--type=<value>] [--length=<value>] [--comment=
 key inspect [-h] KEY...
 key ls [-h]
 key rm [-h] KEY...
+key setup [-h] KEY
 
 # user management
 user help

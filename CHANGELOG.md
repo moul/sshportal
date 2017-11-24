@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* Add 'key setup' command (easy SSH key installation)
 
 ## v1.3.0 (2017-11-23)
 

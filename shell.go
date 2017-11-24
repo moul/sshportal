@@ -903,6 +903,24 @@ GLOBAL OPTIONS:
 
 						return SSHKeysByIdentifiers(db, c.Args()).Delete(&SSHKey{}).Error
 					},
+				}, {
+					Name:      "setup",
+					Usage:     "Return shell command to install key on remote host",
+					ArgsUsage: "KEY",
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						// not checking roles, everyone with an account can see how to enroll new hosts
+
+						var key SSHKey
+						if err := SSHKeysByIdentifiers(db, c.Args()).First(&key).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "umask 077; mkdir -p .ssh; echo %s sshportal >> .ssh/authorized_keys\n", key.PubKey)
+						return nil
+					},
 				},
 			},
 		}, {
