@@ -4,6 +4,7 @@
 
 * Add 'key setup' command (easy SSH key installation)
 * Add Updated and Created fields in 'ls' commands
+* Add `--aes-key` option to encrypt sensitive data
 
 ## v1.3.0 (2017-11-23)
 

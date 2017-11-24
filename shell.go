@@ -277,6 +277,7 @@ GLOBAL OPTIONS:
 					Usage: "Dumps a backup",
 					Flags: []cli.Flag{
 						cli.BoolFlag{Name: "indent", Usage: "uses indented JSON"},
+						cli.BoolFlag{Name: "decrypt", Usage: "decrypt sensitive data"},
 					},
 					Description: "ssh admin@portal config backup > sshportal.bkp",
 					Action: func(c *cli.Context) error {
@@ -288,12 +289,35 @@ GLOBAL OPTIONS:
 						if err := db.Find(&config.Hosts).Error; err != nil {
 							return err
 						}
+
 						if err := db.Find(&config.SSHKeys).Error; err != nil {
 							return err
 						}
+						for _, key := range config.SSHKeys {
+							SSHKeyDecrypt(globalContext.String("aes-key"), key)
+						}
+						if !c.Bool("decrypt") {
+							for _, key := range config.SSHKeys {
+								if err := SSHKeyEncrypt(globalContext.String("aes-key"), key); err != nil {
+									return err
+								}
+							}
+						}
+
 						if err := db.Find(&config.Hosts).Error; err != nil {
 							return err
 						}
+						for _, host := range config.Hosts {
+							HostDecrypt(globalContext.String("aes-key"), host)
+						}
+						if !c.Bool("decrypt") {
+							for _, host := range config.Hosts {
+								if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
+									return err
+								}
+							}
+						}
+
 						if err := db.Find(&config.UserKeys).Error; err != nil {
 							return err
 						}
@@ -325,6 +349,7 @@ GLOBAL OPTIONS:
 					Description: "ssh admin@portal config restore < sshportal.bkp",
 					Flags: []cli.Flag{
 						cli.BoolFlag{Name: "confirm", Usage: "yes, I want to replace everything with this backup!"},
+						cli.BoolFlag{Name: "decrypt", Usage: "do not encrypt sensitive data"},
 					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
@@ -363,6 +388,11 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, host := range config.Hosts {
+							if !c.Bool("decrypt") {
+								if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
+									return err
+								}
+							}
 							if err := tx.Create(&host).Error; err != nil {
 								tx.Rollback()
 								return err
@@ -393,6 +423,11 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, sshKey := range config.SSHKeys {
+							if !c.Bool("decrypt") {
+								if err := SSHKeyEncrypt(globalContext.String("aes-key"), sshKey); err != nil {
+									return err
+								}
+							}
 							if err := tx.Create(&sshKey).Error; err != nil {
 								tx.Rollback()
 								return err
@@ -487,6 +522,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 
+						// encrypt
+						if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
+							return err
+						}
+
 						if err := db.Create(&host).Error; err != nil {
 							return err
 						}
@@ -497,6 +537,9 @@ GLOBAL OPTIONS:
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more hosts",
 					ArgsUsage: "HOST...",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "decrypt", Usage: "Decrypt sensitive data"},
+					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -506,13 +549,19 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hosts []Host
+						var hosts []*Host
 						db = db.Preload("Groups")
 						if UserHasRole(myself, "admin") {
 							db = db.Preload("SSHKey")
 						}
 						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
 							return err
+						}
+
+						if c.Bool("decrypt") {
+							for _, host := range hosts {
+								HostDecrypt(globalContext.String("aes-keuy"), host)
+							}
 						}
 
 						enc := json.NewEncoder(s)
@@ -822,6 +871,11 @@ GLOBAL OPTIONS:
 						}
 
 						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
+						if globalContext.String("aes-key") != "" {
+							if err := SSHKeyEncrypt(globalContext.String("aes-key"), key); err != nil {
+								return err
+							}
+						}
 						if err != nil {
 							return err
 						}
@@ -844,6 +898,9 @@ GLOBAL OPTIONS:
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more keys",
 					ArgsUsage: "KEY...",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "decrypt", Usage: "Decrypt sensitive data"},
+					},
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
@@ -853,9 +910,15 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var keys []SSHKey
+						var keys []*SSHKey
 						if err := SSHKeysByIdentifiers(db, c.Args()).Find(&keys).Error; err != nil {
 							return err
+						}
+
+						if c.Bool("decrypt") {
+							for _, key := range keys {
+								SSHKeyDecrypt(globalContext.String("aes-key"), key)
+							}
 						}
 
 						enc := json.NewEncoder(s)

@@ -34,6 +34,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * User Roles
 * User invitations
 * Easy authorized_keys installation
+* Sensitive data encryption
 
 ## Usage
 
@@ -140,13 +141,13 @@ acl update [-h] [--comment=<value>] [--action=<value>] [--weight=<value>] [--ass
 
 # config management
 config help
-config backup [-h] [--indent]
-config restore [-h] [--confirm]
+config backup [-h] [--indent] [--decrypt]
+config restore [-h] [--confirm] [--decrypt]
 
 # host management
 host help
 host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=KEY] [--group=HOSTGROUP...] <username>[:<password>]@<host>[:<port>]
-host inspect [-h] HOST...
+host inspect [-h] [--decrypt] HOST...
 host ls [-h]
 host rm [-h] HOST...
 host update [-h] [--name=<value>] [--comment=<value>] [--fingerprint=<value>] [--key=KEY] [--assign-group=HOSTGROUP...] [--unassign-group=HOSTGROUP...] HOST...
@@ -161,7 +162,7 @@ hostgroup rm [-h] HOSTGROUP...
 # key management
 key help
 key create [-h] [--name=<value>] [--type=<value>] [--length=<value>] [--comment=<value>]
-key inspect [-h] KEY...
+key inspect [-h] [--decrypt] KEY...
 key ls [-h]
 key rm [-h] KEY...
 key setup [-h] KEY

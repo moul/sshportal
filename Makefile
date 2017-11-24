@@ -4,6 +4,7 @@ GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
 LDFLAGS ?=	-X main.GIT_SHA=$(GIT_SHA) -X main.GIT_TAG=$(GIT_TAG) -X main.GIT_BRANCH=$(GIT_BRANCH)
 VERSION ?=	$(shell grep 'VERSION =' main.go | cut -d'"' -f2)
 PORT ?=		2222
+AES_KEY ?=	my-dummy-aes-key
 
 .PHONY: install
 install:
@@ -24,7 +25,7 @@ _docker_install:
 .PHONY: dev
 dev:
 	-go get github.com/githubnemo/CompileDaemon
-	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug --bind-address=:$(PORT)" .
+	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --demo --debug --bind-address=:$(PORT) --aes-key=$(AES_KEY)" .
 
 .PHONY: test
 test:

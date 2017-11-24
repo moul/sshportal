@@ -75,6 +75,10 @@ func main() {
 			Usage: "SSH user that spawns a configuration shell",
 			Value: "admin",
 		},
+		cli.StringFlag{
+			Name:  "aes-key",
+			Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
+		},
 	}
 	app.Action = server
 	if err := app.Run(os.Args); err != nil {
@@ -83,6 +87,11 @@ func main() {
 }
 
 func server(c *cli.Context) error {
+	switch len(c.String("aes-key")) {
+	case 0, 16, 24, 32:
+	default:
+		return fmt.Errorf("invalid aes key size, should be 16 or 24, 32")
+	}
 	// db
 	db, err := gorm.Open("sqlite3", c.String("db-conn"))
 	if err != nil {
@@ -151,6 +160,10 @@ func server(c *cli.Context) error {
 				fmt.Fprintf(s, "error: %v\n", err)
 				return
 			}
+
+			// decrypt key and password
+			HostDecrypt(c.String("aes-key"), host)
+			SSHKeyDecrypt(c.String("aes-key"), host.SSHKey)
 
 			switch action {
 			case "allow":

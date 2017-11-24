@@ -76,7 +76,12 @@ xssh -l admin host ls
 xssh -l admin config backup --indent > backup-1
 xssh -l admin config restore --confirm < backup-1
 xssh -l admin config backup --indent > backup-2
-diff <(cat backup-1 | grep -v '"date":') <(cat backup-2 | grep -v '"date":')
+(
+    cat backup-1 | grep -v '"date":' > backup-1.clean
+    cat backup-2 | grep -v '"date":' > backup-2.clean
+    set -xe
+    diff backup-1.clean backup-2.clean
+)
 
 # post cleanup
 #cleanup
