@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.4.0 (2017-11-24)
 
 * Add 'key setup' command (easy SSH key installation)
