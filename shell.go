@@ -145,7 +145,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						var acls []ACL
-						if err := db.Preload("UserGroups").Preload("HostGroups").Find(&acls).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("UserGroups").Preload("HostGroups").Find(&acls).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -528,7 +528,7 @@ GLOBAL OPTIONS:
 						}
 
 						var hosts []*Host
-						if err := db.Preload("Groups").Find(&hosts).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("Groups").Find(&hosts).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -722,7 +722,7 @@ GLOBAL OPTIONS:
 						}
 
 						var hostGroups []*HostGroup
-						if err := db.Preload("ACLs").Preload("Hosts").Find(&hostGroups).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("ACLs").Preload("Hosts").Find(&hostGroups).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -871,7 +871,7 @@ GLOBAL OPTIONS:
 						}
 
 						var keys []SSHKey
-						if err := db.Preload("Hosts").Find(&keys).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("Hosts").Find(&keys).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -1019,7 +1019,7 @@ GLOBAL OPTIONS:
 						}
 
 						var users []User
-						if err := db.Preload("Groups").Preload("Roles").Preload("Keys").Find(&users).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("Groups").Preload("Roles").Preload("Keys").Find(&users).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -1219,7 +1219,7 @@ GLOBAL OPTIONS:
 						}
 
 						var userGroups []*UserGroup
-						if err := db.Preload("ACLs").Preload("Users").Find(&userGroups).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("ACLs").Preload("Users").Find(&userGroups).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
@@ -1344,7 +1344,7 @@ GLOBAL OPTIONS:
 						}
 
 						var userkeys []UserKey
-						if err := db.Preload("User").Find(&userkeys).Error; err != nil {
+						if err := db.Order("created_at desc").Preload("User").Find(&userkeys).Error; err != nil {
 							return err
 						}
 						table := tablewriter.NewWriter(s)
