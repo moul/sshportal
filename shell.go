@@ -13,6 +13,7 @@ import (
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/asaskevich/govalidator"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
 	"github.com/moby/moby/pkg/namesgenerator"
@@ -148,7 +149,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Weight", "User groups", "Host groups", "Host pattern", "Action", "Comment"})
+						table.SetHeader([]string{"ID", "Weight", "User groups", "Host groups", "Host pattern", "Action", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d acls.", len(acls)))
 						for _, acl := range acls {
@@ -168,6 +169,8 @@ GLOBAL OPTIONS:
 								strings.Join(hostGroups, ", "),
 								acl.HostPattern,
 								acl.Action,
+								humanize.Time(acl.UpdatedAt),
+								humanize.Time(acl.CreatedAt),
 								acl.Comment,
 							})
 						}
@@ -529,7 +532,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Groups", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Groups", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
@@ -553,9 +556,10 @@ GLOBAL OPTIONS:
 								authKey,
 								authPass,
 								strings.Join(groupNames, ", "),
+								humanize.Time(host.UpdatedAt),
+								humanize.Time(host.CreatedAt),
 								host.Comment,
 								//FIXME: add some stats about last access time etc
-								//FIXME: add creation date
 							})
 						}
 						table.Render()
@@ -722,7 +726,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Hosts", "ACLs", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Hosts", "ACLs", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d host groups.", len(hostGroups)))
 						for _, hostGroup := range hostGroups {
@@ -732,6 +736,8 @@ GLOBAL OPTIONS:
 								hostGroup.Name,
 								fmt.Sprintf("%d", len(hostGroup.Hosts)),
 								fmt.Sprintf("%d", len(hostGroup.ACLs)),
+								humanize.Time(hostGroup.UpdatedAt),
+								humanize.Time(hostGroup.CreatedAt),
 								hostGroup.Comment,
 							})
 						}
@@ -869,7 +875,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Hosts", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Hosts", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d keys.", len(keys)))
 						for _, key := range keys {
@@ -880,9 +886,10 @@ GLOBAL OPTIONS:
 								fmt.Sprintf("%d", key.Length),
 								//key.Fingerprint,
 								fmt.Sprintf("%d", len(key.Hosts)),
+								humanize.Time(key.UpdatedAt),
+								humanize.Time(key.CreatedAt),
 								key.Comment,
 								//FIXME: add some stats
-								//FIXME: add creation date
 							})
 						}
 						table.Render()
@@ -1016,7 +1023,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Email", "Roles", "Keys", "Groups", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Email", "Roles", "Keys", "Groups", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d users.", len(users)))
 						for _, user := range users {
@@ -1035,9 +1042,9 @@ GLOBAL OPTIONS:
 								strings.Join(roleNames, ", "),
 								fmt.Sprintf("%d", len(user.Keys)),
 								strings.Join(groupNames, ", "),
+								humanize.Time(user.UpdatedAt),
+								humanize.Time(user.CreatedAt),
 								user.Comment,
-								//FIXME: add some stats about last access time etc
-								//FIXME: add creation date
 							})
 						}
 						table.Render()
@@ -1216,18 +1223,20 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "Users", "ACLs", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "Users", "ACLs", "Update", "Create", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d user groups.", len(userGroups)))
 						for _, userGroup := range userGroups {
-							// FIXME: add more stats (amount of users, linked usergroups, ...)
 							table.Append([]string{
 								fmt.Sprintf("%d", userGroup.ID),
 								userGroup.Name,
 								fmt.Sprintf("%d", len(userGroup.Users)),
 								fmt.Sprintf("%d", len(userGroup.ACLs)),
+								humanize.Time(userGroup.UpdatedAt),
+								humanize.Time(userGroup.CreatedAt),
 								userGroup.Comment,
 							})
+							// FIXME: add more stats (amount of users, linked usergroups, ...)
 						}
 						table.Render()
 						return nil
@@ -1339,7 +1348,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "User", "Comment"})
+						table.SetHeader([]string{"ID", "User", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userkeys)))
 						for _, userkey := range userkeys {
@@ -1347,6 +1356,8 @@ GLOBAL OPTIONS:
 								fmt.Sprintf("%d", userkey.ID),
 								userkey.User.Email,
 								// FIXME: add fingerprint
+								humanize.Time(userkey.UpdatedAt),
+								humanize.Time(userkey.CreatedAt),
 								userkey.Comment,
 							})
 						}
