@@ -15,6 +15,12 @@
 			"revisionTime": "2017-04-02T15:00:40Z"
 		},
 		{
+			"checksumSHA1": "zkENTbOfU8YoxPfFwVAhTz516Dg=",
+			"path": "github.com/dustin/go-humanize",
+			"revision": "7a41df006ff9af79a29f0ffa9c5f21fbe6314a2d",
+			"revisionTime": "2017-01-10T07:11:07Z"
+		},
+		{
 			"checksumSHA1": "3z3RDSBixjg5A0XPPwAfrpoajoQ=",
 			"path": "github.com/gliderlabs/ssh",
 			"revision": "0c9c3575f476a0c2779aafb89d1838ca4ab7ac16",

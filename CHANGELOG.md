@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * Add 'key setup' command (easy SSH key installation)
+* Add Updated and Created fields in 'ls' commands
 
 ## v1.3.0 (2017-11-23)
 
