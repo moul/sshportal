@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.4.0 (2017-11-24)
 
 * Add 'key setup' command (easy SSH key installation)
 * Add Updated and Created fields in 'ls' commands
