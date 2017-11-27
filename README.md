@@ -35,6 +35,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * User invitations
 * Easy authorized_keys installation
 * Sensitive data encryption
+* Session management
 
 ## Usage
 
@@ -116,7 +117,7 @@ config>
 
 ## CLI
 
-sshportal embeds a configuration CLI.
+`sshportal` embeds a configuration CLI.
 
 By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server.
 
@@ -241,16 +242,39 @@ Get the latest version using GO.
 go get -u github.com/moul/sshportal
 ```
 
+## portal alias (.ssh/config)
+
+Edit your `~/.ssh/config` file (create it first if needed)
+
+```ini
+Host portal
+  User      admin
+  Port      2222       # portal port
+  HostName  127.0.0.1  # portal hostname
+```
+
+```bash
+# you can now run a shell using this:
+ssh portal
+# instead of this:
+ssh localhost -p 2222 -l admin
+
+# or connect to hosts using this:
+ssh hostname@portal
+# instead of this:
+ssh localhost -p 2222 -l hostname
+```
+
 ## Backup / Restore
 
 sshportal embeds built-in backup/restore methods which basically import/export JSON objects:
 
 ```sh
 # Backup
-ssh admin@sshportal config backup  > sshportal.bkp
+ssh portal config backup  > sshportal.bkp
 
 # Restore
-ssh admin@sshportal config restore < sshportal.bkp
+ssh portal config restore < sshportal.bkp
 ```
 
 This method is particularly useful as it should be resistant against future DB schema changes (expected during development phase).
@@ -263,4 +287,20 @@ sqlite3 sshportal.db .dump > sshportal.sql.bkp
 
 # or just the immortal cp
 cp sshportal.db sshportal.db.bkp
+```
+
+## Demo data
+
+The following servers are freely available, without external registration,
+it makes it easier to quickly test `sshportal` without configuring your own servers to accept sshportal connections.
+
+```
+ssh portal host create new@sdf.org
+ssh sdf@portal
+
+ssh portal host create test@whoami.filippo.io
+ssh whoami@portal
+
+ssh portal host create test@chat.shazow.net
+ssh chat@portal
 ```

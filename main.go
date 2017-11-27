@@ -52,10 +52,6 @@ func main() {
 			Value:  ":2222",
 			Usage:  "SSH server bind address",
 		},
-		cli.BoolFlag{
-			Name:  "demo",
-			Usage: "*unsafe* - demo mode: accept all connections",
-		},
 		/*cli.StringFlag{
 			Name:  "db-driver",
 			Value: "sqlite3",
@@ -106,11 +102,6 @@ func server(c *cli.Context) error {
 	}
 	if err := dbInit(db); err != nil {
 		return err
-	}
-	if c.Bool("demo") {
-		if err := dbDemo(db); err != nil {
-			return err
-		}
 	}
 
 	// ssh server

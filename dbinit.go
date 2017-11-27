@@ -429,27 +429,3 @@ func dbInit(db *gorm.DB) error {
 	}
 	return nil
 }
-
-func dbDemo(db *gorm.DB) error {
-	var hostGroup HostGroup
-	if err := HostGroupsByIdentifiers(db, []string{"default"}).First(&hostGroup).Error; err != nil {
-		return err
-	}
-
-	var key SSHKey
-	if err := SSHKeysByIdentifiers(db, []string{"default"}).First(&key).Error; err != nil {
-		return err
-	}
-
-	var (
-		host1 = Host{Name: "sdf", Addr: "sdf.org:22", User: "new", SSHKeyID: key.ID, Groups: []*HostGroup{&hostGroup}}
-		host2 = Host{Name: "whoami", Addr: "whoami.filippo.io:22", User: "test", SSHKeyID: key.ID, Groups: []*HostGroup{&hostGroup}}
-		host3 = Host{Name: "ssh-chat", Addr: "chat.shazow.net:22", User: "test", SSHKeyID: key.ID, Fingerprint: "MD5:e5:d5:d1:75:90:38:42:f6:c7:03:d7:d0:56:7d:6a:db", Groups: []*HostGroup{&hostGroup}}
-	)
-
-	// FIXME: check if hosts exist to avoid `UNIQUE constraint` error
-	db.FirstOrCreate(&host1)
-	db.FirstOrCreate(&host2)
-	db.FirstOrCreate(&host3)
-	return nil
-}
