@@ -158,9 +158,24 @@ func server(c *cli.Context) error {
 
 			switch action {
 			case "allow":
-				if err := proxy(s, host); err != nil {
-					fmt.Fprintf(s, "error: %v\n", err)
+				sess := Session{
+					UserID: currentUser.ID,
+					HostID: host.ID,
+					Status: SessionStatusActive,
 				}
+				if err := db.Create(&sess).Error; err != nil {
+					fmt.Fprintf(s, "error: %v\n", err)
+					return
+				}
+				err := proxy(s, host)
+				sessUpdate := Session{}
+				if err != nil {
+					fmt.Fprintf(s, "error: %v\n", err)
+					sessUpdate.ErrMsg = fmt.Sprintf("%v", err)
+				}
+				sessUpdate.Status = SessionStatusClosed
+				sessUpdate.StoppedAt = time.Now()
+				db.Model(&sess).Updates(&sessUpdate)
 			case "deny":
 				fmt.Fprintf(s, "You don't have permission to that host.\n")
 			default:

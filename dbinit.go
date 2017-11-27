@@ -427,5 +427,14 @@ func dbInit(db *gorm.DB) error {
 			return err
 		}
 	}
+
+	// close unclosed connections
+	if err := db.Table("sessions").Where("status = ?", "active").Updates(&Session{
+		Status: SessionStatusClosed,
+		ErrMsg: "sshportal was halted while the connection was still active",
+	}).Error; err != nil {
+		return err
+	}
+
 	return nil
 }

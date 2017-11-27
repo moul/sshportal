@@ -126,10 +126,9 @@ type Session struct {
 type SessionStatus string
 
 const (
-	Unknown SessionStatus = "unknown"
-	Active                = "active"
-	Closed                = "closed"
-	Error                 = "error"
+	SessionStatusUnknown SessionStatus = "unknown"
+	SessionStatusActive                = "active"
+	SessionStatusClosed                = "closed"
 )
 
 func init() {
