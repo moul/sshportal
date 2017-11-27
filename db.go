@@ -1,3 +1,4 @@
+//go:generate stringer -type=SessionStatus
 package main
 
 import (
@@ -21,6 +22,7 @@ type Config struct {
 	HostGroups []*HostGroup `json:"host_groups"`
 	ACLs       []*ACL       `json:"acls"`
 	Settings   []*Setting   `json:"settings"`
+	Sessions   []*Session   `json:"sessions"`
 	Date       time.Time    `json:"date"`
 }
 
@@ -108,6 +110,27 @@ type ACL struct {
 	Weight      uint         ``
 	Comment     string       `valid:"optional"`
 }
+
+type Session struct {
+	gorm.Model
+	StoppedAt time.Time `valid:"optional"`
+	Status    string    `valid:"required"`
+	User      *User     `gorm:"ForeignKey:UserID"`
+	Host      *Host     `gorm:"ForeignKey:HostID"`
+	UserID    uint      `valid:"optional"`
+	HostID    uint      `valid:"optional"`
+	ErrMsg    string    `valid:"optional"`
+	Comment   string    `valid:"optional"`
+}
+
+type SessionStatus string
+
+const (
+	Unknown SessionStatus = "unknown"
+	Active                = "active"
+	Closed                = "closed"
+	Error                 = "error"
+)
 
 func init() {
 	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")

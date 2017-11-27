@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-gormigrate/gormigrate"
 	"github.com/jinzhu/gorm"
@@ -24,8 +25,7 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return tx.DropTable("settings").Error
 			},
-		},
-		{
+		}, {
 			ID: "2",
 			Migrate: func(tx *gorm.DB) error {
 				type SSHKey struct {
@@ -291,6 +291,25 @@ func dbInit(db *gorm.DB) error {
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Where("name = ?", "listhosts").Delete(&UserRole{}).Error
+			},
+		}, {
+			ID: "21",
+			Migrate: func(tx *gorm.DB) error {
+				type Session struct {
+					gorm.Model
+					StoppedAt time.Time `valid:"optional"`
+					Status    string    `valid:"required"`
+					User      *User     `gorm:"ForeignKey:UserID"`
+					Host      *Host     `gorm:"ForeignKey:HostID"`
+					UserID    uint      `valid:"optional"`
+					HostID    uint      `valid:"optional"`
+					ErrMsg    string    `valid:"optional"`
+					Comment   string    `valid:"optional"`
+				}
+				return tx.AutoMigrate(&Session{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.DropTable("sessions").Error
 			},
 		},
 	})
