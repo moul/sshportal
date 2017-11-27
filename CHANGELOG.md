@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * Create Session objects on each connections (history)
+* Session management
 
 ## v1.4.0 (2017-11-24)
 

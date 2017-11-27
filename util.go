@@ -11,3 +11,10 @@ func RandStringBytes(n int) string {
 	}
 	return string(b)
 }
+
+func wrapText(in string, length int) string {
+	if len(in) <= length {
+		return in
+	}
+	return in[0:length-3] + "..."
+}

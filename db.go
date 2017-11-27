@@ -266,3 +266,11 @@ func UserRolesPreload(db *gorm.DB) *gorm.DB {
 func UserRolesByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
+
+// Session helpers
+func SessionsPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("User").Preload("Host")
+}
+func SessionsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers)
+}

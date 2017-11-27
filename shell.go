@@ -59,7 +59,7 @@ GLOBAL OPTIONS:
 	app.Commands = []cli.Command{
 		{
 			Name:  "acl",
-			Usage: "Manages acls",
+			Usage: "Manages ACLs",
 			Subcommands: []cli.Command{
 				{
 					Name:        "create",
@@ -118,7 +118,7 @@ GLOBAL OPTIONS:
 					},
 				}, {
 					Name:      "inspect",
-					Usage:     "Shows detailed information on one or more acls",
+					Usage:     "Shows detailed information on one or more ACLs",
 					ArgsUsage: "ACL...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -139,7 +139,7 @@ GLOBAL OPTIONS:
 					},
 				}, {
 					Name:  "ls",
-					Usage: "Lists acls",
+					Usage: "Lists ACLs",
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
@@ -151,7 +151,7 @@ GLOBAL OPTIONS:
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Weight", "User groups", "Host groups", "Host pattern", "Action", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
-						table.SetCaption(true, fmt.Sprintf("Total: %d acls.", len(acls)))
+						table.SetCaption(true, fmt.Sprintf("Total: %d ACLs.", len(acls)))
 						for _, acl := range acls {
 							userGroups := []string{}
 							hostGroups := []string{}
@@ -179,7 +179,7 @@ GLOBAL OPTIONS:
 					},
 				}, {
 					Name:      "rm",
-					Usage:     "Removes one or more acls",
+					Usage:     "Removes one or more ACLs",
 					ArgsUsage: "ACL...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -1441,6 +1441,72 @@ GLOBAL OPTIONS:
 						}
 
 						return UserKeysByIdentifiers(db, c.Args()).Delete(&UserKey{}).Error
+					},
+				},
+			},
+		}, {
+			Name:  "session",
+			Usage: "Manages sessions",
+			Subcommands: []cli.Command{
+				{
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more sessions",
+					ArgsUsage: "SESSION...",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
+						var sessions []Session
+						if err := SessionsPreload(SessionsByIdentifiers(db, c.Args())).Find(&sessions).Error; err != nil {
+							return err
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(sessions)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists sessions",
+					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
+						var sessions []Session
+						if err := db.Order("created_at desc").Preload("User").Preload("Host").Find(&sessions).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "User", "Host", "Status", "Start", "Duration", "Error", "Comment"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d sessions.", len(sessions)))
+						for _, session := range sessions {
+							var duration string
+							if session.StoppedAt.IsZero() {
+								duration = humanize.RelTime(session.CreatedAt, time.Now(), "", "")
+							} else {
+								duration = humanize.RelTime(session.CreatedAt, session.StoppedAt, "", "")
+							}
+							duration = strings.Replace(duration, "now", "1 second", 1)
+							table.Append([]string{
+								fmt.Sprintf("%d", session.ID),
+								session.User.Email,
+								session.Host.Name,
+								session.Status,
+								humanize.Time(session.CreatedAt),
+								duration,
+								wrapText(session.ErrMsg, 30),
+								session.Comment,
+							})
+						}
+						table.Render()
+						return nil
 					},
 				},
 			},
