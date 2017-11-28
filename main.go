@@ -172,6 +172,10 @@ func server(c *cli.Context) error {
 				if err != nil {
 					fmt.Fprintf(s, "error: %v\n", err)
 					sessUpdate.ErrMsg = fmt.Sprintf("%v", err)
+					switch sessUpdate.ErrMsg {
+					case "lch closed the connection", "rch closed the connection":
+						sessUpdate.ErrMsg = ""
+					}
 				}
 				sessUpdate.Status = SessionStatusClosed
 				sessUpdate.StoppedAt = time.Now()
