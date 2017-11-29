@@ -11,6 +11,8 @@ import (
 )
 
 func dbInit(db *gorm.DB) error {
+	db.Callback().Delete().Replace("gorm:delete", hardDeleteCallback)
+
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
 		{
 			ID: "1",
@@ -152,7 +154,7 @@ func dbInit(db *gorm.DB) error {
 			ID: "9",
 			Migrate: func(tx *gorm.DB) error {
 				db.Model(&Setting{}).RemoveIndex("uix_settings_name")
-				return db.Model(&Setting{}).Where(`"deleted_at" IS NULL`).AddUniqueIndex("uix_settings_name", "name").Error
+				return db.Model(&Setting{}).AddUniqueIndex("uix_settings_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&Setting{}).RemoveIndex("uix_settings_name").Error
@@ -161,7 +163,7 @@ func dbInit(db *gorm.DB) error {
 			ID: "10",
 			Migrate: func(tx *gorm.DB) error {
 				db.Model(&SSHKey{}).RemoveIndex("uix_keys_name")
-				return db.Model(&SSHKey{}).Where(`"deleted_at" IS NULL`).AddUniqueIndex("uix_keys_name", "name").Error
+				return db.Model(&SSHKey{}).AddUniqueIndex("uix_keys_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&SSHKey{}).RemoveIndex("uix_keys_name").Error
@@ -170,7 +172,7 @@ func dbInit(db *gorm.DB) error {
 			ID: "11",
 			Migrate: func(tx *gorm.DB) error {
 				db.Model(&Host{}).RemoveIndex("uix_hosts_name")
-				return db.Model(&Host{}).Where(`"deleted_at" IS NULL`).AddUniqueIndex("uix_hosts_name", "name").Error
+				return db.Model(&Host{}).AddUniqueIndex("uix_hosts_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&Host{}).RemoveIndex("uix_hosts_name").Error
@@ -179,7 +181,7 @@ func dbInit(db *gorm.DB) error {
 			ID: "12",
 			Migrate: func(tx *gorm.DB) error {
 				db.Model(&User{}).RemoveIndex("uix_users_name")
-				return db.Model(&User{}).Where(`"deleted_at" IS NULL`).AddUniqueIndex("uix_users_name", "name").Error
+				return db.Model(&User{}).AddUniqueIndex("uix_users_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&User{}).RemoveIndex("uix_users_name").Error
@@ -188,7 +190,7 @@ func dbInit(db *gorm.DB) error {
 			ID: "13",
 			Migrate: func(tx *gorm.DB) error {
 				db.Model(&UserGroup{}).RemoveIndex("uix_usergroups_name")
-				return db.Model(&UserGroup{}).Where(`"deleted_at" IS NULL`).AddUniqueIndex("uix_usergroups_name", "name").Error
+				return db.Model(&UserGroup{}).AddUniqueIndex("uix_usergroups_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&UserGroup{}).RemoveIndex("uix_usergroups_name").Error
@@ -197,7 +199,7 @@ func dbInit(db *gorm.DB) error {
 			ID: "14",
 			Migrate: func(tx *gorm.DB) error {
 				db.Model(&HostGroup{}).RemoveIndex("uix_hostgroups_name")
-				return db.Model(&HostGroup{}).Where(`"deleted_at" IS NULL`).AddUniqueIndex("uix_hostgroups_name", "name").Error
+				return db.Model(&HostGroup{}).AddUniqueIndex("uix_hostgroups_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return db.Model(&HostGroup{}).RemoveIndex("uix_hostgroups_name").Error
@@ -455,4 +457,27 @@ func dbInit(db *gorm.DB) error {
 	}
 
 	return nil
+}
+
+func hardDeleteCallback(scope *gorm.Scope) {
+	if !scope.HasError() {
+		var extraOption string
+		if str, ok := scope.Get("gorm:delete_option"); ok {
+			extraOption = fmt.Sprint(str)
+		}
+
+		scope.Raw(fmt.Sprintf(
+			"DELETE FROM %v%v%v",
+			scope.QuotedTableName(),
+			addExtraSpaceIfExist(scope.CombinedConditionSql()),
+			addExtraSpaceIfExist(extraOption),
+		)).Exec()
+	}
+}
+
+func addExtraSpaceIfExist(str string) string {
+	if str != "" {
+		return " " + str
+	}
+	return ""
 }
