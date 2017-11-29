@@ -63,10 +63,11 @@ type Host struct {
 
 type UserKey struct {
 	gorm.Model
-	Key     []byte `sql:"size:10000" valid:"required,length(1|10000)"`
-	UserID  uint   ``
-	User    *User  `gorm:"ForeignKey:UserID"`
-	Comment string `valid:"optional"`
+	Key           []byte `sql:"size:10000" valid:"required,length(1|10000)"`
+	AuthorizedKey string `sql:"size:10000" valid:"required,length(1|10000)"`
+	UserID        uint   ``
+	User          *User  `gorm:"ForeignKey:UserID"`
+	Comment       string `valid:"optional"`
 }
 
 type UserRole struct {

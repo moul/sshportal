@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-gormigrate/gormigrate"
 	"github.com/jinzhu/gorm"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 func dbInit(db *gorm.DB) error {
@@ -329,6 +330,45 @@ func dbInit(db *gorm.DB) error {
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.DropTable("events").Error
+			},
+		}, {
+			ID: "23",
+			Migrate: func(tx *gorm.DB) error {
+				type UserKey struct {
+					gorm.Model
+					Key           []byte `sql:"size:10000" valid:"required,length(1|10000)"`
+					AuthorizedKey string `sql:"size:10000" valid:"required,length(1|10000)"`
+					UserID        uint   ``
+					User          *User  `gorm:"ForeignKey:UserID"`
+					Comment       string `valid:"optional"`
+				}
+				return tx.AutoMigrate(&UserKey{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "24",
+			Migrate: func(tx *gorm.DB) error {
+				var userKeys []UserKey
+				if err := db.Find(&userKeys).Error; err != nil {
+					return err
+				}
+
+				for _, userKey := range userKeys {
+					key, err := gossh.ParsePublicKey(userKey.Key)
+					if err != nil {
+						return err
+					}
+					userKey.AuthorizedKey = string(gossh.MarshalAuthorizedKey(key))
+					if err := db.Model(&userKey).Updates(&userKey).Error; err != nil {
+						return err
+					}
+				}
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
 			},
 		},
 	})

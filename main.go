@@ -52,11 +52,11 @@ func main() {
 			Value:  ":2222",
 			Usage:  "SSH server bind address",
 		},
-		/*cli.StringFlag{
+		cli.StringFlag{
 			Name:  "db-driver",
 			Value: "sqlite3",
 			Usage: "GORM driver (sqlite3)",
-		},*/
+		},
 		cli.StringFlag{
 			Name:  "db-conn",
 			Value: "./sshportal.db",
@@ -89,7 +89,7 @@ func server(c *cli.Context) error {
 		return fmt.Errorf("invalid aes key size, should be 16 or 24, 32")
 	}
 	// db
-	db, err := gorm.Open("sqlite3", c.String("db-conn"))
+	db, err := gorm.Open(c.String("db-driver"), c.String("db-conn"))
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func server(c *cli.Context) error {
 		)
 
 		// lookup user by key
-		db.Where("key = ?", key.Marshal()).First(&userKey)
+		db.Where("authorized_key = ?", string(gossh.MarshalAuthorizedKey(key))).First(&userKey)
 		if userKey.UserID > 0 {
 			db.Preload("Roles").Where("id = ?", userKey.UserID).First(&user)
 			if strings.HasPrefix(username, "invite:") {
@@ -216,15 +216,16 @@ func server(c *cli.Context) error {
 			}
 			if user.ID > 0 {
 				userKey = UserKey{
-					UserID:  user.ID,
-					Key:     key.Marshal(),
-					Comment: "created by sshportal",
+					UserID:        user.ID,
+					Key:           key.Marshal(),
+					Comment:       "created by sshportal",
+					AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
 				}
 				db.Create(&userKey)
 
 				// token is only usable once
 				user.InviteToken = ""
-				db.Update(&user)
+				db.Model(&user).Updates(&user)
 
 				ctx.SetValue(messageContextKey, fmt.Sprintf("Welcome %s!\n\nYour key is now associated with the user %q.\n", user.Name, user.Email))
 				ctx.SetValue(userContextKey, user)
@@ -246,6 +247,8 @@ func server(c *cli.Context) error {
 		if err := SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
 			return err
 		}
+		SSHKeyDecrypt(c.String("aes-key"), &key)
+
 		signer, err := gossh.ParsePrivateKey([]byte(key.PrivKey))
 		if err != nil {
 			return err

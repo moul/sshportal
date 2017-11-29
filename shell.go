@@ -388,6 +388,7 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, host := range config.Hosts {
+							HostDecrypt(globalContext.String("aes-key"), host)
 							if !c.Bool("decrypt") {
 								if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
 									return err
@@ -423,6 +424,7 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, sshKey := range config.SSHKeys {
+							SSHKeyDecrypt(globalContext.String("aes-key"), sshKey)
 							if !c.Bool("decrypt") {
 								if err := SSHKeyEncrypt(globalContext.String("aes-key"), sshKey); err != nil {
 									return err
