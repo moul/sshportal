@@ -2,7 +2,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"regexp"
 	"strings"
@@ -121,6 +123,17 @@ type Session struct {
 	HostID    uint      `valid:"optional"`
 	ErrMsg    string    `valid:"optional"`
 	Comment   string    `valid:"optional"`
+}
+
+type Event struct {
+	gorm.Model
+	Author   *User                  `gorm:"ForeignKey:AuthorID"`
+	AuthorID uint                   `valid:"optional"`
+	Domain   string                 `valid:"required"`
+	Action   string                 `valid:"required"`
+	Entity   string                 `valid:"optional"`
+	Args     []byte                 `sql:"size:10000" valid:"optional,length(1|10000)" json:"-"`
+	ArgsMap  map[string]interface{} `gorm:"-" json:"Args"`
 }
 
 type SessionStatus string
@@ -273,4 +286,41 @@ func SessionsPreload(db *gorm.DB) *gorm.DB {
 }
 func SessionsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers)
+}
+
+// Events helpers
+func EventsPreload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Author")
+}
+func EventsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("id IN (?)", identifiers)
+}
+
+func NewEvent(domain, action string) *Event {
+	return &Event{
+		Domain:  domain,
+		Action:  action,
+		ArgsMap: map[string]interface{}{},
+	}
+}
+
+func (e *Event) Log(db *gorm.DB) {
+	if len(e.ArgsMap) > 0 {
+		e.Args, _ = json.Marshal(e.ArgsMap)
+	}
+	log.Printf("event: %v", e)
+	if err := db.Create(e).Error; err != nil {
+		log.Printf("warning: %v", err)
+	}
+}
+
+func (e *Event) SetAuthor(user *User) *Event {
+	e.Author = user
+	e.AuthorID = user.ID
+	return e
+}
+
+func (e *Event) SetArg(name string, value interface{}) *Event {
+	e.ArgsMap[name] = value
+	return e
 }

@@ -311,11 +311,29 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return tx.DropTable("sessions").Error
 			},
+		}, {
+			ID: "22",
+			Migrate: func(tx *gorm.DB) error {
+				type Event struct {
+					gorm.Model
+					Author   *User  `gorm:"ForeignKey:AuthorID"`
+					AuthorID uint   `valid:"optional"`
+					Domain   string `valid:"required"`
+					Action   string `valid:"required"`
+					Entity   string `valid:"optional"`
+					Args     []byte `sql:"size:10000" valid:"optional,length(1|10000)"`
+				}
+				return tx.AutoMigrate(&Event{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.DropTable("events").Error
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {
 		return err
 	}
+	NewEvent("system", "migrated").Log(db)
 
 	// create default ssh key
 	var count uint
@@ -399,7 +417,7 @@ func dbInit(db *gorm.DB) error {
 			return err
 		}
 		user := User{
-			Name:        "Administrator",
+			Name:        "admin",
 			Email:       "admin@sshportal",
 			Comment:     "created by sshportal",
 			Roles:       []*UserRole{&adminRole},

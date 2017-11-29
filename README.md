@@ -36,6 +36,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Easy authorized_keys installation
 * Sensitive data encryption
 * Session management
+* Audit log
 
 ## Usage
 
@@ -51,7 +52,7 @@ Link your SSH key with the admin account
 
 ```console
 $ ssh localhost -p 2222 -l invite:BpLnfgDsc2WD8F2q
-Welcome Administrator!
+Welcome admin!
 
 Your key is now associated with the user "admin@sshportal".
 Shared connection to localhost closed.
@@ -145,6 +146,11 @@ config help
 config backup [-h] [--indent] [--decrypt]
 config restore [-h] [--confirm] [--decrypt]
 
+# event management
+event help
+event ls [-h]
+event inspect [-h] EVENT...
+
 # host management
 host help
 host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=KEY] [--group=HOSTGROUP...] <username>[:<password>]@<host>[:<port>]
@@ -167,6 +173,11 @@ key inspect [-h] [--decrypt] KEY...
 key ls [-h]
 key rm [-h] KEY...
 key setup [-h] KEY
+
+# session management
+session help
+session ls [-h]
+session inspect [-h] SESSION...
 
 # user management
 user help

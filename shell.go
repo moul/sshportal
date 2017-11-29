@@ -456,6 +456,76 @@ GLOBAL OPTIONS:
 				},
 			},
 		}, {
+			Name:  "event",
+			Usage: "Manages events",
+			Subcommands: []cli.Command{
+				{
+					Name:      "inspect",
+					Usage:     "Shows detailed information on one or more events",
+					ArgsUsage: "EVENT...",
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
+						var events []*Event
+						if err := EventsPreload(EventsByIdentifiers(db, c.Args())).Find(&events).Error; err != nil {
+							return err
+						}
+
+						for _, event := range events {
+							if len(event.Args) > 0 {
+								if err := json.Unmarshal(event.Args, &event.ArgsMap); err != nil {
+									return err
+								}
+							}
+						}
+
+						enc := json.NewEncoder(s)
+						enc.SetIndent("", "  ")
+						return enc.Encode(events)
+					},
+				}, {
+					Name:  "ls",
+					Usage: "Lists events",
+					Action: func(c *cli.Context) error {
+						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+							return err
+						}
+
+						var events []Event
+						if err := db.Order("created_at desc").Preload("Author").Find(&events).Error; err != nil {
+							return err
+						}
+						table := tablewriter.NewWriter(s)
+						table.SetHeader([]string{"ID", "Author", "Domain", "Action", "Entity", "Args", "Date"})
+						table.SetBorder(false)
+						table.SetCaption(true, fmt.Sprintf("Total: %d events.", len(events)))
+						for _, event := range events {
+							author := ""
+							if event.Author != nil {
+								author = event.Author.Name
+							}
+							table.Append([]string{
+								fmt.Sprintf("%d", event.ID),
+								author,
+								event.Domain,
+								event.Action,
+								event.Entity,
+								wrapText(string(event.Args), 30),
+								humanize.Time(event.CreatedAt),
+							})
+						}
+						table.Render()
+						return nil
+					},
+				},
+			},
+		}, {
 			Name:  "host",
 			Usage: "Manages hosts",
 			Subcommands: []cli.Command{
@@ -1496,7 +1566,7 @@ GLOBAL OPTIONS:
 							duration = strings.Replace(duration, "now", "1 second", 1)
 							table.Append([]string{
 								fmt.Sprintf("%d", session.ID),
-								session.User.Email,
+								session.User.Name,
 								session.Host.Name,
 								session.Status,
 								humanize.Time(session.CreatedAt),
@@ -1543,6 +1613,7 @@ GLOBAL OPTIONS:
 				s.Exit(0)
 				return nil
 			}
+			NewEvent("shell", words[0]).SetAuthor(&myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
 				if cliErr, ok := err.(*cli.ExitError); ok {
 					if cliErr.ExitCode() != 0 {
@@ -1555,6 +1626,7 @@ GLOBAL OPTIONS:
 			}
 		}
 	} else { // oneshot mode
+		NewEvent("shell", sshCommand[0]).SetAuthor(&myself).SetArg("interactive", false).SetArg("args", sshCommand[1:]).Log(db)
 		if err := app.Run(append([]string{"config"}, sshCommand...)); err != nil {
 			if errMsg := err.Error(); errMsg != "" {
 				io.WriteString(s, fmt.Sprintf("error: %s\n", errMsg))
