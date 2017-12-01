@@ -37,6 +37,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Sensitive data encryption
 * Session management
 * Audit log
+* Host Keys verifications shared across users
 
 ## Usage
 
@@ -153,11 +154,11 @@ event inspect [-h] EVENT...
 
 # host management
 host help
-host create [-h] [--name=<value>] [--password=<value>] [--fingerprint=<value>] [--comment=<value>] [--key=KEY] [--group=HOSTGROUP...] <username>[:<password>]@<host>[:<port>]
+host create [-h] [--name=<value>] [--password=<value>] [--comment=<value>] [--key=KEY] [--group=HOSTGROUP...] <username>[:<password>]@<host>[:<port>]
 host inspect [-h] [--decrypt] HOST...
 host ls [-h]
 host rm [-h] HOST...
-host update [-h] [--name=<value>] [--comment=<value>] [--fingerprint=<value>] [--key=KEY] [--assign-group=HOSTGROUP...] [--unassign-group=HOSTGROUP...] HOST...
+host update [-h] [--name=<value>] [--comment=<value>] [--key=KEY] [--assign-group=HOSTGROUP...] [--unassign-group=HOSTGROUP...] HOST...
 
 # hostgroup management
 hostgroup help

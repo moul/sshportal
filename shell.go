@@ -539,7 +539,6 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Assigns a name to the host"},
 						cli.StringFlag{Name: "password, p", Usage: "If present, sshportal will use password-based authentication"},
-						cli.StringFlag{Name: "fingerprint, f", Usage: "SSH host key fingerprint"},
 						cli.StringFlag{Name: "comment, c"},
 						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
 						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `HOSTGROUPS` (default: \"default\")"},
@@ -560,7 +559,6 @@ GLOBAL OPTIONS:
 						if c.String("password") != "" {
 							host.Password = c.String("password")
 						}
-						host.Fingerprint = c.String("fingerprint")
 						host.Name = strings.Split(host.Hostname(), ".")[0]
 
 						if c.String("name") != "" {
@@ -708,7 +706,6 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Rename the host"},
 						cli.StringFlag{Name: "password, p", Usage: "Update/set a password, use \"none\" to unset"},
-						cli.StringFlag{Name: "fingerprint, f", Usage: "Update/set a host fingerprint, use \"none\" to unset"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
 						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
@@ -736,7 +733,7 @@ GLOBAL OPTIONS:
 						for _, host := range hosts {
 							model := tx.Model(&host)
 							// simple fields
-							for _, fieldname := range []string{"name", "comment", "password", "fingerprint"} {
+							for _, fieldname := range []string{"name", "comment", "password"} {
 								if c.String(fieldname) != "" {
 									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
 										tx.Rollback()

@@ -370,6 +370,28 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
 			},
+		}, {
+			ID: "25",
+			Migrate: func(tx *gorm.DB) error {
+				type Host struct {
+					// FIXME: use uuid for ID
+					gorm.Model
+					Name        string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+					Addr        string       `valid:"required"`
+					User        string       `valid:"optional"`
+					Password    string       `valid:"optional"`
+					SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"` // SSHKey used to connect by the client
+					SSHKeyID    uint         `gorm:"index"`
+					HostKey     []byte       `sql:"size:10000" valid:"optional"`
+					Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
+					Fingerprint string       `valid:"optional"` // FIXME: replace with hostKey ?
+					Comment     string       `valid:"optional"`
+				}
+				return tx.AutoMigrate(&Host{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {

@@ -5,6 +5,7 @@
 * Create Session objects on each connections (history)
 * Connection history
 * Audit log
+* Add dynamic strict host key checking (learning on the first time, strict on the next ones)
 
 ## v1.4.0 (2017-11-24)
 

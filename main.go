@@ -167,7 +167,7 @@ func server(c *cli.Context) error {
 					fmt.Fprintf(s, "error: %v\n", err)
 					return
 				}
-				err := proxy(s, host)
+				err := proxy(s, host, DynamicHostKey(db, host))
 				sessUpdate := Session{}
 				if err != nil {
 					fmt.Fprintf(s, "error: %v\n", err)

@@ -10,8 +10,8 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-func proxy(s ssh.Session, host *Host) error {
-	config, err := host.ClientConfig(s)
+func proxy(s ssh.Session, host *Host, hk gossh.HostKeyCallback) error {
+	config, err := host.ClientConfig(s, hk)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func proxy(s ssh.Session, host *Host) error {
 		return err
 	}
 
-	log.Println("SSH Connectin established")
+	log.Println("SSH Connection established")
 	return pipe(s.MaskedReqs(), rreqs, s, rch)
 }
 
@@ -76,10 +76,10 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 	return nil
 }
 
-func (host *Host) ClientConfig(_ ssh.Session) (*gossh.ClientConfig, error) {
+func (host *Host) ClientConfig(_ ssh.Session, hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
 	config := gossh.ClientConfig{
 		User:            host.User,
-		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hk,
 		Auth:            []gossh.AuthMethod{},
 	}
 	if host.SSHKey != nil {

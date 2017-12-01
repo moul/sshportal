@@ -34,6 +34,7 @@ type Setting struct {
 	Value string `valid:"required"`
 }
 
+// SSHKey defines a ssh client key (used by sshportal to connect to remote hosts)
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model
@@ -50,17 +51,18 @@ type SSHKey struct {
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
-	Addr        string       `valid:"required"`
-	User        string       `valid:"optional"`
-	Password    string       `valid:"optional"`
-	SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
-	SSHKeyID    uint         `gorm:"index"`
-	Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
-	Fingerprint string       `valid:"optional"` // FIXME: replace with hostKey ?
-	Comment     string       `valid:"optional"`
+	Name     string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+	Addr     string       `valid:"required"`
+	User     string       `valid:"optional"`
+	Password string       `valid:"optional"`
+	SSHKey   *SSHKey      `gorm:"ForeignKey:SSHKeyID"` // SSHKey used to connect by the client
+	SSHKeyID uint         `gorm:"index"`
+	HostKey  []byte       `sql:"size:10000" valid:"optional"`
+	Groups   []*HostGroup `gorm:"many2many:host_host_groups;"`
+	Comment  string       `valid:"optional"`
 }
 
+// UserKey defines a user public key used by sshportal to identify the user
 type UserKey struct {
 	gorm.Model
 	Key           []byte `sql:"size:10000" valid:"required,length(1|10000)"`
