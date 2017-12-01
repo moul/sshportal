@@ -286,11 +286,11 @@ GLOBAL OPTIONS:
 						}
 
 						config := Config{}
-						if err := db.Find(&config.Hosts).Error; err != nil {
+						if err := HostsPreload(db).Find(&config.Hosts).Error; err != nil {
 							return err
 						}
 
-						if err := db.Find(&config.SSHKeys).Error; err != nil {
+						if err := SSHKeysPreload(db).Find(&config.SSHKeys).Error; err != nil {
 							return err
 						}
 						for _, key := range config.SSHKeys {
@@ -304,7 +304,7 @@ GLOBAL OPTIONS:
 							}
 						}
 
-						if err := db.Find(&config.Hosts).Error; err != nil {
+						if err := HostsPreload(db).Find(&config.Hosts).Error; err != nil {
 							return err
 						}
 						for _, host := range config.Hosts {
@@ -318,22 +318,28 @@ GLOBAL OPTIONS:
 							}
 						}
 
-						if err := db.Find(&config.UserKeys).Error; err != nil {
+						if err := UserKeysPreload(db).Find(&config.UserKeys).Error; err != nil {
 							return err
 						}
-						if err := db.Find(&config.Users).Error; err != nil {
+						if err := UsersPreload(db).Find(&config.Users).Error; err != nil {
 							return err
 						}
-						if err := db.Find(&config.UserGroups).Error; err != nil {
+						if err := UserGroupsPreload(db).Find(&config.UserGroups).Error; err != nil {
 							return err
 						}
-						if err := db.Find(&config.HostGroups).Error; err != nil {
+						if err := HostGroupsPreload(db).Find(&config.HostGroups).Error; err != nil {
 							return err
 						}
-						if err := db.Find(&config.ACLs).Error; err != nil {
+						if err := ACLsPreload(db).Find(&config.ACLs).Error; err != nil {
 							return err
 						}
 						if err := db.Find(&config.Settings).Error; err != nil {
+							return err
+						}
+						if err := SessionsPreload(db).Find(&config.Sessions).Error; err != nil {
+							return err
+						}
+						if err := EventsPreload(db).Find(&config.Events).Error; err != nil {
 							return err
 						}
 						config.Date = time.Now()
@@ -372,6 +378,8 @@ GLOBAL OPTIONS:
 						fmt.Fprintf(s, "* %d Userkeys\n", len(config.UserKeys))
 						fmt.Fprintf(s, "* %d Users\n", len(config.Users))
 						fmt.Fprintf(s, "* %d Settings\n", len(config.Settings))
+						fmt.Fprintf(s, "* %d Sessions\n", len(config.Sessions))
+						fmt.Fprintf(s, "* %d Events\n", len(config.Events))
 
 						if !c.Bool("confirm") {
 							fmt.Fprintf(s, "restore will erase and replace everything in the database.\nIf you are ok, add the '--confirm' to the restore command\n")
@@ -380,8 +388,36 @@ GLOBAL OPTIONS:
 
 						tx := db.Begin()
 
+						// FIXME: handle different migrations:
+						//   1. drop tables
+						//   2. apply migrations `1` to `<backup-migration-id>`
+						//   3. restore data
+						//   4. continues migrations
+
+						// FIXME: tell the administrator to restart the server
+						// if the master host key changed
+
 						// FIXME: do everything in a transaction
-						for _, tableName := range []string{"hosts", "users", "acls", "host_groups", "user_groups", "ssh_keys", "user_keys", "settings"} {
+						tableNames := []string{
+							"acls",
+							"events",
+							"host_group_acls",
+							"host_groups",
+							"host_host_groups",
+							"hosts",
+							//"migrations",
+							"sessions",
+							"settings",
+							"ssh_keys",
+							"user_group_acls",
+							"user_groups",
+							"user_keys",
+							"user_roles",
+							"user_user_groups",
+							"user_user_roles",
+							"users",
+						}
+						for _, tableName := range tableNames {
 							if err := tx.Exec(fmt.Sprintf("DELETE FROM %s;", tableName)).Error; err != nil {
 								tx.Rollback()
 								return err
@@ -394,31 +430,31 @@ GLOBAL OPTIONS:
 									return err
 								}
 							}
-							if err := tx.Create(&host).Error; err != nil {
+							if err := tx.FirstOrCreate(&host).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, user := range config.Users {
-							if err := tx.Create(&user).Error; err != nil {
+							if err := tx.FirstOrCreate(&user).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, acl := range config.ACLs {
-							if err := tx.Create(&acl).Error; err != nil {
+							if err := tx.FirstOrCreate(&acl).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, hostGroup := range config.HostGroups {
-							if err := tx.Create(&hostGroup).Error; err != nil {
+							if err := tx.FirstOrCreate(&hostGroup).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, userGroup := range config.UserGroups {
-							if err := tx.Create(&userGroup).Error; err != nil {
+							if err := tx.FirstOrCreate(&userGroup).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -430,19 +466,31 @@ GLOBAL OPTIONS:
 									return err
 								}
 							}
-							if err := tx.Create(&sshKey).Error; err != nil {
+							if err := tx.FirstOrCreate(&sshKey).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, userKey := range config.UserKeys {
-							if err := tx.Create(&userKey).Error; err != nil {
+							if err := tx.FirstOrCreate(&userKey).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, setting := range config.Settings {
-							if err := tx.Create(&setting).Error; err != nil {
+							if err := tx.FirstOrCreate(&setting).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, session := range config.Sessions {
+							if err := tx.FirstOrCreate(&session).Error; err != nil {
+								tx.Rollback()
+								return err
+							}
+						}
+						for _, event := range config.Events {
+							if err := tx.FirstOrCreate(&event).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -1560,7 +1608,7 @@ GLOBAL OPTIONS:
 							if session.StoppedAt.IsZero() {
 								duration = humanize.RelTime(session.CreatedAt, time.Now(), "", "")
 							} else {
-								duration = humanize.RelTime(session.CreatedAt, session.StoppedAt, "", "")
+								duration = humanize.RelTime(session.CreatedAt, *session.StoppedAt, "", "")
 							}
 							duration = strings.Replace(duration, "now", "1 second", 1)
 							table.Append([]string{

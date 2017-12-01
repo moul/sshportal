@@ -24,8 +24,10 @@ type Config struct {
 	HostGroups []*HostGroup `json:"host_groups"`
 	ACLs       []*ACL       `json:"acls"`
 	Settings   []*Setting   `json:"settings"`
+	Events     []*Event     `json:"events"`
 	Sessions   []*Session   `json:"sessions"`
-	Date       time.Time    `json:"date"`
+	// FIXME: add latest migration
+	Date time.Time `json:"date"`
 }
 
 type Setting struct {
@@ -118,14 +120,14 @@ type ACL struct {
 
 type Session struct {
 	gorm.Model
-	StoppedAt time.Time `valid:"optional"`
-	Status    string    `valid:"required"`
-	User      *User     `gorm:"ForeignKey:UserID"`
-	Host      *Host     `gorm:"ForeignKey:HostID"`
-	UserID    uint      `valid:"optional"`
-	HostID    uint      `valid:"optional"`
-	ErrMsg    string    `valid:"optional"`
-	Comment   string    `valid:"optional"`
+	StoppedAt *time.Time `sql:"index" valid:"optional"`
+	Status    string     `valid:"required"`
+	User      *User      `gorm:"ForeignKey:UserID"`
+	Host      *Host      `gorm:"ForeignKey:HostID"`
+	UserID    uint       `valid:"optional"`
+	HostID    uint       `valid:"optional"`
+	ErrMsg    string     `valid:"optional"`
+	Comment   string     `valid:"optional"`
 }
 
 type Event struct {

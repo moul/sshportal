@@ -392,6 +392,45 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
 			},
+		}, {
+			ID: "26",
+			Migrate: func(tx *gorm.DB) error {
+				type Session struct {
+					gorm.Model
+					StoppedAt *time.Time `sql:"index" valid:"optional"`
+					Status    string     `valid:"required"`
+					User      *User      `gorm:"ForeignKey:UserID"`
+					Host      *Host      `gorm:"ForeignKey:HostID"`
+					UserID    uint       `valid:"optional"`
+					HostID    uint       `valid:"optional"`
+					ErrMsg    string     `valid:"optional"`
+					Comment   string     `valid:"optional"`
+				}
+				return tx.AutoMigrate(&Session{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "27",
+			Migrate: func(tx *gorm.DB) error {
+				var sessions []Session
+				if err := db.Find(&sessions).Error; err != nil {
+					return err
+				}
+
+				for _, session := range sessions {
+					if session.StoppedAt != nil && session.StoppedAt.IsZero() {
+						if err := db.Model(&session).Updates(map[string]interface{}{"stopped_at": nil}).Error; err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {

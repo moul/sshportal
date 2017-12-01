@@ -178,7 +178,8 @@ func server(c *cli.Context) error {
 					}
 				}
 				sessUpdate.Status = SessionStatusClosed
-				sessUpdate.StoppedAt = time.Now()
+				now := time.Now()
+				sessUpdate.StoppedAt = &now
 				db.Model(&sess).Updates(&sessUpdate)
 			case "deny":
 				fmt.Fprintf(s, "You don't have permission to that host.\n")

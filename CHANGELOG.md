@@ -6,6 +6,8 @@
 * Connection history
 * Audit log
 * Add dynamic strict host key checking (learning on the first time, strict on the next ones)
+* Add-back MySQL support (experimental)
+* Fix some backup/restore bugs
 
 ## v1.4.0 (2017-11-24)
 
