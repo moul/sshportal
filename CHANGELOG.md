@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.5.0 (2017-12-02)
 
 * Create Session objects on each connections (history)
