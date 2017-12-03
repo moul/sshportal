@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -35,7 +34,9 @@ var startTime = time.Now()
 
 func shell(globalContext *cli.Context, s ssh.Session, sshCommand []string, db *gorm.DB) error {
 	if len(sshCommand) == 0 {
-		io.WriteString(s, banner)
+		if _, err := fmt.Fprint(s, banner); err != nil {
+			return err
+		}
 	}
 
 	cli.AppHelpTemplate = `COMMANDS:
@@ -70,7 +71,7 @@ GLOBAL OPTIONS:
 						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `HOSTGROUPS` to the acl"},
 						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
-						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: "allow"},
+						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: ACLActionAllow},
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
 					Action: func(c *cli.Context) error {
@@ -85,7 +86,7 @@ GLOBAL OPTIONS:
 							Weight:      c.Uint("weight"),
 							Action:      c.String("action"),
 						}
-						if acl.Action != "allow" && acl.Action != "deny" {
+						if acl.Action != ACLActionAllow && acl.Action != ACLActionDeny {
 							return fmt.Errorf("invalid action %q, allowed values: allow, deny", acl.Action)
 						}
 						if _, err := govalidator.ValidateStruct(acl); err != nil {
@@ -418,7 +419,8 @@ GLOBAL OPTIONS:
 							"users",
 						}
 						for _, tableName := range tableNames {
-							if err := tx.Exec(fmt.Sprintf("DELETE FROM %s;", tableName)).Error; err != nil {
+							/* #nosec */
+							if err := tx.Exec(fmt.Sprintf("DELETE FROM %s", tableName)).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -952,10 +954,10 @@ GLOBAL OPTIONS:
 
 				fmt.Fprintf(s, "User email: %v\n", myself.ID)
 				fmt.Fprintf(s, "User email: %s\n", myself.Email)
-				fmt.Fprintf(s, "Version: %s\n", VERSION)
-				fmt.Fprintf(s, "GIT SHA: %s\n", GIT_SHA)
-				fmt.Fprintf(s, "GIT Branch: %s\n", GIT_BRANCH)
-				fmt.Fprintf(s, "GIT Tag: %s\n", GIT_TAG)
+				fmt.Fprintf(s, "Version: %s\n", Version)
+				fmt.Fprintf(s, "GIT SHA: %s\n", GitSha)
+				fmt.Fprintf(s, "GIT Branch: %s\n", GitBranch)
+				fmt.Fprintf(s, "GIT Tag: %s\n", GitTag)
 
 				// FIXME: add info about current server (network, cpu, ram, OS)
 				// FIXME: add info about current user
@@ -989,8 +991,8 @@ GLOBAL OPTIONS:
 
 						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
 						if globalContext.String("aes-key") != "" {
-							if err := SSHKeyEncrypt(globalContext.String("aes-key"), key); err != nil {
-								return err
+							if err2 := SSHKeyEncrypt(globalContext.String("aes-key"), key); err2 != nil {
+								return err2
 							}
 						}
 						if err != nil {
@@ -1167,7 +1169,7 @@ GLOBAL OPTIONS:
 							Name:        name,
 							Email:       email,
 							Comment:     c.String("comment"),
-							InviteToken: RandStringBytes(16),
+							InviteToken: randStringBytes(16),
 						}
 
 						if _, err := govalidator.ValidateStruct(user); err != nil {
@@ -1605,7 +1607,7 @@ GLOBAL OPTIONS:
 						table.SetCaption(true, fmt.Sprintf("Total: %d sessions.", len(sessions)))
 						for _, session := range sessions {
 							var duration string
-							if session.StoppedAt.IsZero() {
+							if session.StoppedAt == nil || session.StoppedAt.IsZero() {
 								duration = humanize.RelTime(session.CreatedAt, time.Now(), "", "")
 							} else {
 								duration = humanize.RelTime(session.CreatedAt, *session.StoppedAt, "", "")
@@ -1631,7 +1633,7 @@ GLOBAL OPTIONS:
 			Name:  "version",
 			Usage: "Shows the SSHPortal version information",
 			Action: func(c *cli.Context) error {
-				fmt.Fprintf(s, "%s\n", VERSION)
+				fmt.Fprintf(s, "%s\n", Version)
 				return nil
 			},
 		}, {
@@ -1653,22 +1655,21 @@ GLOBAL OPTIONS:
 
 			words, err := shlex.Split(line, true)
 			if err != nil {
-				io.WriteString(s, "syntax error.\n")
+				fmt.Fprint(s, "syntax error.\n")
 				continue
 			}
 			if len(words) == 1 && strings.ToLower(words[0]) == "exit" {
-				s.Exit(0)
-				return nil
+				return s.Exit(0)
 			}
 			NewEvent("shell", words[0]).SetAuthor(&myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
 				if cliErr, ok := err.(*cli.ExitError); ok {
 					if cliErr.ExitCode() != 0 {
-						io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+						fmt.Fprintf(s, "error: %v\n", err)
 					}
 					//s.Exit(cliErr.ExitCode())
 				} else {
-					io.WriteString(s, fmt.Sprintf("error: %v\n", err))
+					fmt.Fprintf(s, "error: %v\n", err)
 				}
 			}
 		}
@@ -1676,13 +1677,12 @@ GLOBAL OPTIONS:
 		NewEvent("shell", sshCommand[0]).SetAuthor(&myself).SetArg("interactive", false).SetArg("args", sshCommand[1:]).Log(db)
 		if err := app.Run(append([]string{"config"}, sshCommand...)); err != nil {
 			if errMsg := err.Error(); errMsg != "" {
-				io.WriteString(s, fmt.Sprintf("error: %s\n", errMsg))
+				fmt.Fprintf(s, "error: %s\n", errMsg)
 			}
 			if cliErr, ok := err.(*cli.ExitError); ok {
-				s.Exit(cliErr.ExitCode())
-			} else {
-				s.Exit(1)
+				return s.Exit(cliErr.ExitCode())
 			}
+			return s.Exit(1)
 		}
 	}
 

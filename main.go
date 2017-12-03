@@ -19,14 +19,14 @@ import (
 )
 
 var (
-	// VERSION should be updated by hand at each release
-	VERSION = "1.5.0+dev"
-	// GIT_TAG will be overwritten automatically by the build system
-	GIT_TAG string
-	// GIT_SHA will be overwritten automatically by the build system
-	GIT_SHA string
-	// GIT_BRANCH will be overwritten automatically by the build system
-	GIT_BRANCH string
+	// Version should be updated by hand at each release
+	Version = "1.5.0+dev"
+	// GitTag will be overwritten automatically by the build system
+	GitTag string
+	// GitSha will be overwritten automatically by the build system
+	GitSha string
+	// GitBranch will be overwritten automatically by the build system
+	GitBranch string
 )
 
 type sshportalContextKey string
@@ -43,7 +43,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
-	app.Version = VERSION + " (" + GIT_SHA + ")"
+	app.Version = Version + " (" + GitSha + ")"
 	app.Email = "https://github.com/moul/sshportal"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -93,7 +93,11 @@ func server(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() {
+		if err2 := db.Close(); err2 != nil {
+			panic(err2)
+		}
+	}()
 	if err = db.DB().Ping(); err != nil {
 		return err
 	}
@@ -136,19 +140,19 @@ func server(c *cli.Context) error {
 			// load up-to-date objects
 			// FIXME: cache them or try not to load them
 			var tmpUser User
-			if err := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", currentUser.ID).First(&tmpUser).Error; err != nil {
-				fmt.Fprintf(s, "error: %v\n", err)
+			if err2 := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", currentUser.ID).First(&tmpUser).Error; err2 != nil {
+				fmt.Fprintf(s, "error: %v\n", err2)
 				return
 			}
 			var tmpHost Host
-			if err := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err != nil {
-				fmt.Fprintf(s, "error: %v\n", err)
+			if err2 := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err2 != nil {
+				fmt.Fprintf(s, "error: %v\n", err2)
 				return
 			}
 
-			action, err := CheckACLs(tmpUser, tmpHost)
-			if err != nil {
-				fmt.Fprintf(s, "error: %v\n", err)
+			action, err2 := CheckACLs(tmpUser, tmpHost)
+			if err2 != nil {
+				fmt.Fprintf(s, "error: %v\n", err2)
 				return
 			}
 
@@ -157,21 +161,20 @@ func server(c *cli.Context) error {
 			SSHKeyDecrypt(c.String("aes-key"), host.SSHKey)
 
 			switch action {
-			case "allow":
+			case ACLActionAllow:
 				sess := Session{
 					UserID: currentUser.ID,
 					HostID: host.ID,
 					Status: SessionStatusActive,
 				}
-				if err := db.Create(&sess).Error; err != nil {
-					fmt.Fprintf(s, "error: %v\n", err)
+				if err2 := db.Create(&sess).Error; err2 != nil {
+					fmt.Fprintf(s, "error: %v\n", err2)
 					return
 				}
-				err := proxy(s, host, DynamicHostKey(db, host))
 				sessUpdate := Session{}
-				if err != nil {
-					fmt.Fprintf(s, "error: %v\n", err)
-					sessUpdate.ErrMsg = fmt.Sprintf("%v", err)
+				if err2 := proxy(s, host, DynamicHostKey(db, host)); err2 != nil {
+					fmt.Fprintf(s, "error: %v\n", err2)
+					sessUpdate.ErrMsg = fmt.Sprintf("%v", err2)
 					switch sessUpdate.ErrMsg {
 					case "lch closed the connection", "rch closed the connection":
 						sessUpdate.ErrMsg = ""
@@ -181,10 +184,10 @@ func server(c *cli.Context) error {
 				now := time.Now()
 				sessUpdate.StoppedAt = &now
 				db.Model(&sess).Updates(&sessUpdate)
-			case "deny":
+			case ACLActionDeny:
 				fmt.Fprintf(s, "You don't have permission to that host.\n")
 			default:
-				fmt.Fprintf(s, "error: %v\n", err)
+				fmt.Fprintf(s, "error: invalid ACL action: %q\n", action)
 			}
 
 		}
@@ -203,7 +206,7 @@ func server(c *cli.Context) error {
 		if userKey.UserID > 0 {
 			db.Preload("Roles").Where("id = ?", userKey.UserID).First(&user)
 			if strings.HasPrefix(username, "invite:") {
-				ctx.SetValue(errorContextKey, fmt.Errorf("invites are only supported for ney SSH keys; your ssh key is already associated with the user %q.", user.Email))
+				ctx.SetValue(errorContextKey, fmt.Errorf("invites are only supported for ney SSH keys; your ssh key is already associated with the user %q", user.Email))
 			}
 			ctx.SetValue(userContextKey, user)
 			return true

@@ -511,7 +511,7 @@ func dbInit(db *gorm.DB) error {
 	db.Table("users").Count(&count)
 	if count == 0 {
 		// if no admin, create an account for the first connection
-		inviteToken := RandStringBytes(16)
+		inviteToken := randStringBytes(16)
 		if os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN") != "" {
 			inviteToken = os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN")
 		}
@@ -567,6 +567,7 @@ func hardDeleteCallback(scope *gorm.Scope) {
 			extraOption = fmt.Sprint(str)
 		}
 
+		/* #nosec */
 		scope.Raw(fmt.Sprintf(
 			"DELETE FROM %v%v%v",
 			scope.QuotedTableName(),

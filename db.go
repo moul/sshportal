@@ -149,6 +149,14 @@ const (
 	SessionStatusClosed                = "closed"
 )
 
+type ACLAction string
+
+const (
+	ACLActionUnknown ACLAction = "unknown"
+	ACLActionAllow             = "allow"
+	ACLActionDeny              = "deny"
+)
+
 func init() {
 	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
 
@@ -201,6 +209,7 @@ func (host *Host) Hostname() string {
 }
 
 // Host helpers
+
 func HostsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Groups").Preload("SSHKey")
 }
@@ -209,6 +218,7 @@ func HostsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // SSHKey helpers
+
 func SSHKeysPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Hosts")
 }
@@ -217,6 +227,7 @@ func SSHKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // HostGroup helpers
+
 func HostGroupsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("ACLs").Preload("Hosts")
 }
@@ -224,7 +235,8 @@ func HostGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
 
-// UserGroup heleprs
+// UserGroup helpers
+
 func UserGroupsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("ACLs").Preload("Users")
 }
@@ -233,6 +245,7 @@ func UserGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // User helpers
+
 func UsersPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Groups").Preload("Keys").Preload("Roles")
 }
@@ -262,6 +275,7 @@ func UserCheckRoles(user User, names []string) error {
 }
 
 // ACL helpers
+
 func ACLsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("UserGroups").Preload("HostGroups")
 }
@@ -270,6 +284,7 @@ func ACLsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // UserKey helpers
+
 func UserKeysPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("User")
 }
@@ -278,6 +293,7 @@ func UserKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // UserRole helpers
+
 func UserRolesPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Users")
 }
@@ -286,6 +302,7 @@ func UserRolesByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // Session helpers
+
 func SessionsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("User").Preload("Host")
 }
@@ -294,6 +311,7 @@ func SessionsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 }
 
 // Events helpers
+
 func EventsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Author")
 }
@@ -311,7 +329,10 @@ func NewEvent(domain, action string) *Event {
 
 func (e *Event) Log(db *gorm.DB) {
 	if len(e.ArgsMap) > 0 {
-		e.Args, _ = json.Marshal(e.ArgsMap)
+		var err error
+		if e.Args, err = json.Marshal(e.ArgsMap); err != nil {
+			log.Printf("error: %v", err)
+		}
 	}
 	log.Printf("event: %v", e)
 	if err := db.Create(e).Error; err != nil {

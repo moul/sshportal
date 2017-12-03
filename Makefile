@@ -1,7 +1,7 @@
 GIT_SHA ?=	$(shell git rev-parse HEAD)
 GIT_TAG ?=	$(shell git describe --tags --always)
 GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
-LDFLAGS ?=	-X main.GIT_SHA=$(GIT_SHA) -X main.GIT_TAG=$(GIT_TAG) -X main.GIT_BRANCH=$(GIT_BRANCH)
+LDFLAGS ?=	-X main.GitSha=$(GIT_SHA) -X main.GitTag=$(GIT_TAG) -X main.GitBranch=$(GIT_BRANCH)
 VERSION ?=	$(shell grep 'VERSION =' main.go | cut -d'"' -f2)
 PORT ?=		2222
 AES_KEY ?=	my-dummy-aes-key
@@ -31,6 +31,10 @@ dev:
 test:
 	go test -i .
 	go test -v .
+
+.PHONY: lint
+lint:
+	gometalinter --disable-all --enable=errcheck --enable=vet --enable=vetshadow --enable=golint --enable=gas --enable=ineffassign --enable=goconst --enable=goimports --enable=gofmt --exclude="should have comment" --enable=staticcheck --enable=gosimple --enable=misspell --deadline=20s .
 
 .PHONY: backup
 backup:

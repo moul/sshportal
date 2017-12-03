@@ -15,17 +15,21 @@ func TestCheckACLs(t *testing.T) {
 		// create tmp dir
 		tempDir, err := ioutil.TempDir("", "sshportal")
 		So(err, ShouldBeNil)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			So(os.RemoveAll(tempDir), ShouldBeNil)
+		}()
 
 		// create sqlite db
 		db, err := gorm.Open("sqlite3", filepath.Join(tempDir, "sshportal.db"))
+		So(err, ShouldBeNil)
 		db.LogMode(false)
 		So(dbInit(db), ShouldBeNil)
 
 		// create dummy objects
-		hostGroup, err := FindHostGroupByIdOrName(db, "default")
+		var hostGroup HostGroup
+		err = HostGroupsByIdentifiers(db, []string{"default"}).First(&hostGroup).Error
 		So(err, ShouldBeNil)
-		db.Create(&Host{Groups: []HostGroup{*hostGroup}})
+		db.Create(&Host{Groups: []*HostGroup{&hostGroup}})
 
 		//. load db
 		var (
@@ -38,6 +42,6 @@ func TestCheckACLs(t *testing.T) {
 		// test
 		action, err := CheckACLs(users[0], hosts[0])
 		So(err, ShouldBeNil)
-		So(action, ShouldEqual, "allow")
+		So(action, ShouldEqual, ACLActionAllow)
 	})
 }

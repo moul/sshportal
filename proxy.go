@@ -11,7 +11,7 @@ import (
 )
 
 func proxy(s ssh.Session, host *Host, hk gossh.HostKeyCallback) error {
-	config, err := host.ClientConfig(s, hk)
+	config, err := host.clientConfig(s, hk)
 	if err != nil {
 		return err
 	}
@@ -20,7 +20,7 @@ func proxy(s ssh.Session, host *Host, hk gossh.HostKeyCallback) error {
 	if err != nil {
 		return err
 	}
-	defer rconn.Close()
+	defer func() { _ = rconn.Close() }()
 
 	rch, rreqs, err := rconn.OpenChannel("session", []byte{})
 	if err != nil {
@@ -33,8 +33,8 @@ func proxy(s ssh.Session, host *Host, hk gossh.HostKeyCallback) error {
 
 func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 	defer func() {
-		lch.Close()
-		rch.Close()
+		_ = lch.Close()
+		_ = rch.Close()
 	}()
 
 	errch := make(chan error, 1)
@@ -59,7 +59,9 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 			if err != nil {
 				return err
 			}
-			req.Reply(b, nil)
+			if err2 := req.Reply(b, nil); err2 != nil {
+				return err2
+			}
 		case req := <-rreqs: // forward ssh requests from remote to local
 			if req == nil {
 				return nil
@@ -68,15 +70,16 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 			if err != nil {
 				return err
 			}
-			req.Reply(b, nil)
+			if err2 := req.Reply(b, nil); err2 != nil {
+				return err2
+			}
 		case err := <-errch:
 			return err
 		}
 	}
-	return nil
 }
 
-func (host *Host) ClientConfig(_ ssh.Session, hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
+func (host *Host) clientConfig(_ ssh.Session, hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
 	config := gossh.ClientConfig{
 		User:            host.User,
 		HostKeyCallback: hk,

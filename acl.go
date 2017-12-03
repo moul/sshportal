@@ -26,10 +26,10 @@ func CheckACLs(user User, host Host) (string, error) {
 
 	// deny by default if no shared ACL
 	if len(aclMap) == 0 {
-		return "deny", nil // default action
+		return ACLActionDeny, nil // default action
 	}
 
-	// transofrm map to slice and sort it
+	// transform map to slice and sort it
 	acls := []*ACL{}
 	for _, acl := range aclMap {
 		acls = append(acls, acl)
