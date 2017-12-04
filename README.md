@@ -1,7 +1,10 @@
 # sshportal
 
 [![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
-[![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)]()
+[![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)](https://hub.docker.com/r/moul/sshportal/)
+[![GoDoc](https://godoc.org/github.com/moul/sshportal?status.svg)](https://godoc.org/github.com/moul/sshportal)
+[![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/release/moul/sshportal.svg)](https://github.com/moul/sshportal/releases)
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
