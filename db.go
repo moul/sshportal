@@ -327,6 +327,10 @@ func NewEvent(domain, action string) *Event {
 	}
 }
 
+func (e *Event) String() string {
+	return fmt.Sprintf("%s %s %s %s", e.Domain, e.Action, e.Entity, string(e.Args))
+}
+
 func (e *Event) Log(db *gorm.DB) {
 	if len(e.ArgsMap) > 0 {
 		var err error
@@ -334,7 +338,7 @@ func (e *Event) Log(db *gorm.DB) {
 			log.Printf("error: %v", err)
 		}
 	}
-	log.Printf("event: %v", e)
+	log.Printf("info: %s", e)
 	if err := db.Create(e).Error; err != nil {
 		log.Printf("warning: %v", err)
 	}

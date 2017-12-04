@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -12,7 +13,9 @@ import (
 )
 
 func dbInit(db *gorm.DB) error {
+	log.SetOutput(ioutil.Discard)
 	db.Callback().Delete().Replace("gorm:delete", hardDeleteCallback)
+	log.SetOutput(os.Stderr)
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
 		{
@@ -530,7 +533,7 @@ func dbInit(db *gorm.DB) error {
 		if err := db.Create(&user).Error; err != nil {
 			return err
 		}
-		log.Printf("Admin user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
+		log.Printf("info 'admin' user created, use the user 'invite:%s' to associate a public key with this account", user.InviteToken)
 	}
 
 	// create host ssh key

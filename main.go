@@ -269,6 +269,6 @@ func server(c *cli.Context) error {
 		return nil
 	})
 
-	log.Printf("SSH Server accepting connections on %s", c.String("bind-address"))
+	log.Printf("info: SSH Server accepting connections on %s", c.String("bind-address"))
 	return ssh.ListenAndServe(c.String("bind-address"), nil, opts...)
 }
