@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* Add `--latest` and `--quiet` options to `ls` commands
 
 ## v1.5.0 (2017-12-02)
 

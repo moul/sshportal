@@ -141,14 +141,35 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists ACLs",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest ACL"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
-						var acls []ACL
-						if err := db.Order("created_at desc").Preload("UserGroups").Preload("HostGroups").Find(&acls).Error; err != nil {
-							return err
+
+						var acls []*ACL
+						query := db.Order("created_at desc").Preload("UserGroups").Preload("HostGroups")
+						if c.Bool("latest") {
+							var acl ACL
+							if err := query.First(&acl).Error; err != nil {
+								return err
+							}
+							acls = append(acls, &acl)
+						} else {
+							if err := query.Find(&acls).Error; err != nil {
+								return err
+							}
 						}
+						if c.Bool("quiet") {
+							for _, acl := range acls {
+								fmt.Fprintln(s, acl.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Weight", "User groups", "Host groups", "Host pattern", "Action", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
@@ -544,15 +565,36 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists events",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest event"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
 						var events []Event
-						if err := db.Order("created_at desc").Preload("Author").Find(&events).Error; err != nil {
-							return err
+						query := db.Order("created_at desc").Preload("Author")
+						if c.Bool("latest") {
+							var event Event
+							if err := query.First(&event).Error; err != nil {
+								return err
+							}
+							events = append(events, event)
+						} else {
+							if err := query.Find(&events).Error; err != nil {
+								return err
+							}
 						}
+
+						if c.Bool("quiet") {
+							for _, event := range events {
+								fmt.Fprintln(s, event.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Author", "Domain", "Action", "Entity", "Args", "Date"})
 						table.SetBorder(false)
@@ -691,15 +733,36 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists hosts",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest host"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin", "listhosts"}); err != nil {
 							return err
 						}
 
 						var hosts []*Host
-						if err := db.Order("created_at desc").Preload("Groups").Find(&hosts).Error; err != nil {
-							return err
+						query := db.Order("created_at desc").Preload("Groups")
+						if c.Bool("latest") {
+							var host Host
+							if err := query.First(&host).Error; err != nil {
+								return err
+							}
+							hosts = append(hosts, &host)
+						} else {
+							if err := query.Find(&hosts).Error; err != nil {
+								return err
+							}
 						}
+
+						if c.Bool("quiet") {
+							for _, host := range hosts {
+								fmt.Fprintln(s, host.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Groups", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
@@ -884,15 +947,36 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists host groups",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest host group"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
 						var hostGroups []*HostGroup
-						if err := db.Order("created_at desc").Preload("ACLs").Preload("Hosts").Find(&hostGroups).Error; err != nil {
-							return err
+						query := db.Order("created_at desc").Preload("ACLs").Preload("Hosts")
+						if c.Bool("latest") {
+							var hostGroup HostGroup
+							if err := query.First(&hostGroup).Error; err != nil {
+								return err
+							}
+							hostGroups = append(hostGroups, &hostGroup)
+						} else {
+							if err := query.Find(&hostGroups).Error; err != nil {
+								return err
+							}
 						}
+
+						if c.Bool("quiet") {
+							for _, hostGroup := range hostGroups {
+								fmt.Fprintln(s, hostGroup.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Name", "Hosts", "ACLs", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
@@ -1047,20 +1131,40 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists keys",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest key"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
-						var keys []SSHKey
-						if err := db.Order("created_at desc").Preload("Hosts").Find(&keys).Error; err != nil {
-							return err
+						var sshKeys []*SSHKey
+						query := db.Order("created_at desc").Preload("Hosts")
+						if c.Bool("latest") {
+							var sshKey SSHKey
+							if err := query.First(&sshKey).Error; err != nil {
+								return err
+							}
+							sshKeys = append(sshKeys, &sshKey)
+						} else {
+							if err := query.Find(&sshKeys).Error; err != nil {
+								return err
+							}
 						}
+						if c.Bool("quiet") {
+							for _, sshKey := range sshKeys {
+								fmt.Fprintln(s, sshKey.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Name", "Type", "Length", "Hosts", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
-						table.SetCaption(true, fmt.Sprintf("Total: %d keys.", len(keys)))
-						for _, key := range keys {
+						table.SetCaption(true, fmt.Sprintf("Total: %d keys.", len(sshKeys)))
+						for _, key := range sshKeys {
 							table.Append([]string{
 								fmt.Sprintf("%d", key.ID),
 								key.Name,
@@ -1195,15 +1299,35 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists users",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest user"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
-						var users []User
-						if err := db.Order("created_at desc").Preload("Groups").Preload("Roles").Preload("Keys").Find(&users).Error; err != nil {
-							return err
+						var users []*User
+						query := db.Order("created_at desc").Preload("Groups").Preload("Roles").Preload("Keys")
+						if c.Bool("latest") {
+							var user User
+							if err := query.First(&user).Error; err != nil {
+								return err
+							}
+							users = append(users, &user)
+						} else {
+							if err := query.Find(&users).Error; err != nil {
+								return err
+							}
 						}
+						if c.Bool("quiet") {
+							for _, user := range users {
+								fmt.Fprintln(s, user.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Name", "Email", "Roles", "Keys", "Groups", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
@@ -1395,15 +1519,35 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists user groups",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest user group"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
 						var userGroups []*UserGroup
-						if err := db.Order("created_at desc").Preload("ACLs").Preload("Users").Find(&userGroups).Error; err != nil {
-							return err
+						query := db.Order("created_at desc").Preload("ACLs").Preload("Users")
+						if c.Bool("latest") {
+							var userGroup UserGroup
+							if err := query.First(&userGroup).Error; err != nil {
+								return err
+							}
+							userGroups = append(userGroups, &userGroup)
+						} else {
+							if err := query.Find(&userGroups).Error; err != nil {
+								return err
+							}
 						}
+						if c.Bool("quiet") {
+							for _, userGroup := range userGroups {
+								fmt.Fprintln(s, userGroup.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "Name", "Users", "ACLs", "Update", "Create", "Comment"})
 						table.SetBorder(false)
@@ -1520,20 +1664,40 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists userkeys",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest user key"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
-						var userkeys []UserKey
-						if err := db.Order("created_at desc").Preload("User").Find(&userkeys).Error; err != nil {
-							return err
+						var userKeys []*UserKey
+						query := db.Order("created_at desc").Preload("User")
+						if c.Bool("latest") {
+							var userKey UserKey
+							if err := query.First(&userKey).Error; err != nil {
+								return err
+							}
+							userKeys = append(userKeys, &userKey)
+						} else {
+							if err := query.Find(&userKeys).Error; err != nil {
+								return err
+							}
 						}
+						if c.Bool("quiet") {
+							for _, userKey := range userKeys {
+								fmt.Fprintln(s, userKey.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "User", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
-						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userkeys)))
-						for _, userkey := range userkeys {
+						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userKeys)))
+						for _, userkey := range userKeys {
 							table.Append([]string{
 								fmt.Sprintf("%d", userkey.ID),
 								userkey.User.Email,
@@ -1592,15 +1756,35 @@ GLOBAL OPTIONS:
 				}, {
 					Name:  "ls",
 					Usage: "Lists sessions",
+					Flags: []cli.Flag{
+						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest session"},
+						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
+					},
 					Action: func(c *cli.Context) error {
 						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
 							return err
 						}
 
-						var sessions []Session
-						if err := db.Order("created_at desc").Preload("User").Preload("Host").Find(&sessions).Error; err != nil {
-							return err
+						var sessions []*Session
+						query := db.Order("created_at desc").Preload("User").Preload("Host")
+						if c.Bool("latest") {
+							var session Session
+							if err := query.First(&session).Error; err != nil {
+								return err
+							}
+							sessions = append(sessions, &session)
+						} else {
+							if err := query.Find(&sessions).Error; err != nil {
+								return err
+							}
 						}
+						if c.Bool("quiet") {
+							for _, session := range sessions {
+								fmt.Fprintln(s, session.ID)
+							}
+							return nil
+						}
+
 						table := tablewriter.NewWriter(s)
 						table.SetHeader([]string{"ID", "User", "Host", "Status", "Start", "Duration", "Error", "Comment"})
 						table.SetBorder(false)

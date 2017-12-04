@@ -138,7 +138,7 @@ You can enter in interactive mode using this syntax: `ssh admin@portal.example.o
 acl help
 acl create [-h] [--hostgroup=HOSTGROUP...] [--usergroup=USERGROUP...] [--pattern=<value>] [--comment=<value>] [--action=<value>] [--weight=value]
 acl inspect [-h] ACL...
-acl ls [-h]
+acl ls [-h] [--latest] [--quiet]
 acl rm [-h] ACL...
 acl update [-h] [--comment=<value>] [--action=<value>] [--weight=<value>] [--assign-hostgroup=HOSTGROUP...] [--unassign-hostgroup=HOSTGROUP...] [--assign-usergroup=USERGROUP...] [--unassign-usergroup=USERGROUP...] ACL...
 
@@ -149,14 +149,14 @@ config restore [-h] [--confirm] [--decrypt]
 
 # event management
 event help
-event ls [-h]
+event ls [-h] [--latest] [--quiet]
 event inspect [-h] EVENT...
 
 # host management
 host help
 host create [-h] [--name=<value>] [--password=<value>] [--comment=<value>] [--key=KEY] [--group=HOSTGROUP...] <username>[:<password>]@<host>[:<port>]
 host inspect [-h] [--decrypt] HOST...
-host ls [-h]
+host ls [-h] [--latest] [--quiet]
 host rm [-h] HOST...
 host update [-h] [--name=<value>] [--comment=<value>] [--key=KEY] [--assign-group=HOSTGROUP...] [--unassign-group=HOSTGROUP...] HOST...
 
@@ -164,27 +164,27 @@ host update [-h] [--name=<value>] [--comment=<value>] [--key=KEY] [--assign-grou
 hostgroup help
 hostgroup create [-h] [--name=<value>] [--comment=<value>]
 hostgroup inspect [-h] HOSTGROUP...
-hostgroup ls [-h]
+hostgroup ls [-h] [--latest] [--quiet]
 hostgroup rm [-h] HOSTGROUP...
 
 # key management
 key help
 key create [-h] [--name=<value>] [--type=<value>] [--length=<value>] [--comment=<value>]
 key inspect [-h] [--decrypt] KEY...
-key ls [-h]
+key ls [-h] [--latest] [--quiet]
 key rm [-h] KEY...
 key setup [-h] KEY
 
 # session management
 session help
-session ls [-h]
+session ls [-h] [--latest] [--quiet]
 session inspect [-h] SESSION...
 
 # user management
 user help
 user invite [-h] [--name=<value>] [--comment=<value>] [--group=USERGROUP...] <email>
 user inspect [-h] USER...
-user ls [-h]
+user ls [-h] [--latest] [--quiet]
 user rm [-h] USER...
 user update [-h] [--name=<value>] [--email=<value>] [--set-admin] [--unset-admin] [--assign-group=USERGROUP...] [--unassign-group=USERGROUP...] USER...
 
@@ -192,7 +192,7 @@ user update [-h] [--name=<value>] [--email=<value>] [--set-admin] [--unset-admin
 usergroup help
 hostgroup create [-h] [--name=<value>] [--comment=<value>]
 usergroup inspect [-h] USERGROUP...
-usergroup ls [-h]
+usergroup ls [-h] [--latest] [--quiet]
 usergroup rm [-h] USERGROUP...
 
 # other
