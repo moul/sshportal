@@ -45,9 +45,7 @@ GLOBAL OPTIONS:
    {{range .VisibleFlags}}{{.}}
    {{end}}{{end}}
 `
-	cli.OsExiter = func(c int) {
-		return
-	}
+	cli.OsExiter = func(c int) {}
 	cli.HelpFlag = cli.BoolFlag{
 		Name:   "help, h",
 		Hidden: true,
