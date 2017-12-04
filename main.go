@@ -72,6 +72,11 @@ func main() {
 			Value: "admin",
 		},
 		cli.StringFlag{
+			Name:  "healthcheck-user",
+			Usage: "SSH user that returns healthcheck status without checking the SSH key",
+			Value: "healthcheck",
+		},
+		cli.StringFlag{
 			Name:  "aes-key",
 			Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
 		},
@@ -123,6 +128,9 @@ func server(c *cli.Context) error {
 		}
 
 		switch username := s.User(); {
+		case username == c.String("healthcheck-user"):
+			fmt.Fprintln(s, "OK")
+			return
 		case username == currentUser.Name || username == currentUser.Email || username == c.String("config-user"):
 			if err := shell(c, s, s.Command(), db); err != nil {
 				fmt.Fprintf(s, "error: %v\n", err)

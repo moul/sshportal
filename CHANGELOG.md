@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * Add `--latest` and `--quiet` options to `ls` commands
+* Add `healthcheck` user
 
 ## v1.5.0 (2017-12-02)
 

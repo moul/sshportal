@@ -38,6 +38,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Session management
 * Audit log
 * Host Keys verifications shared across users
+* Healthcheck user
 
 ## Usage
 
@@ -316,3 +317,15 @@ ssh whoami@portal
 ssh portal host create test@chat.shazow.net
 ssh chat@portal
 ```
+
+## Healthcheck
+
+By default, `sshportal` will return `OK` to anyone sshing using the `healthcheck` user without checking for authentication.
+
+```console
+$ ssh healthcheck@sshportal
+OK
+$
+```
+
+the `healtcheck` user can be changed using the `healthcheck-user` option.
