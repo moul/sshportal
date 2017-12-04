@@ -1,6 +1,7 @@
 # sshportal
 
 [![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
+[![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)]()
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
