@@ -1,0 +1,17 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.8
+      # - image: circleci/mysql:9.4
+
+    working_directory: /go/src/github.com/moul/sshportal
+    steps:
+      - checkout
+      - run: make install
+      - run: go get -v -t .
+      - run: make test
+      # - run: make integration
+      - run: go get -u github.com/alecthomas/gometalinter
+      - run: gometalinter --install
+      - run: make lint

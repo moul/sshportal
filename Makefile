@@ -8,7 +8,7 @@ AES_KEY ?=	my-dummy-aes-key
 
 .PHONY: install
 install:
-	go install -ldflags '$(LDFLAGS)' .
+	go install -v -ldflags '$(LDFLAGS)' .
 
 .PHONY: docker.build
 docker.build:
