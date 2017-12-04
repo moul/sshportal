@@ -1,5 +1,7 @@
 # sshportal
 
+[![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
+
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
 ```
