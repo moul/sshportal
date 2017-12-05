@@ -181,6 +181,7 @@ key inspect [-h] [--decrypt] KEY...
 key ls [-h] [--latest] [--quiet]
 key rm [-h] KEY...
 key setup [-h] KEY
+key show [-h] KEY
 
 # session management
 session help
