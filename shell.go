@@ -15,6 +15,7 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
+	"github.com/mgutz/ansi"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
@@ -1112,7 +1113,7 @@ GLOBAL OPTIONS:
 						}
 
 						var keys []*SSHKey
-						if err := SSHKeysByIdentifiers(db, c.Args()).Find(&keys).Error; err != nil {
+						if err := SSHKeysByIdentifiers(SSHKeysPreload(db), c.Args()).Find(&keys).Error; err != nil {
 							return err
 						}
 
@@ -1210,6 +1211,80 @@ GLOBAL OPTIONS:
 							return err
 						}
 						fmt.Fprintf(s, "umask 077; mkdir -p .ssh; echo %s sshportal >> .ssh/authorized_keys\n", key.PubKey)
+						return nil
+					},
+				}, {
+					Name:      "show",
+					Usage:     "Shows standard information on a `KEY`",
+					ArgsUsage: "KEY",
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						// not checking roles, everyone with an account can see how to enroll new hosts
+
+						var key SSHKey
+						if err := SSHKeysByIdentifiers(SSHKeysPreload(db), c.Args()).First(&key).Error; err != nil {
+							return err
+						}
+						SSHKeyDecrypt(globalContext.String("aes-key"), &key)
+
+						type line struct {
+							key   string
+							value string
+						}
+						type section struct {
+							name  string
+							lines []line
+						}
+						var hosts []string
+						for _, host := range key.Hosts {
+							hosts = append(hosts, host.Name)
+						}
+						sections := []section{
+							{
+								name: "General",
+								lines: []line{
+									{"Name", key.Name},
+									{"Type", key.Type},
+									{"Length", fmt.Sprintf("%d", key.Length)},
+									{"Comment", key.Comment},
+								},
+							}, {
+								name: "Relationships",
+								lines: []line{
+									{"Linked hosts", fmt.Sprintf("%s (%d)", strings.Join(hosts, ", "), len(hosts))},
+								},
+							}, {
+								name: "Crypto",
+								lines: []line{
+									{"authorized_key format", key.PubKey},
+									{"Private Key", key.PrivKey},
+								},
+							}, {
+								name: "Help",
+								lines: []line{
+									{"inspect", fmt.Sprintf("ssh sshportal key inspect %s", key.Name)},
+									{"setup", fmt.Sprintf(`ssh user@example.com "$(ssh sshportal key setup %s)"`, key.Name)},
+								},
+							},
+						}
+
+						valueColor := ansi.ColorFunc("white")
+						titleColor := ansi.ColorFunc("magenta+bh")
+						keyColor := ansi.ColorFunc("red+bh")
+						for _, section := range sections {
+							fmt.Fprintf(s, "%s\n%s\n", titleColor(section.name), strings.Repeat("=", len(section.name)))
+							for _, line := range section.lines {
+								if strings.Contains(line.value, "\n") {
+									fmt.Fprintf(s, "%s:\n%s\n", keyColor(line.key), valueColor(line.value))
+								} else {
+									fmt.Fprintf(s, "%s: %s\n", keyColor(line.key), valueColor(line.value))
+								}
+							}
+							fmt.Fprintf(s, "\n")
+						}
 						return nil
 					},
 				},
