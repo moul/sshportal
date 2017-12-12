@@ -340,3 +340,7 @@ $
 ```
 
 the `healtcheck` user can be changed using the `healthcheck-user` option.
+
+---
+
+This is totally experimental for now, so please file issues to let me know what you think about it!
