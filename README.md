@@ -8,6 +8,12 @@
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
+![sshportal server](https://github.com/moul/sshportal/raw/master/.assets/server.gif)
+
+![sshportal client (ssh)](https://github.com/moul/sshportal/raw/master/.assets/client.gif)
+
+---
+
 ```
                        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
                                   DMZ           │
