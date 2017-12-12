@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.6.0 (2017-12-12)
 
 * Add `--latest` and `--quiet` options to `ls` commands
 * Add `healthcheck` user
