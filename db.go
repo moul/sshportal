@@ -1,4 +1,3 @@
-//go:generate stringer -type=SessionStatus
 package main
 
 import (

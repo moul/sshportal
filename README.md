@@ -32,23 +32,25 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
 ## Features
 
-* Host management
-* User management
-* User Group management
-* Host Group management
-* Host Key management
-* User Key management
-* ACL management
-* Connect to host using key or password
+* Single autonomous binary (~10-20Mb) with no runtime dependencies (embeds ssh server and client)
+* Portable / Cross-platform
+* Store data in Sqlite3 or MySQL (probably easy to add postgres, mssql thanks to gorm)
+* Stateless -> horizontally scalable when using MySQL as the backend
+* Connect to remote host using key or password
 * Admin commands can be run directly or in an interactive shell
-* User Roles
-* User invitations
-* Easy authorized_keys installation
+* Host management
+* User management (invite, group, stats)
+* Host Key management (remote host key learning)
+* User Key management (multile keys per user)
+* ACL management (acl+user-groups+host-groups)
+* User roles (admin, trusted, standard, ...)
+* User invitations (no more "give me your public ssh key please")
+* Easy server installation (generate shell command to setup `authorized_keys`)
 * Sensitive data encryption
-* Session management
-* Audit log
+* Session management (see active connections, history, stats, stop)
+* Audit log (logging every user action)
 * Host Keys verifications shared across users
-* Healthcheck user
+* Healthcheck user (replying OK to any user)
 
 ## Usage
 
@@ -121,10 +123,12 @@ bart@foo>
 
 Invite friends
 
+*This command doesn't create a user on the remote server, it only creates an account in the sshportal database.*
+
 ```console
 config> user invite bob@example.com
 User 2 created.
-To associate this account with a key, use the following SSH user: 'invite-NfHK5a84jjJkwzDk'.
+To associate this account with a key, use the following SSH user: 'invite:NfHK5a84jjJkwzDk'.
 config>
 ```
 
@@ -341,6 +345,23 @@ $
 
 the `healtcheck` user can be changed using the `healthcheck-user` option.
 
----
+## Under the hood
+
+* Docker first (used in dev, tests, by the CI and in production)
+* Backed by (see [dep graph](https://godoc.org/github.com/moul/sshportal?import-graph&hide=2)):
+  * SSH
+    * https://github.com/gliderlabs/ssh: SSH server made easy (well-designed golang library to build SSH servers)
+    * https://godoc.org/golang.org/x/crypto/ssh: both client and server SSH protocol and helpers
+  * Database
+    * https://github.com/jinzhu/gorm/: SQL orm
+    * https://github.com/go-gormigrate/gormigrate: Database migration system
+  * Built-in shell
+    * https://github.com/olekukonko/tablewriter: Ascii tables
+    * https://github.com/asaskevich/govalidator: Valide user inputs
+    * https://github.com/dustin/go-humanize: Human-friendly representation of technical data (time ago, bytes, ...)
+    * https://github.com/mgutz/ansi: Terminal color helpers
+    * https://github.com/urfave/cli: CLI flag parsing with subcommands support
+
+## Note
 
 This is totally experimental for now, so please file issues to let me know what you think about it!
