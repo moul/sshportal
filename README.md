@@ -362,6 +362,8 @@ the `healtcheck` user can be changed using the `healthcheck-user` option.
     * https://github.com/mgutz/ansi: Terminal color helpers
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
 
+[SQL schema](https://github.com/moul/sshportal/blob/master/.assets/sql-schema.svg)
+
 ## Note
 
 This is totally experimental for now, so please file issues to let me know what you think about it!
