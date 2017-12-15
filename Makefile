@@ -40,3 +40,7 @@ lint:
 backup:
 	mkdir -p data/backups
 	cp sshportal.db data/backups/$(shell date +%s)-$(VERSION)-sshportal.sqlite
+
+doc:
+	dot -Tsvg ./.assets/overview.dot > ./.assets/overview.svg
+	dot -Tsvg ./.assets/cluster-mysql.dot > ./.assets/cluster-mysql.svg
