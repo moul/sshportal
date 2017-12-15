@@ -1918,6 +1918,9 @@ GLOBAL OPTIONS:
 			if len(words) == 1 && strings.ToLower(words[0]) == "exit" {
 				return s.Exit(0)
 			}
+			if len(words) == 0 {
+				continue
+			}
 			NewEvent("shell", words[0]).SetAuthor(&myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
 				if cliErr, ok := err.(*cli.ExitError); ok {

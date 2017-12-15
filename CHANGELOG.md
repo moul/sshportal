@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* Fix panic when entering empty command (fix [#13](https://github.com/moul/sshportal/issues/13))
 
 ## v1.6.0 (2017-12-12)
 
