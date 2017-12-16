@@ -2,6 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
 [![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)](https://hub.docker.com/r/moul/sshportal/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/moul/sshportal)](https://goreportcard.com/report/github.com/moul/sshportal)
 [![GoDoc](https://godoc.org/github.com/moul/sshportal?status.svg)](https://godoc.org/github.com/moul/sshportal)
 [![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/moul/sshportal.svg)](https://github.com/moul/sshportal/releases)
@@ -19,7 +20,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 ## Features
 
 * Single autonomous binary (~10-20Mb) with no runtime dependencies (embeds ssh server and client)
-* Portable / Cross-platform
+* Portable / Cross-platform (regularly tested on linux and OSX/darwin)
 * Store data in [Sqlite3](https://www.sqlite.org/) or [MySQL](https://www.mysql.com) (probably easy to add postgres, mssql thanks to gorm)
 * Stateless -> horizontally scalable when using [MySQL](https://www.mysql.com) as the backend
 * Connect to remote host using key or password
@@ -37,6 +38,15 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Audit log (logging every user action)
 * Host Keys verifications shared across users
 * Healthcheck user (replying OK to any user)
+* ipv4 and ipv6 support
+* [`scp`](https://linux.die.net/man/1/scp) support
+* [`rsync`](https://linux.die.net/man/1/rsync) support
+* Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
+* Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH 
+
+## (Known) limitations
+
+* Does not work (yet?) with [`mosh`](https://mosh.org/)
 
 ## Usage
 
