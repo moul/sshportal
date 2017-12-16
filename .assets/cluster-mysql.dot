@@ -1,0 +1,30 @@
+graph {
+  rankdir=LR;
+  subgraph cluster_sshportal {
+    label="sshportal cluster";
+    edge[style=dashed,color=grey,constraint=false];
+    sshportal1; sshportal2; sshportal3; sshportalN;
+    sshportal1 -- MySQL;
+    sshportal2 -- MySQL;
+    sshportal3 -- MySQL;
+    sshportalN -- MySQL;
+  }
+
+  subgraph cluster_hosts {
+    label="hosts";
+    host1; host2; host3; hostN;
+  }
+
+  subgraph cluster_users {
+    label="users";
+    user1; user2; user3; userN;
+  }
+
+  {
+    user1 -- sshportal1 -- host1[color=red,penwidth=3.0];
+    user2 -- sshportal2 -- host2[color=green,penwidth=3.0];
+    user3 -- sshportal3 -- host3[color=blue,penwidth=3.0];
+    user3 -- sshportal2 -- host1[color=purple,penwidth=3.0];
+    userN -- sshportalN -- hostN[style=dotted];
+  }
+}

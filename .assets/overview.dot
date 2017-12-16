@@ -1,0 +1,16 @@
+graph {
+  rankdir=LR;
+  node[shape=box,style=rounded,style=rounded,fillcolor=gray];
+
+  db[color=gray];
+
+  user1 -- sshportal -- host1[color=red,penwidth=3.0];
+  user2 -- sshportal -- host2[color=blue,penwidth=3.0];
+  user3 -- sshportal -- host1[color=purple,penwidth=3.0];
+  user2 -- sshportal -- host3[color=green,penwidth=3.0];
+  userN -- sshportal[style=dotted];
+  sshportal -- hostN[style=dotted];
+  sshportal -- db[style=dotted,color=grey];
+
+  { rank=same; sshportal; db; }
+}

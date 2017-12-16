@@ -12,30 +12,16 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
 ---
 
-```
-                       ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-                                  DMZ           │
-┌────────┐             │             ┌────────┐
-│ homer  │───▶╔═════════════════╗───▶│ host1  │ │
-└────────┘    ║                 ║    └────────┘
-┌────────┐    ║                 ║    ┌────────┐ │
-│  bart  │───▶║    sshportal    ║───▶│ host2  │
-└────────┘    ║                 ║    └────────┘ │
-┌────────┐    ║                 ║    ┌────────┐
-│  lisa  │───▶╚═════════════════╝───▶│ host3  │ │
-└────────┘             │             └────────┘
-┌────────┐                           ┌────────┐ │
-│  ...   │             │             │  ...   │
-└────────┘                           └────────┘ │
-                       └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-```
+## Overview
+
+![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.svg?sanitize=true)
 
 ## Features
 
 * Single autonomous binary (~10-20Mb) with no runtime dependencies (embeds ssh server and client)
 * Portable / Cross-platform
-* Store data in Sqlite3 or MySQL (probably easy to add postgres, mssql thanks to gorm)
-* Stateless -> horizontally scalable when using MySQL as the backend
+* Store data in [Sqlite3](https://www.sqlite.org/) or [MySQL](https://www.mysql.com) (probably easy to add postgres, mssql thanks to gorm)
+* Stateless -> horizontally scalable when using [MySQL](https://www.mysql.com) as the backend
 * Connect to remote host using key or password
 * Admin commands can be run directly or in an interactive shell
 * Host management
@@ -345,6 +331,18 @@ $
 
 the `healtcheck` user can be changed using the `healthcheck-user` option.
 
+## Scaling
+
+`sshportal` is stateless but relies on a database to store configuration and logs.
+
+By default, `sshportal` uses a local [sqlite](https://www.sqlite.org/) database which isn't scalable by design.
+
+You can run multiple instances of `sshportal` sharing a same [MySQL](https://www.mysql.com) database, using `sshportal --db-conn=user:pass@host/dbname?parseTime=true --db-driver=mysql`.
+
+![sshportal cluster with MySQL backend](https://raw.github.com/moul/sshportal/master/.assets/cluster-mysql.svg?sanitize=true)
+
+See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql).
+
 ## Under the hood
 
 * Docker first (used in dev, tests, by the CI and in production)
@@ -362,7 +360,7 @@ the `healtcheck` user can be changed using the `healthcheck-user` option.
     * https://github.com/mgutz/ansi: Terminal color helpers
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
 
-[SQL schema](https://github.com/moul/sshportal/blob/master/.assets/sql-schema.svg)
+![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.svg?sanitize=true)
 
 ## Note
 
