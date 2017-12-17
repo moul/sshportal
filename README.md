@@ -129,7 +129,11 @@ To associate this account with a key, use the following SSH user: 'invite:NfHK5a
 config>
 ```
 
-## CLI
+## Flow Diagram
+
+![Flow Diagram](https://raw.github.com/moul/sshportal/master/.assets/flow-diagram.svg?sanitize=true)
+
+## built-in shell
 
 `sshportal` embeds a configuration CLI.
 

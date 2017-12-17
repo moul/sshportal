@@ -1,0 +1,65 @@
+digraph {
+    rankdir=LR;
+    layout=dot;
+    node[shape=record];
+    
+    start[label="ssh sshportal";color=blue;fontcolor=blue;fontsize=20];
+    
+    subgraph cluster_sshportal {
+        graph[fontsize=20;style=dashed;color=purple;fontcolor=purple];
+        label="sshportal";
+        {
+            node[color=darkorange;fontcolor=darkorange];
+            known_user_key[label="known user key"];
+            unknown_user_key[label="unknown user key"];
+            invite_manager[label="invite manager"];
+            acl_manager[label="ACL manager"];
+        }
+        {
+            node[color=darkgreen;fontcolor=darkgreen];
+            builtin_shell[label="built-in shell"];
+            ssh_proxy[label="SSH proxy"];
+            learn_key[label="learn key"];
+        }
+        err_and_exit[label="error and exit";color=red;fontcolor=red];
+        { rank=same; ssh_proxy; builtin_shell; learn_key; err_and_exit; }
+        { rank=same; known_user_key; unknown_user_key; }
+    }
+    
+    subgraph cluster_hosts {
+        label="your hosts";
+        graph[fontsize=20;style=dashed;color=purple;fontcolor=purple];
+        node[color=blue;fontcolor=blue];
+        
+        host_1[label="root@host1"];
+        host_2[label="user@host2:2222"];
+        host_3[label="root@host3:1234"];
+    }
+    
+    {
+        edge[color=blue];
+        start -> known_user_key;
+        start -> unknown_user_key;
+        ssh_proxy -> host_1;
+        ssh_proxy -> host_2;
+        ssh_proxy -> host_3;
+    }
+    {
+        edge[color=darkgreen;fontcolor=darkgreen];
+        known_user_key -> builtin_shell[label="user=admin"];
+        acl_manager -> ssh_proxy[label="authorized"];
+        invite_manager -> learn_key[label="valid token"];
+    }
+    {
+        edge[color=darkorange;fontcolor=darkorange];
+        known_user_key -> acl_manager[label="user matches an existing host"];
+        unknown_user_key -> invite_manager[headlabel="user=invite:<token>"];
+    }
+    {
+        edge[color=red;fontcolor=red];
+        known_user_key -> err_and_exit[label="invalid user"];
+        acl_manager -> err_and_exit[label="unauthorized"];
+        unknown_user_key -> err_and_exit[label="any other user"];
+        invite_manager -> err_and_exit[label="invalid token"];
+    }
+}

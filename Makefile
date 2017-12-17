@@ -44,3 +44,4 @@ backup:
 doc:
 	dot -Tsvg ./.assets/overview.dot > ./.assets/overview.svg
 	dot -Tsvg ./.assets/cluster-mysql.dot > ./.assets/cluster-mysql.svg
+	dot -Tsvg ./.assets/flow-diagram.dot > ./.assets/flow-diagram.svg
