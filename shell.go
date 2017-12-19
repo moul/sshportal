@@ -1366,7 +1366,7 @@ GLOBAL OPTIONS:
 						if err := db.Create(&user).Error; err != nil {
 							return err
 						}
-						fmt.Fprintf(s, "User %d created.\nTo associate this account with a key, use the following SSH user: 'invite-%s'.\n", user.ID, user.InviteToken)
+						fmt.Fprintf(s, "User %d created.\nTo associate this account with a key, use the following SSH user: 'invite:%s'.\n", user.ID, user.InviteToken)
 						return nil
 					},
 				}, {
