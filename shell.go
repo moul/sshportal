@@ -721,7 +721,7 @@ GLOBAL OPTIONS:
 
 						if c.Bool("decrypt") {
 							for _, host := range hosts {
-								HostDecrypt(globalContext.String("aes-keuy"), host)
+								HostDecrypt(globalContext.String("aes-key"), host)
 							}
 						}
 
