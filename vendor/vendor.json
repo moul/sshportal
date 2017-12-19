@@ -21,12 +21,6 @@
 			"revisionTime": "2017-01-10T07:11:07Z"
 		},
 		{
-			"checksumSHA1": "3z3RDSBixjg5A0XPPwAfrpoajoQ=",
-			"path": "github.com/gliderlabs/ssh",
-			"revision": "0c9c3575f476a0c2779aafb89d1838ca4ab7ac16",
-			"revisionTime": "2017-11-01T23:11:58Z"
-		},
-		{
 			"checksumSHA1": "fI9spYCCgBl19GMD/JsW+znBHkw=",
 			"path": "github.com/go-gormigrate/gormigrate",
 			"revision": "21b0b93e8253d575d9185974835423f98d30158d",
