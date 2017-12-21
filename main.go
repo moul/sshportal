@@ -214,7 +214,7 @@ func server(c *cli.Context) error {
 		if userKey.UserID > 0 {
 			db.Preload("Roles").Where("id = ?", userKey.UserID).First(&user)
 			if strings.HasPrefix(username, "invite:") {
-				ctx.SetValue(errorContextKey, fmt.Errorf("invites are only supported for ney SSH keys; your ssh key is already associated with the user %q", user.Email))
+				ctx.SetValue(errorContextKey, fmt.Errorf("invites are only supported for new SSH keys; your ssh key is already associated with the user %q", user.Email))
 			}
 			ctx.SetValue(userContextKey, user)
 			return true
