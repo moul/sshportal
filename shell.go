@@ -67,7 +67,7 @@ GLOBAL OPTIONS:
 					Description: "$> acl create -",
 					Flags: []cli.Flag{
 						cli.StringSliceFlag{Name: "hostgroup, hg", Usage: "Assigns `HOSTGROUPS` to the acl"},
-						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `HOSTGROUPS` to the acl"},
+						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `USERGROUP` to the acl"},
 						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: ACLActionAllow},
