@@ -55,6 +55,7 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 			if req == nil {
 				return nil
 			}
+			log.Println("%s\n", req.Payload)
 			b, err := rch.SendRequest(req.Type, req.WantReply, req.Payload)
 			if err != nil {
 				return err
@@ -66,6 +67,7 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 			if req == nil {
 				return nil
 			}
+			log.Println("%s\n", req.Payload)
 			b, err := lch.SendRequest(req.Type, req.WantReply, req.Payload)
 			if err != nil {
 				return err
