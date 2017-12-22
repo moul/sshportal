@@ -40,11 +40,13 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 	errch := make(chan error, 1)
 
 	go func() {
+		log.Println("%s\n", lch)
 		_, _ = io.Copy(lch, rch)
 		errch <- errors.New("lch closed the connection")
 	}()
 
 	go func() {
+		log.Println("%s\n", rch)
 		_, _ = io.Copy(rch, lch)
 		errch <- errors.New("rch closed the connection")
 	}()
