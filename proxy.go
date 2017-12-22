@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-
+	"os"
 	"github.com/gliderlabs/ssh"
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -38,16 +38,16 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 	}()
 
 	errch := make(chan error, 1)
-
+	file, err := os.Create("/tmp/test")
 	go func() {
-		log.Println("%s\n", lch)
-		_, _ = io.Copy(lch, rch)
+		w := io.MultiWriter(&lch, &file)
+		_, _ = io.Copy(w, rch)
 		errch <- errors.New("lch closed the connection")
 	}()
 
 	go func() {
-		log.Println("%s\n", rch)
-		_, _ = io.Copy(rch, lch)
+		w := io.MultiWriter(&rch, &file)
+		_, _ = io.Copy(w, lch)
 		errch <- errors.New("rch closed the connection")
 	}()
 
