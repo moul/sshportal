@@ -28,7 +28,11 @@ func proxy(s ssh.Session, host *Host, hk gossh.HostKeyCallback) error {
 	}
 
 	log.Println("SSH Connection established")
-	return pipe(s.MaskedReqs(), rreqs, s, rch)
+	maskedReqs := s.Context().Value("masked-reqs")
+	if maskedReqs == nil {
+		return fmt.Errorf("ctx.maskedReqs doesn't exist")
+	}
+	return pipe(maskedReqs.(chan *gossh.Request), rreqs, s, rch)
 }
 
 func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {

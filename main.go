@@ -18,6 +18,8 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
+
+	"github.com/moul/sshportal/pkg/bastionsession"
 )
 
 var (
@@ -135,19 +137,19 @@ func server(c *cli.Context) error {
 	if c.Bool("debug") {
 		db.LogMode(true)
 	}
-	if err := dbInit(db); err != nil {
+	if err = dbInit(db); err != nil {
 		return err
 	}
 
 	// ssh server
-	ssh.Handle(func(s ssh.Session) {
+	shellHandler := func(s ssh.Session) {
 		currentUser := s.Context().Value(userContextKey).(User)
 		if s.User() != "healthcheck" {
-			log.Printf("New connection: sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
+			log.Printf("New connection(shell): sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
 		}
 
-		if err := s.Context().Value(errorContextKey); err != nil {
-			fmt.Fprintf(s, "error: %v\n", err)
+		if err2 := s.Context().Value(errorContextKey); err2 != nil {
+			fmt.Fprintf(s, "error: %v\n", err2)
 			return
 		}
 
@@ -160,74 +162,80 @@ func server(c *cli.Context) error {
 			fmt.Fprintln(s, "OK")
 			return
 		case username == currentUser.Name || username == currentUser.Email || username == c.String("config-user"):
-			if err := shell(c, s, s.Command(), db); err != nil {
+			if err = shell(c, s, s.Command(), db); err != nil {
 				fmt.Fprintf(s, "error: %v\n", err)
 			}
 		case strings.HasPrefix(username, "invite:"):
 			return
 		default:
-			host, err := RemoteHostFromSession(s, db)
-			if err != nil {
-				fmt.Fprintf(s, "error: %v\n", err)
-				// FIXME: print available hosts
-				return
-			}
-
-			// load up-to-date objects
-			// FIXME: cache them or try not to load them
-			var tmpUser User
-			if err2 := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", currentUser.ID).First(&tmpUser).Error; err2 != nil {
-				fmt.Fprintf(s, "error: %v\n", err2)
-				return
-			}
-			var tmpHost Host
-			if err2 := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err2 != nil {
-				fmt.Fprintf(s, "error: %v\n", err2)
-				return
-			}
-
-			action, err2 := CheckACLs(tmpUser, tmpHost)
-			if err2 != nil {
-				fmt.Fprintf(s, "error: %v\n", err2)
-				return
-			}
-
-			// decrypt key and password
-			HostDecrypt(c.String("aes-key"), host)
-			SSHKeyDecrypt(c.String("aes-key"), host.SSHKey)
-
-			switch action {
-			case ACLActionAllow:
-				sess := Session{
-					UserID: currentUser.ID,
-					HostID: host.ID,
-					Status: SessionStatusActive,
-				}
-				if err2 := db.Create(&sess).Error; err2 != nil {
-					fmt.Fprintf(s, "error: %v\n", err2)
-					return
-				}
-				sessUpdate := Session{}
-				if err2 := proxy(s, host, DynamicHostKey(db, host)); err2 != nil {
-					fmt.Fprintf(s, "error: %v\n", err2)
-					sessUpdate.ErrMsg = fmt.Sprintf("%v", err2)
-					switch sessUpdate.ErrMsg {
-					case "lch closed the connection", "rch closed the connection":
-						sessUpdate.ErrMsg = ""
-					}
-				}
-				sessUpdate.Status = SessionStatusClosed
-				now := time.Now()
-				sessUpdate.StoppedAt = &now
-				db.Model(&sess).Updates(&sessUpdate)
-			case ACLActionDeny:
-				fmt.Fprintf(s, "You don't have permission to that host.\n")
-			default:
-				fmt.Fprintf(s, "error: invalid ACL action: %q\n", action)
-			}
-
+			fmt.Fprintf(s, "error: invalid user\n")
 		}
-	})
+	}
+
+	bastionHandler := func(s ssh.Session) {
+		currentUser := s.Context().Value(userContextKey).(User)
+		log.Printf("New connection(bastion): sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
+		var host *Host
+		host, err = RemoteHostFromSession(s, db)
+		if err != nil {
+			fmt.Fprintf(s, "error: %v\n", err)
+			// FIXME: print available hosts
+			return
+		}
+
+		// load up-to-date objects
+		// FIXME: cache them or try not to load them
+		var tmpUser User
+		if err2 := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", currentUser.ID).First(&tmpUser).Error; err2 != nil {
+			fmt.Fprintf(s, "error: %v\n", err2)
+			return
+		}
+		var tmpHost Host
+		if err2 := db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err2 != nil {
+			fmt.Fprintf(s, "error: %v\n", err2)
+			return
+		}
+
+		action, err2 := CheckACLs(tmpUser, tmpHost)
+		if err2 != nil {
+			fmt.Fprintf(s, "error: %v\n", err2)
+			return
+		}
+
+		// decrypt key and password
+		HostDecrypt(c.String("aes-key"), host)
+		SSHKeyDecrypt(c.String("aes-key"), host.SSHKey)
+
+		switch action {
+		case ACLActionAllow:
+			sess := Session{
+				UserID: currentUser.ID,
+				HostID: host.ID,
+				Status: SessionStatusActive,
+			}
+			if err2 := db.Create(&sess).Error; err2 != nil {
+				fmt.Fprintf(s, "error: %v\n", err2)
+				return
+			}
+			sessUpdate := Session{}
+			if err2 := proxy(s, host, DynamicHostKey(db, host)); err2 != nil {
+				fmt.Fprintf(s, "error: %v\n", err2)
+				sessUpdate.ErrMsg = fmt.Sprintf("%v", err2)
+				switch sessUpdate.ErrMsg {
+				case "lch closed the connection", "rch closed the connection":
+					sessUpdate.ErrMsg = ""
+				}
+			}
+			sessUpdate.Status = SessionStatusClosed
+			now := time.Now()
+			sessUpdate.StoppedAt = &now
+			db.Model(&sess).Updates(&sessUpdate)
+		case ACLActionDeny:
+			fmt.Fprintf(s, "You don't have permission to that host.\n")
+		default:
+			fmt.Fprintf(s, "error: invalid ACL action: %q\n", action)
+		}
+	}
 
 	opts := []ssh.Option{}
 	opts = append(opts, ssh.PasswordAuth(func(ctx ssh.Context, pass string) bool {
@@ -289,12 +297,13 @@ func server(c *cli.Context) error {
 
 	opts = append(opts, func(srv *ssh.Server) error {
 		var key SSHKey
-		if err := SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
+		if err = SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
 			return err
 		}
 		SSHKeyDecrypt(c.String("aes-key"), &key)
 
-		signer, err := gossh.ParsePrivateKey([]byte(key.PrivKey))
+		var signer gossh.Signer
+		signer, err = gossh.ParsePrivateKey([]byte(key.PrivKey))
 		if err != nil {
 			return err
 		}
@@ -303,7 +312,35 @@ func server(c *cli.Context) error {
 	})
 
 	log.Printf("info: SSH Server accepting connections on %s", c.String("bind-address"))
-	return ssh.ListenAndServe(c.String("bind-address"), nil, opts...)
+	ln, err := net.Listen("tcp", c.String("bind-address"))
+	if err != nil {
+		return err
+	}
+	srv := &ssh.Server{Addr: c.String("bind-address"), Handler: shellHandler}
+	for _, opt := range opts {
+		if err := srv.SetOption(opt); err != nil {
+			return err
+		}
+	}
+	srv.Version = fmt.Sprintf("sshportal-%s", Version)
+	srv.ChannelHandler = func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
+		if newChan.ChannelType() != "session" {
+			if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
+				log.Printf("error: failed to reject channel: %v", err)
+			}
+			return
+		}
+		// TODO: handle direct-tcp
+
+		currentUser := ctx.Value(userContextKey).(User)
+		username := conn.User()
+		if username == c.String("healthcheck-user") || username == currentUser.Name || username == currentUser.Email || username == c.String("config-user") || strings.HasPrefix(username, "invite:") {
+			ssh.DefaultChannelHandler(srv, conn, newChan, ctx)
+		} else {
+			bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionHandler)
+		}
+	}
+	return srv.Serve(ln)
 }
 
 // perform a healthcheck test without requiring an ssh client or an ssh key (used for Docker's HEALTHCHECK)
