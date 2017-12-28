@@ -2,6 +2,7 @@
 
 ## master (unreleased)
 
+* Fix connection failure when sending too many environment variables (fix [#22](https://github.com/moul/sshportal/issues/22))
 * Fix panic when entering empty command (fix [#13](https://github.com/moul/sshportal/issues/13))
 
 ## v1.6.0 (2017-12-12)
