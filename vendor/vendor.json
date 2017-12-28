@@ -111,6 +111,18 @@
 			"revisionTime": "2017-09-25T23:40:30Z"
 		},
 		{
+			"checksumSHA1": "7BsTyiYZMTvIGT/KsF9a3tAoN0g=",
+			"path": "github.com/reiver/go-oi",
+			"revision": "431c83978379297f04f85f6eb94f129f25ab741d",
+			"revisionTime": "2016-03-25T06:16:15Z"
+		},
+		{
+			"checksumSHA1": "sb1kOSRpAu22ovV0dXHkPlG06i4=",
+			"path": "github.com/reiver/go-telnet",
+			"revision": "6b696f32801a8f8dd07947f1e1fdb1a7dc4766ff",
+			"revisionTime": "2016-03-30T05:09:16Z"
+		},
+		{
 			"checksumSHA1": "zRAcxJW8WNDMryOBS4VE03V6ivw=",
 			"path": "github.com/urfave/cli",
 			"revision": "7f4b273a05858e05b96b6adf0a7907b7b695c352",
