@@ -14,7 +14,6 @@ import (
 	"github.com/asaskevich/govalidator"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/gliderlabs/ssh"
-	"github.com/jinzhu/gorm"
 	"github.com/mgutz/ansi"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/olekukonko/tablewriter"
@@ -33,7 +32,11 @@ var banner = `
 `
 var startTime = time.Now()
 
-func shell(globalContext *cli.Context, s ssh.Session, sshCommand []string, db *gorm.DB) error {
+func shell(s ssh.Session) error {
+	var (
+		sshCommand = s.Command()
+		actx       = s.Context().Value(authContextKey).(*authContext)
+	)
 	if len(sshCommand) == 0 {
 		if _, err := fmt.Fprint(s, banner); err != nil {
 			return err
@@ -55,7 +58,11 @@ GLOBAL OPTIONS:
 	app.Writer = s
 	app.HideVersion = true
 
-	myself := s.Context().Value(userContextKey).(User)
+	var (
+		myself = &actx.user
+		db     = actx.db
+	)
+
 	app.Commands = []cli.Command{
 		{
 			Name:  "acl",
@@ -74,7 +81,7 @@ GLOBAL OPTIONS:
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 						acl := ACL{
@@ -124,7 +131,7 @@ GLOBAL OPTIONS:
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -145,7 +152,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -206,7 +213,7 @@ GLOBAL OPTIONS:
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -230,7 +237,7 @@ GLOBAL OPTIONS:
 						if c.NArg() < 1 {
 							return cli.ShowSubcommandHelp(c)
 						}
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -303,7 +310,7 @@ GLOBAL OPTIONS:
 					},
 					Description: "ssh admin@portal config backup > sshportal.bkp",
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -316,11 +323,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 						for _, key := range config.SSHKeys {
-							SSHKeyDecrypt(globalContext.String("aes-key"), key)
+							SSHKeyDecrypt(actx.globalContext.String("aes-key"), key)
 						}
 						if !c.Bool("decrypt") {
 							for _, key := range config.SSHKeys {
-								if err := SSHKeyEncrypt(globalContext.String("aes-key"), key); err != nil {
+								if err := SSHKeyEncrypt(actx.globalContext.String("aes-key"), key); err != nil {
 									return err
 								}
 							}
@@ -330,11 +337,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 						for _, host := range config.Hosts {
-							HostDecrypt(globalContext.String("aes-key"), host)
+							HostDecrypt(actx.globalContext.String("aes-key"), host)
 						}
 						if !c.Bool("decrypt") {
 							for _, host := range config.Hosts {
-								if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
+								if err := HostEncrypt(actx.globalContext.String("aes-key"), host); err != nil {
 									return err
 								}
 							}
@@ -382,7 +389,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "decrypt", Usage: "do not encrypt sensitive data"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -449,9 +456,9 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, host := range config.Hosts {
-							HostDecrypt(globalContext.String("aes-key"), host)
+							HostDecrypt(actx.globalContext.String("aes-key"), host)
 							if !c.Bool("decrypt") {
-								if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
+								if err := HostEncrypt(actx.globalContext.String("aes-key"), host); err != nil {
 									return err
 								}
 							}
@@ -485,9 +492,9 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, sshKey := range config.SSHKeys {
-							SSHKeyDecrypt(globalContext.String("aes-key"), sshKey)
+							SSHKeyDecrypt(actx.globalContext.String("aes-key"), sshKey)
 							if !c.Bool("decrypt") {
-								if err := SSHKeyEncrypt(globalContext.String("aes-key"), sshKey); err != nil {
+								if err := SSHKeyEncrypt(actx.globalContext.String("aes-key"), sshKey); err != nil {
 									return err
 								}
 							}
@@ -543,7 +550,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -572,7 +579,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -642,7 +649,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -687,7 +694,7 @@ GLOBAL OPTIONS:
 						}
 
 						// encrypt
-						if err := HostEncrypt(globalContext.String("aes-key"), host); err != nil {
+						if err := HostEncrypt(actx.globalContext.String("aes-key"), host); err != nil {
 							return err
 						}
 
@@ -709,13 +716,13 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin", "listhosts"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin", "listhosts"}); err != nil {
 							return err
 						}
 
 						var hosts []*Host
 						db = db.Preload("Groups")
-						if UserHasRole(myself, "admin") {
+						if myself.HasRole("admin") {
 							db = db.Preload("SSHKey")
 						}
 						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
@@ -724,7 +731,7 @@ GLOBAL OPTIONS:
 
 						if c.Bool("decrypt") {
 							for _, host := range hosts {
-								HostDecrypt(globalContext.String("aes-key"), host)
+								HostDecrypt(actx.globalContext.String("aes-key"), host)
 							}
 						}
 
@@ -740,7 +747,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin", "listhosts"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin", "listhosts"}); err != nil {
 							return err
 						}
 
@@ -808,7 +815,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -831,7 +838,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -902,7 +909,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -933,7 +940,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -954,7 +961,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1007,7 +1014,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1019,18 +1026,18 @@ GLOBAL OPTIONS:
 			Name:  "info",
 			Usage: "Shows system-wide information",
 			Action: func(c *cli.Context) error {
-				if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+				if err := myself.CheckRoles([]string{"admin"}); err != nil {
 					return err
 				}
 
-				fmt.Fprintf(s, "Debug mode (server): %v\n", globalContext.Bool("debug"))
+				fmt.Fprintf(s, "Debug mode (server): %v\n", actx.globalContext.Bool("debug"))
 				hostname, _ := os.Hostname()
 				fmt.Fprintf(s, "Hostname: %s\n", hostname)
 				fmt.Fprintf(s, "CPUs: %d\n", runtime.NumCPU())
-				fmt.Fprintf(s, "Demo mode: %v\n", globalContext.Bool("demo"))
-				fmt.Fprintf(s, "DB Driver: %s\n", globalContext.String("db-driver"))
-				fmt.Fprintf(s, "DB Conn: %s\n", globalContext.String("db-conn"))
-				fmt.Fprintf(s, "Bind Address: %s\n", globalContext.String("bind-address"))
+				fmt.Fprintf(s, "Demo mode: %v\n", actx.globalContext.Bool("demo"))
+				fmt.Fprintf(s, "DB Driver: %s\n", actx.globalContext.String("db-driver"))
+				fmt.Fprintf(s, "DB Conn: %s\n", actx.globalContext.String("db-conn"))
+				fmt.Fprintf(s, "Bind Address: %s\n", actx.globalContext.String("bind-address"))
 				fmt.Fprintf(s, "System Time: %v\n", time.Now().Format(time.RFC3339Nano))
 				fmt.Fprintf(s, "OS Type: %s\n", runtime.GOOS)
 				fmt.Fprintf(s, "OS Architecture: %s\n", runtime.GOARCH)
@@ -1038,7 +1045,7 @@ GLOBAL OPTIONS:
 				fmt.Fprintf(s, "Go version (build): %v\n", runtime.Version())
 				fmt.Fprintf(s, "Uptime: %v\n", time.Since(startTime))
 
-				fmt.Fprintf(s, "User email: %v\n", myself.ID)
+				fmt.Fprintf(s, "User ID: %v\n", myself.ID)
 				fmt.Fprintf(s, "User email: %s\n", myself.Email)
 				fmt.Fprintf(s, "Version: %s\n", Version)
 				fmt.Fprintf(s, "GIT SHA: %s\n", GitSha)
@@ -1066,7 +1073,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1076,8 +1083,8 @@ GLOBAL OPTIONS:
 						}
 
 						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
-						if globalContext.String("aes-key") != "" {
-							if err2 := SSHKeyEncrypt(globalContext.String("aes-key"), key); err2 != nil {
+						if actx.globalContext.String("aes-key") != "" {
+							if err2 := SSHKeyEncrypt(actx.globalContext.String("aes-key"), key); err2 != nil {
 								return err2
 							}
 						}
@@ -1111,7 +1118,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1122,7 +1129,7 @@ GLOBAL OPTIONS:
 
 						if c.Bool("decrypt") {
 							for _, key := range keys {
-								SSHKeyDecrypt(globalContext.String("aes-key"), key)
+								SSHKeyDecrypt(actx.globalContext.String("aes-key"), key)
 							}
 						}
 
@@ -1138,7 +1145,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1192,7 +1199,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1231,7 +1238,7 @@ GLOBAL OPTIONS:
 						if err := SSHKeysByIdentifiers(SSHKeysPreload(db), c.Args()).First(&key).Error; err != nil {
 							return err
 						}
-						SSHKeyDecrypt(globalContext.String("aes-key"), &key)
+						SSHKeyDecrypt(actx.globalContext.String("aes-key"), &key)
 
 						type line struct {
 							key   string
@@ -1305,7 +1312,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1333,7 +1340,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1380,7 +1387,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1441,7 +1448,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1464,7 +1471,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1544,7 +1551,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1562,7 +1569,7 @@ GLOBAL OPTIONS:
 						// FIXME: check if name already exists
 						// FIXME: add myself to the new group
 
-						userGroup.Users = []*User{&myself}
+						userGroup.Users = []*User{myself}
 
 						if err := db.Create(&userGroup).Error; err != nil {
 							return err
@@ -1579,7 +1586,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1600,7 +1607,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1652,7 +1659,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1677,7 +1684,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1724,7 +1731,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1745,7 +1752,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1795,7 +1802,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1816,7 +1823,7 @@ GLOBAL OPTIONS:
 							return cli.ShowSubcommandHelp(c)
 						}
 
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1837,7 +1844,7 @@ GLOBAL OPTIONS:
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
-						if err := UserCheckRoles(myself, []string{"admin"}); err != nil {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
 
@@ -1924,7 +1931,7 @@ GLOBAL OPTIONS:
 			if len(words) == 0 {
 				continue
 			}
-			NewEvent("shell", words[0]).SetAuthor(&myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
+			NewEvent("shell", words[0]).SetAuthor(myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
 				if cliErr, ok := err.(*cli.ExitError); ok {
 					if cliErr.ExitCode() != 0 {
@@ -1937,7 +1944,7 @@ GLOBAL OPTIONS:
 			}
 		}
 	} else { // oneshot mode
-		NewEvent("shell", sshCommand[0]).SetAuthor(&myself).SetArg("interactive", false).SetArg("args", sshCommand[1:]).Log(db)
+		NewEvent("shell", sshCommand[0]).SetAuthor(myself).SetArg("interactive", false).SetArg("args", sshCommand[1:]).Log(db)
 		if err := app.Run(append([]string{"config"}, sshCommand...)); err != nil {
 			if errMsg := err.Error(); errMsg != "" {
 				fmt.Fprintf(s, "error: %s\n", errMsg)

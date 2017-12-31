@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 type Config struct {
@@ -168,16 +168,6 @@ func init() {
 	}))
 }
 
-func RemoteHostFromSession(s ssh.Session, db *gorm.DB) (*Host, error) {
-	var host Host
-	db.Preload("SSHKey").Where("name = ?", s.User()).Find(&host)
-	if host.Name == "" {
-		// FIXME: add available hosts
-		return nil, fmt.Errorf("No such target: %q", s.User())
-	}
-	return &host, nil
-}
-
 func (host *Host) URL() string {
 	return fmt.Sprintf("%s@%s", host.User, host.Addr)
 }
@@ -215,6 +205,37 @@ func HostsPreload(db *gorm.DB) *gorm.DB {
 func HostsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
+func HostByName(db *gorm.DB, name string) (*Host, error) {
+	var host Host
+	db.Preload("SSHKey").Where("name = ?", name).Find(&host)
+	if host.Name == "" {
+		// FIXME: add available hosts
+		return nil, fmt.Errorf("No such target: %q", name)
+	}
+	return &host, nil
+}
+
+func (host *Host) clientConfig(hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
+	config := gossh.ClientConfig{
+		User:            host.User,
+		HostKeyCallback: hk,
+		Auth:            []gossh.AuthMethod{},
+	}
+	if host.SSHKey != nil {
+		signer, err := gossh.ParsePrivateKey([]byte(host.SSHKey.PrivKey))
+		if err != nil {
+			return nil, err
+		}
+		config.Auth = append(config.Auth, gossh.PublicKeys(signer))
+	}
+	if host.Password != "" {
+		config.Auth = append(config.Auth, gossh.Password(host.Password))
+	}
+	if len(config.Auth) == 0 {
+		return nil, fmt.Errorf("no valid authentication method for host %q", host.Name)
+	}
+	return &config, nil
+}
 
 // SSHKey helpers
 
@@ -251,18 +272,18 @@ func UsersPreload(db *gorm.DB) *gorm.DB {
 func UsersByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers).Or("email IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
-func UserHasRole(user User, name string) bool {
-	for _, role := range user.Roles {
+func (u *User) HasRole(name string) bool {
+	for _, role := range u.Roles {
 		if role.Name == name {
 			return true
 		}
 	}
 	return false
 }
-func UserCheckRoles(user User, names []string) error {
+func (u *User) CheckRoles(names []string) error {
 	ok := false
 	for _, name := range names {
-		if UserHasRole(user, name) {
+		if u.HasRole(name) {
 			ok = true
 			break
 		}

@@ -4,6 +4,7 @@
 
 Breaking changes:
 * Use `sshportal server` instead of `sshportal` to start a new server (nothing to change if using the docker image)
+* Remove `--config-user` and `--healthcheck-user` global options
 
 Changes:
 * Fix connection failure when sending too many environment variables (fix [#22](https://github.com/moul/sshportal/issues/22))
