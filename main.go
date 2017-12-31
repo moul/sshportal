@@ -45,43 +45,49 @@ func main() {
 	app.Author = "Manfred Touron"
 	app.Version = Version + " (" + GitSha + ")"
 	app.Email = "https://github.com/moul/sshportal"
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:   "bind-address, b",
-			EnvVar: "SSHPORTAL_BIND",
-			Value:  ":2222",
-			Usage:  "SSH server bind address",
-		},
-		cli.StringFlag{
-			Name:  "db-driver",
-			Value: "sqlite3",
-			Usage: "GORM driver (sqlite3)",
-		},
-		cli.StringFlag{
-			Name:  "db-conn",
-			Value: "./sshportal.db",
-			Usage: "GORM connection string",
-		},
-		cli.BoolFlag{
-			Name:  "debug, D",
-			Usage: "Display debug information",
-		},
-		cli.StringFlag{
-			Name:  "config-user",
-			Usage: "SSH user that spawns a configuration shell",
-			Value: "admin",
-		},
-		cli.StringFlag{
-			Name:  "healthcheck-user",
-			Usage: "SSH user that returns healthcheck status without checking the SSH key",
-			Value: "healthcheck",
-		},
-		cli.StringFlag{
-			Name:  "aes-key",
-			Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
+	app.Commands = []cli.Command{
+		{
+			Name:   "server",
+			Usage:  "Start sshportal server",
+			Action: server,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "bind-address, b",
+					EnvVar: "SSHPORTAL_BIND",
+					Value:  ":2222",
+					Usage:  "SSH server bind address",
+				},
+				cli.StringFlag{
+					Name:  "db-driver",
+					Value: "sqlite3",
+					Usage: "GORM driver (sqlite3)",
+				},
+				cli.StringFlag{
+					Name:  "db-conn",
+					Value: "./sshportal.db",
+					Usage: "GORM connection string",
+				},
+				cli.BoolFlag{
+					Name:  "debug, D",
+					Usage: "Display debug information",
+				},
+				cli.StringFlag{
+					Name:  "config-user",
+					Usage: "SSH user that spawns a configuration shell",
+					Value: "admin",
+				},
+				cli.StringFlag{
+					Name:  "healthcheck-user",
+					Usage: "SSH user that returns healthcheck status without checking the SSH key",
+					Value: "healthcheck",
+				},
+				cli.StringFlag{
+					Name:  "aes-key",
+					Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
+				},
+			},
 		},
 	}
-	app.Action = server
 	if err := app.Run(os.Args); err != nil {
 		log.Fatalf("error: %v", err)
 	}

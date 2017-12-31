@@ -8,3 +8,4 @@ RUN             make _docker_install
 FROM            scratch
 COPY            --from=builder /go/bin/sshportal /bin/sshportal
 ENTRYPOINT      ["/bin/sshportal"]
+CMD             ["server"]
