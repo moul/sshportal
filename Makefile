@@ -3,7 +3,6 @@ GIT_TAG ?=	$(shell git describe --tags --always)
 GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
 LDFLAGS ?=	-X main.GitSha=$(GIT_SHA) -X main.GitTag=$(GIT_TAG) -X main.GitBranch=$(GIT_BRANCH)
 VERSION ?=	$(shell grep 'VERSION =' main.go | cut -d'"' -f2)
-PORT ?=		2222
 AES_KEY ?=	my-dummy-aes-key
 
 .PHONY: install
@@ -16,7 +15,7 @@ docker.build:
 
 .PHONY: integration
 integration:
-	PORT="$(PORT)" bash ./examples/integration/test.sh
+	cd ./examples/integration && make
 
 .PHONY: _docker_install
 _docker_install:
