@@ -10,4 +10,4 @@ COPY            --from=builder /go/bin/sshportal /bin/sshportal
 ENTRYPOINT      ["/bin/sshportal"]
 CMD             ["server"]
 EXPOSE          2222
-HEALTHCHECK     --interval=10s --timeout=10s CMD /bin/sshportal healthcheck
+HEALTHCHECK     CMD /bin/sshportal healthcheck --wait

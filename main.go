@@ -95,6 +95,15 @@ func main() {
 				cli.StringFlag{
 					Name:  "addr, a",
 					Value: "localhost:2222",
+					Usage: "sshportal server address",
+				},
+				cli.BoolFlag{
+					Name:  "wait, w",
+					Usage: "Loop indefinitely until sshportal is ready",
+				},
+				cli.BoolFlag{
+					Name:  "quiet, q",
+					Usage: "Do not print errors, if any",
 				},
 			},
 		},
@@ -304,7 +313,31 @@ func healthcheck(c *cli.Context) error {
 		HostKeyCallback: func(hostname string, remote net.Addr, key gossh.PublicKey) error { return nil },
 		Auth:            []gossh.AuthMethod{gossh.Password("healthcheck")},
 	}
-	client, err := gossh.Dial("tcp", c.String("addr"), &config)
+
+	if c.Bool("wait") {
+		for {
+			if err := healthcheckOnce(c.String("addr"), config, c.Bool("quiet")); err != nil {
+				if !c.Bool("quiet") {
+					log.Printf("error: %v", err)
+				}
+				time.Sleep(time.Second)
+				continue
+			}
+			return nil
+		}
+	}
+
+	if err := healthcheckOnce(c.String("addr"), config, c.Bool("quiet")); err != nil {
+		if c.Bool("quiet") {
+			return cli.NewExitError("", 1)
+		}
+		return err
+	}
+	return nil
+}
+
+func healthcheckOnce(addr string, config gossh.ClientConfig, quiet bool) error {
+	client, err := gossh.Dial("tcp", addr, &config)
 	if err != nil {
 		return err
 	}
@@ -315,7 +348,9 @@ func healthcheck(c *cli.Context) error {
 	}
 	defer func() {
 		if err := session.Close(); err != nil {
-			panic(err)
+			if !quiet {
+				log.Printf("failed to close session: %v", err)
+			}
 		}
 	}()
 

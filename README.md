@@ -350,9 +350,20 @@ the `healtcheck` user can be changed using the `healthcheck-user` option.
 
 Alternatively, you can run the built-in healthcheck helper (requiring no ssh client nor ssh key):
 
+Usage: `sshportal healthcheck [--addr=host:port] [--wait] [--quiet]
+
 ```console
 $ sshportal healthcheck --addr=localhost:2222; echo $?
 $ 0
+```
+
+---
+
+Wait for sshportal to be healthy, then connect
+
+```console
+$ sshportal healthcheck --wait && ssh sshportal -l admin
+config>
 ```
 
 ## Scaling
