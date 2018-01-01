@@ -1,11 +1,12 @@
+defaults: &defaults
+  working_directory: /go/src/github.com/moul/sshportal
+  docker:
+    - image: circleci/golang:1.8
+
 version: 2
 jobs:
-  build:
-    docker:
-      - image: circleci/golang:1.8
-      # - image: circleci/mysql:9.4
-
-    working_directory: /go/src/github.com/moul/sshportal
+  go.build:
+    <<: *defaults
     steps:
       - checkout
       - run: make install
@@ -15,3 +16,25 @@ jobs:
       - run: go get -u github.com/alecthomas/gometalinter
       - run: gometalinter --install
       - run: make lint
+  docker.integration:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Install Docker Compose
+          command: |
+            umask 022
+            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run: docker build -t moul/sshportal .
+      - run: make integration
+
+
+workflows:
+  version: 2
+  build_and_integration:
+    jobs:
+      - go.build
+      - docker.integration
+      # requires: docker.build?
