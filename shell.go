@@ -299,6 +299,7 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.BoolFlag{Name: "indent", Usage: "uses indented JSON"},
 						cli.BoolFlag{Name: "decrypt", Usage: "decrypt sensitive data"},
+						cli.BoolFlag{Name: "ignore-events", Usage: "do not backup events data"},
 					},
 					Description: "ssh admin@portal config backup > sshportal.bkp",
 					Action: func(c *cli.Context) error {
@@ -360,8 +361,10 @@ GLOBAL OPTIONS:
 						if err := SessionsPreload(db).Find(&config.Sessions).Error; err != nil {
 							return err
 						}
-						if err := EventsPreload(db).Find(&config.Events).Error; err != nil {
-							return err
+						if !c.Bool("ignore-events") {
+							if err := EventsPreload(db).Find(&config.Events).Error; err != nil {
+								return err
+							}
 						}
 						config.Date = time.Now()
 						enc := json.NewEncoder(s)
