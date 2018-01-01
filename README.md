@@ -43,7 +43,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * [`scp`](https://linux.die.net/man/1/scp) support
 * [`rsync`](https://linux.die.net/man/1/rsync) support
 * Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
-* Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH 
+* Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH
 
 ## (Known) limitations
 
@@ -54,7 +54,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 Start the server
 
 ```console
-$ sshportal
+$ sshportal server
 2017/11/13 10:58:35 Admin user created, use the user 'invite:BpLnfgDsc2WD8F2q' to associate a public key with this account
 2017/11/13 10:58:35 SSH Server accepting connections on :2222
 ```
@@ -345,6 +345,15 @@ $
 ```
 
 the `healtcheck` user can be changed using the `healthcheck-user` option.
+
+---
+
+Alternatively, you can run the built-in healthcheck helper (requiring no ssh client nor ssh key):
+
+```console
+$ sshportal healthcheck --addr=localhost:2222; echo $?
+$ 0
+```
 
 ## Scaling
 
