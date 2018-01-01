@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
 	"math/rand"
+	"net"
 	"os"
 	"path"
 	"strings"
@@ -86,6 +88,24 @@ func main() {
 					Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
 				},
 			},
+		}, {
+			Name:   "healthcheck",
+			Action: healthcheck,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "addr, a",
+					Value: "localhost:2222",
+					Usage: "sshportal server address",
+				},
+				cli.BoolFlag{
+					Name:  "wait, w",
+					Usage: "Loop indefinitely until sshportal is ready",
+				},
+				cli.BoolFlag{
+					Name:  "quiet, q",
+					Usage: "Do not print errors, if any",
+				},
+			},
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
@@ -122,7 +142,9 @@ func server(c *cli.Context) error {
 	// ssh server
 	ssh.Handle(func(s ssh.Session) {
 		currentUser := s.Context().Value(userContextKey).(User)
-		log.Printf("New connection: sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
+		if s.User() != "healthcheck" {
+			log.Printf("New connection: sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), currentUser.ID, currentUser.Email)
+		}
 
 		if err := s.Context().Value(errorContextKey); err != nil {
 			fmt.Fprintf(s, "error: %v\n", err)
@@ -208,6 +230,11 @@ func server(c *cli.Context) error {
 	})
 
 	opts := []ssh.Option{}
+	opts = append(opts, ssh.PasswordAuth(func(ctx ssh.Context, pass string) bool {
+		ctx.SetValue(userContextKey, User{})
+		return ctx.User() == "healthcheck"
+	}))
+
 	opts = append(opts, ssh.PublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 		var (
 			userKey  UserKey
@@ -277,4 +304,64 @@ func server(c *cli.Context) error {
 
 	log.Printf("info: SSH Server accepting connections on %s", c.String("bind-address"))
 	return ssh.ListenAndServe(c.String("bind-address"), nil, opts...)
+}
+
+// perform a healthcheck test without requiring an ssh client or an ssh key (used for Docker's HEALTHCHECK)
+func healthcheck(c *cli.Context) error {
+	config := gossh.ClientConfig{
+		User:            "healthcheck",
+		HostKeyCallback: func(hostname string, remote net.Addr, key gossh.PublicKey) error { return nil },
+		Auth:            []gossh.AuthMethod{gossh.Password("healthcheck")},
+	}
+
+	if c.Bool("wait") {
+		for {
+			if err := healthcheckOnce(c.String("addr"), config, c.Bool("quiet")); err != nil {
+				if !c.Bool("quiet") {
+					log.Printf("error: %v", err)
+				}
+				time.Sleep(time.Second)
+				continue
+			}
+			return nil
+		}
+	}
+
+	if err := healthcheckOnce(c.String("addr"), config, c.Bool("quiet")); err != nil {
+		if c.Bool("quiet") {
+			return cli.NewExitError("", 1)
+		}
+		return err
+	}
+	return nil
+}
+
+func healthcheckOnce(addr string, config gossh.ClientConfig, quiet bool) error {
+	client, err := gossh.Dial("tcp", addr, &config)
+	if err != nil {
+		return err
+	}
+
+	session, err := client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := session.Close(); err != nil {
+			if !quiet {
+				log.Printf("failed to close session: %v", err)
+			}
+		}
+	}()
+
+	var b bytes.Buffer
+	session.Stdout = &b
+	if err := session.Run(""); err != nil {
+		return err
+	}
+	stdout := strings.TrimSpace(b.String())
+	if stdout != "OK" {
+		return fmt.Errorf("invalid stdout: %q expected 'OK'", stdout)
+	}
+	return nil
 }

@@ -11,9 +11,6 @@ Host sshportal
     HostName sshportal
 EOF
 
-#ping -c 1 sshportal
-sleep 3
-
 set -x
 
 # login
