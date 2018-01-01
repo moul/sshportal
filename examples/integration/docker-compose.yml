@@ -1,0 +1,18 @@
+version: '3.0'
+
+services:
+  sshportal:
+    image: moul/sshportal
+    environment:
+      - SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN=integration
+    command: server --debug
+    ports:
+      - 2222
+
+  client:
+    build: .
+    depends_on:
+      - sshportal
+    #volumes:
+    #  - .:/integration
+    tty: true

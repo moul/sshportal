@@ -2,8 +2,13 @@
 
 ## master (unreleased)
 
+Breaking changes:
+* Use `sshportal server` instead of `sshportal` to start a new server (nothing to change if using the docker image)
+
+Changes:
 * Fix connection failure when sending too many environment variables (fix [#22](https://github.com/moul/sshportal/issues/22))
 * Fix panic when entering empty command (fix [#13](https://github.com/moul/sshportal/issues/13))
+* Add `config backup --ignore-events` option
 
 ## v1.6.0 (2017-12-12)
 

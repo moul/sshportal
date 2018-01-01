@@ -9,7 +9,7 @@ services:
         condition: service_healthy
     links:
       - mysql
-    command: --db-driver=mysql --debug --db-conn="root:root@tcp(mysql:3306)/db?charset=utf8&parseTime=true&loc=Local"
+    command: server --db-driver=mysql --debug --db-conn="root:root@tcp(mysql:3306)/db?charset=utf8&parseTime=true&loc=Local"
     ports:
       - 2222:2222
 
