@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.7.1 (2018-01-03)
 
 * Return non-null exit-code on authentication error
 * **hotfix**: repair invite system (broken in v1.7.0)
