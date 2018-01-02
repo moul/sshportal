@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.7.1 (2018-01-03)
 
 * Return non-null exit-code on authentication error
