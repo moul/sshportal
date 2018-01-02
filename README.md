@@ -42,6 +42,10 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * ipv4 and ipv6 support
 * [`scp`](https://linux.die.net/man/1/scp) support
 * [`rsync`](https://linux.die.net/man/1/rsync) support
+* [tunneling](https://www.ssh.com/ssh/tunneling/example) (local forward, remote forward, dynamic forward) support
+* [`sftp`](https://www.ssh.com/ssh/sftp/) support
+* [`ssh-agent`](https://www.ssh.com/ssh/agent) support
+* [`X11 forwarding`](http://en.tldp.org/HOWTO/XDMCP-HOWTO/ssh.html) support
 * Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
 * Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH
 
