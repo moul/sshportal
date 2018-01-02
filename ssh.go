@@ -108,6 +108,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			}
 			fmt.Fprintf(ch, "error: %v\n", err)
 			// FIXME: force close all channels
+			_ = ch.Close()
 			return
 		}
 
@@ -122,6 +123,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				return
 			}
 			fmt.Fprintf(ch, "error: %v\n", err)
+			_ = ch.Close()
 			return
 		}
 
