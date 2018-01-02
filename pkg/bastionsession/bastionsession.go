@@ -3,13 +3,18 @@ package bastionsession
 import (
 	"errors"
 	"io"
-
+	"strings"
+	"time"
+	"os"
+	
 	"github.com/gliderlabs/ssh"
+	"github.com/sabban/sshportal/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
 )
 
 type Config struct {
 	Addr         string
+	Logs         string
 	ClientConfig *gossh.ClientConfig
 }
 
@@ -35,21 +40,28 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	if err != nil {
 		return err
 	}
-
+	user := conn.User()
 	// pipe everything
-	return pipe(lreqs, rreqs, lch, rch)
+	return pipe(lreqs, rreqs, lch, rch, config.Logs, user)
 }
 
-func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
+func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logs_location string, user string) error {
 	defer func() {
 		_ = lch.Close()
 		_ = rch.Close()
 	}()
 
 	errch := make(chan error, 1)
-
+	file_name := strings.Join([]string{logs_location, "/", user, "-", time.Now().Format("RFC3339")}, "") // get user
+	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
+	if err != nil {
+		errch <- errors.New("Opening session file" + file_name + "failed.")
+	}
+	defer f.Close()
+	wrappedlch := logchannel.New(lch, f) 
+	
 	go func() {
-		_, _ = io.Copy(lch, rch)
+		_, _ = io.Copy(wrappedlch, rch)
 		errch <- errors.New("lch closed the connection")
 	}()
 

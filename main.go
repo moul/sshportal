@@ -68,6 +68,11 @@ func main() {
 					Name:  "aes-key",
 					Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
 				},
+				cli.StringFlag{
+					Name: "logs-location",
+					Value: "/var/log/sshportal",
+					Usage: "Store user session files",
+				},
 			},
 		}, {
 			Name:   "healthcheck",
@@ -125,7 +130,7 @@ func server(c *cli.Context) error {
 	opts = append(opts, ssh.PublicKeyAuth(publicKeyAuthHandler(db, c)))
 	opts = append(opts, ssh.PasswordAuth(passwordAuthHandler(db, c)))
 
-	// retrieve sshportal SSH private key from databse
+	// retrieve sshportal SSH private key from database
 	opts = append(opts, func(srv *ssh.Server) error {
 		var key SSHKey
 		if err = SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
