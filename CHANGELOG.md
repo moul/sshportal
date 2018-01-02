@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* Return non-null exit-code on authentication error
 
 ## v1.7.0 (2018-01-02)
 

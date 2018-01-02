@@ -195,6 +195,7 @@ func shellHandler(s ssh.Session) {
 
 	if actx.err != nil {
 		fmt.Fprintf(s, "error: %v\n", actx.err)
+		_ = s.Exit(1)
 		return
 	}
 
@@ -209,6 +210,7 @@ func shellHandler(s ssh.Session) {
 	case UserTypeShell:
 		if err := shell(s); err != nil {
 			fmt.Fprintf(s, "error: %v\n", err)
+			_ = s.Exit(1)
 		}
 		return
 	case UserTypeInvite:
