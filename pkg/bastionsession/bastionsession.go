@@ -1,34 +1,43 @@
-package main
+package bastionsession
 
 import (
 	"errors"
-	"fmt"
 	"io"
-	"log"
 
 	"github.com/gliderlabs/ssh"
 	gossh "golang.org/x/crypto/ssh"
 )
 
-func proxy(s ssh.Session, host *Host, hk gossh.HostKeyCallback) error {
-	config, err := host.clientConfig(s, hk)
+type Config struct {
+	Addr         string
+	ClientConfig *gossh.ClientConfig
+}
+
+func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, config Config) error {
+	if newChan.ChannelType() != "session" {
+		newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
+		return nil
+	}
+	lch, lreqs, err := newChan.Accept()
+	// TODO: defer clean closer
 	if err != nil {
-		return err
+		// TODO: trigger event callback
+		return nil
 	}
 
-	rconn, err := gossh.Dial("tcp", host.Addr, config)
+	// open client channel
+	rconn, err := gossh.Dial("tcp", config.Addr, config.ClientConfig)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = rconn.Close() }()
-
 	rch, rreqs, err := rconn.OpenChannel("session", []byte{})
 	if err != nil {
 		return err
 	}
 
-	log.Println("SSH Connection established")
-	return pipe(s.MaskedReqs(), rreqs, s, rch)
+	// pipe everything
+	return pipe(lreqs, rreqs, lch, rch)
 }
 
 func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
@@ -77,26 +86,4 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel) error {
 			return err
 		}
 	}
-}
-
-func (host *Host) clientConfig(_ ssh.Session, hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
-	config := gossh.ClientConfig{
-		User:            host.User,
-		HostKeyCallback: hk,
-		Auth:            []gossh.AuthMethod{},
-	}
-	if host.SSHKey != nil {
-		signer, err := gossh.ParsePrivateKey([]byte(host.SSHKey.PrivKey))
-		if err != nil {
-			return nil, err
-		}
-		config.Auth = append(config.Auth, gossh.PublicKeys(signer))
-	}
-	if host.Password != "" {
-		config.Auth = append(config.Auth, gossh.Password(host.Password))
-	}
-	if len(config.Auth) == 0 {
-		return nil, fmt.Errorf("no valid authentication method for host %q", host.Name)
-	}
-	return &config, nil
 }

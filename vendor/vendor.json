@@ -21,6 +21,12 @@
 			"revisionTime": "2017-01-10T07:11:07Z"
 		},
 		{
+			"checksumSHA1": "XIIHyP5QkRbX/zBNqq+hAQ2SmzE=",
+			"path": "github.com/gliderlabs/ssh",
+			"revision": "ce31f3cc47feee0c38db7ecfaa154026929ffbda",
+			"revisionTime": "2017-12-06T20:46:25Z"
+		},
+		{
 			"checksumSHA1": "fI9spYCCgBl19GMD/JsW+znBHkw=",
 			"path": "github.com/go-gormigrate/gormigrate",
 			"revision": "21b0b93e8253d575d9185974835423f98d30158d",
@@ -107,26 +113,26 @@
 		{
 			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
 			"path": "golang.org/x/crypto/curve25519",
-			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
-			"revisionTime": "2017-10-31T10:16:35Z"
+			"revision": "d585fd2cc9195196078f516b69daff6744ef5e84",
+			"revisionTime": "2017-12-16T04:08:15Z"
 		},
 		{
 			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
 			"path": "golang.org/x/crypto/ed25519",
-			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
-			"revisionTime": "2017-10-31T10:16:35Z"
+			"revision": "d585fd2cc9195196078f516b69daff6744ef5e84",
+			"revisionTime": "2017-12-16T04:08:15Z"
 		},
 		{
 			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
 			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
-			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
-			"revisionTime": "2017-10-31T10:16:35Z"
+			"revision": "d585fd2cc9195196078f516b69daff6744ef5e84",
+			"revisionTime": "2017-12-16T04:08:15Z"
 		},
 		{
-			"checksumSHA1": "EGImhmIP401D+CChQfTscz2RuGE=",
+			"checksumSHA1": "pySTR3iSeU7FhjbBnQPNxgyIa4I=",
 			"path": "golang.org/x/crypto/ssh",
-			"revision": "bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8",
-			"revisionTime": "2017-10-31T10:16:35Z"
+			"revision": "d585fd2cc9195196078f516b69daff6744ef5e84",
+			"revisionTime": "2017-12-16T04:08:15Z"
 		},
 		{
 			"checksumSHA1": "nqWNlnMmVpt628zzvyo6Yv2CX5Q=",

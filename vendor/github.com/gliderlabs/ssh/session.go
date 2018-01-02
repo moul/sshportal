@@ -71,27 +71,24 @@ type Session interface {
 	// If there are buffered signals when a channel is registered, they will be
 	// sent in order on the channel immediately after registering.
 	Signals(c chan<- Signal)
-
-	MaskedReqs() chan *gossh.Request
 }
 
 // maxSigBufSize is how many signals will be buffered
 // when there is no signal channel specified
 const maxSigBufSize = 128
 
-func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx *sshContext) {
+func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx Context) {
 	ch, reqs, err := newChan.Accept()
 	if err != nil {
 		// TODO: trigger event callback
 		return
 	}
 	sess := &session{
-		Channel:    ch,
-		conn:       conn,
-		handler:    srv.Handler,
-		ptyCb:      srv.PtyCallback,
-		maskedReqs: make(chan *gossh.Request, 100),
-		ctx:        ctx,
+		Channel: ch,
+		conn:    conn,
+		handler: srv.Handler,
+		ptyCb:   srv.PtyCallback,
+		ctx:     ctx,
 	}
 	sess.handleRequests(reqs)
 }
@@ -99,19 +96,18 @@ func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChanne
 type session struct {
 	sync.Mutex
 	gossh.Channel
-	conn       *gossh.ServerConn
-	handler    Handler
-	handled    bool
-	exited     bool
-	pty        *Pty
-	winch      chan Window
-	env        []string
-	ptyCb      PtyCallback
-	cmd        []string
-	ctx        *sshContext
-	sigCh      chan<- Signal
-	sigBuf     []Signal
-	maskedReqs chan *gossh.Request
+	conn    *gossh.ServerConn
+	handler Handler
+	handled bool
+	exited  bool
+	pty     *Pty
+	winch   chan Window
+	env     []string
+	ptyCb   PtyCallback
+	cmd     []string
+	ctx     Context
+	sigCh   chan<- Signal
+	sigBuf  []Signal
 }
 
 func (sess *session) Write(p []byte) (n int, err error) {
@@ -146,13 +142,12 @@ func (sess *session) Permissions() Permissions {
 }
 
 func (sess *session) Context() context.Context {
-	return sess.ctx.Context
+	return sess.ctx
 }
 
 func (sess *session) Exit(code int) error {
 	sess.Lock()
 	defer sess.Unlock()
-
 	if sess.exited {
 		return errors.New("Session.Exit called multiple times")
 	}
@@ -163,9 +158,6 @@ func (sess *session) Exit(code int) error {
 	if err != nil {
 		return err
 	}
-
-	close(sess.maskedReqs)
-
 	return sess.Close()
 }
 
@@ -207,10 +199,6 @@ func (sess *session) Signals(c chan<- Signal) {
 			}
 		}()
 	}
-}
-
-func (sess *session) MaskedReqs() chan *gossh.Request {
-	return sess.maskedReqs
 }
 
 func (sess *session) handleRequests(reqs <-chan *gossh.Request) {
@@ -290,12 +278,10 @@ func (sess *session) handleRequests(reqs <-chan *gossh.Request) {
 			req.Reply(ok, nil)
 		case agentRequestType:
 			// TODO: option/callback to allow agent forwarding
-			setAgentRequested(sess)
+			SetAgentRequested(sess.ctx)
 			req.Reply(true, nil)
 		default:
 			// TODO: debug log
 		}
-
-		sess.maskedReqs <- req
 	}
 }
