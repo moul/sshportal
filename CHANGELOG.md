@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.7.0 (2018-01-02)
 
 Breaking changes:
 * Use `sshportal server` instead of `sshportal` to start a new server (nothing to change if using the docker image)
