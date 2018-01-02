@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.7.0 (2018-01-02)
 
 Breaking changes:
