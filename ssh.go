@@ -249,14 +249,14 @@ func publicKeyAuthHandler(db *gorm.DB, globalContext *cli.Context) ssh.PublicKey
 		db.Where("authorized_key = ?", string(gossh.MarshalAuthorizedKey(key))).First(&actx.userKey)
 		if actx.userKey.UserID > 0 {
 			db.Preload("Roles").Where("id = ?", actx.userKey.UserID).First(&actx.user)
-			if actx.userType() == "invite" {
+			if actx.userType() == UserTypeInvite {
 				actx.err = fmt.Errorf("invites are only supported for new SSH keys; your ssh key is already associated with the user %q", actx.user.Email)
 			}
 			return true
 		}
 
 		// handle invite "links"
-		if actx.userType() == "invite" {
+		if actx.userType() == UserTypeInvite {
 			inputToken := strings.Split(actx.inputUsername, ":")[1]
 			if len(inputToken) > 0 {
 				db.Where("invite_token = ?", inputToken).First(&actx.user)
@@ -268,11 +268,11 @@ func publicKeyAuthHandler(db *gorm.DB, globalContext *cli.Context) ssh.PublicKey
 					Comment:       "created by sshportal",
 					AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
 				}
-				db.Create(actx.userKey)
+				db.Create(&actx.userKey)
 
 				// token is only usable once
 				actx.user.InviteToken = ""
-				db.Model(actx.user).Updates(actx.user)
+				db.Model(&actx.user).Updates(&actx.user)
 
 				actx.message = fmt.Sprintf("Welcome %s!\n\nYour key is now associated with the user %q.\n", actx.user.Name, actx.user.Email)
 			} else {
