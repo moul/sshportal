@@ -16,6 +16,7 @@ Changes:
 * Add `config backup --ignore-events` option
 * Add `sshportal healthcheck [--addr=] [--wait] [--quiet]` cli command
 * Add [Docker Healthcheck](https://docs.docker.com/engine/reference/builder/#healthcheck) helper
+* Support Putty (fix [#24](https://github.com/moul/sshportal/issues/24))
 
 ## v1.6.0 (2017-12-12)
 
