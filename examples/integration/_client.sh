@@ -51,3 +51,6 @@ ssh sshportal -l admin config backup --indent --ignore-events  > backup-2
     set -xe
     diff backup-1.clean backup-2.clean
 )
+
+# bastion
+# TODO
