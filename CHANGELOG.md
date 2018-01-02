@@ -2,7 +2,8 @@
 
 ## master (unreleased)
 
-* No entry
+* Return non-null exit-code on authentication error
+* **hotfix**: repair invite system (broken in v1.7.0)
 
 ## v1.7.0 (2018-01-02)
 
