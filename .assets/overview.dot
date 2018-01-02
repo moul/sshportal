@@ -2,15 +2,35 @@ graph {
   rankdir=LR;
   node[shape=box,style=rounded,style=rounded,fillcolor=gray];
 
-  db[color=gray];
 
-  user1 -- sshportal -- host1[color=red,penwidth=3.0];
-  user2 -- sshportal -- host2[color=blue,penwidth=3.0];
-  user3 -- sshportal -- host1[color=purple,penwidth=3.0];
-  user2 -- sshportal -- host3[color=green,penwidth=3.0];
+  subgraph cluster_sshportal {
+      sshportal[penwidth=3.0,color=brown,fontcolor=brown,fontsize=20];
+      shell[label="built-in\nadmin shell",color=orange,fontcolor=orange];
+      db[color=gray,fontcolor=gray,shape=circle];
+      { rank=same; db; sshportal; shell }
+  }
+
+  {
+      node[color="green"];
+      host1; host2; host3; hostN;
+  }
+
+  {
+      node[color="blue"];
+      user1; user2; user3; userN;
+  }
+
+  {
+      edge[penwidth=3.0];
+      user1 -- sshportal -- host1[color=red];
+      user2 -- sshportal -- host2[color=blue];
+      user3 -- sshportal -- host1[color=purple];
+      user2 -- sshportal -- host3[color=green];
+      user2 -- sshportal -- shell[color=orange,constraint=false];
+  }
+
   userN -- sshportal[style=dotted];
   sshportal -- hostN[style=dotted];
   sshportal -- db[style=dotted,color=grey];
 
-  { rank=same; sshportal; db; }
 }

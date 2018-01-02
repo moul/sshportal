@@ -28,8 +28,8 @@
 <!-- known_user_key -->
 <g id="node2" class="node">
 <title>known_user_key</title>
-<polygon fill="none" stroke="#ffa500" points="162.7832,-157 162.7832,-193 267.4316,-193 267.4316,-157 162.7832,-157"/>
-<text text-anchor="middle" x="215.1074" y="-170.8" font-family="Times,serif" font-size="14.00" fill="#ffa500">known user key</text>
+<polygon fill="none" stroke="#ff8c00" points="162.7832,-157 162.7832,-193 267.4316,-193 267.4316,-157 162.7832,-157"/>
+<text text-anchor="middle" x="215.1074" y="-170.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">known user key</text>
 </g>
 <!-- start&#45;&gt;known_user_key -->
 <g id="edge1" class="edge">
@@ -40,8 +40,8 @@
 <!-- unknown_user_key -->
 <g id="node3" class="node">
 <title>unknown_user_key</title>
-<polygon fill="none" stroke="#ffa500" points="155.7832,-72 155.7832,-108 274.4316,-108 274.4316,-72 155.7832,-72"/>
-<text text-anchor="middle" x="215.1074" y="-85.8" font-family="Times,serif" font-size="14.00" fill="#ffa500">unknown user key</text>
+<polygon fill="none" stroke="#ff8c00" points="155.7832,-72 155.7832,-108 274.4316,-108 274.4316,-72 155.7832,-72"/>
+<text text-anchor="middle" x="215.1074" y="-85.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">unknown user key</text>
 </g>
 <!-- start&#45;&gt;unknown_user_key -->
 <g id="edge2" class="edge">
@@ -52,15 +52,15 @@
 <!-- acl_manager -->
 <g id="node5" class="node">
 <title>acl_manager</title>
-<polygon fill="none" stroke="#ffa500" points="514.7056,-173 514.7056,-209 609.8862,-209 609.8862,-173 514.7056,-173"/>
-<text text-anchor="middle" x="562.2959" y="-186.8" font-family="Times,serif" font-size="14.00" fill="#ffa500">ACL manager</text>
+<polygon fill="none" stroke="#ff8c00" points="514.7056,-173 514.7056,-209 609.8862,-209 609.8862,-173 514.7056,-173"/>
+<text text-anchor="middle" x="562.2959" y="-186.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">ACL manager</text>
 </g>
 <!-- known_user_key&#45;&gt;acl_manager -->
 <g id="edge9" class="edge">
 <title>known_user_key&#45;&gt;acl_manager</title>
-<path fill="none" stroke="#ffa500" d="M267.461,-177.4127C331.1153,-180.3462 438.21,-185.2816 504.3082,-188.3277"/>
-<polygon fill="#ffa500" stroke="#ffa500" points="504.401,-191.8356 514.5516,-188.7997 504.7233,-184.843 504.401,-191.8356"/>
-<text text-anchor="middle" x="393.4697" y="-188.8" font-family="Times,serif" font-size="14.00" fill="#ffa500">user matches an existing host</text>
+<path fill="none" stroke="#ff8c00" d="M267.461,-177.4127C331.1153,-180.3462 438.21,-185.2816 504.3082,-188.3277"/>
+<polygon fill="#ff8c00" stroke="#ff8c00" points="504.401,-191.8356 514.5516,-188.7997 504.7233,-184.843 504.401,-191.8356"/>
+<text text-anchor="middle" x="393.4697" y="-188.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">user matches an existing host</text>
 </g>
 <!-- builtin_shell -->
 <g id="node6" class="node">
@@ -91,15 +91,15 @@
 <!-- invite_manager -->
 <g id="node4" class="node">
 <title>invite_manager</title>
-<polygon fill="none" stroke="#ffa500" points="512.5078,-17 512.5078,-53 612.084,-53 612.084,-17 512.5078,-17"/>
-<text text-anchor="middle" x="562.2959" y="-30.8" font-family="Times,serif" font-size="14.00" fill="#ffa500">invite manager</text>
+<polygon fill="none" stroke="#ff8c00" points="512.5078,-17 512.5078,-53 612.084,-53 612.084,-17 512.5078,-17"/>
+<text text-anchor="middle" x="562.2959" y="-30.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">invite manager</text>
 </g>
 <!-- unknown_user_key&#45;&gt;invite_manager -->
 <g id="edge10" class="edge">
 <title>unknown_user_key&#45;&gt;invite_manager</title>
-<path fill="none" stroke="#ffa500" d="M274.7912,-80.5452C338.467,-70.4579 438.7527,-54.5711 502.4793,-44.4759"/>
-<polygon fill="#ffa500" stroke="#ffa500" points="503.0528,-47.9288 512.382,-42.9071 501.9575,-41.015 503.0528,-47.9288"/>
-<text text-anchor="middle" x="455.4386" y="-31.7071" font-family="Times,serif" font-size="14.00" fill="#ffa500">user=invite:&lt;token&gt;</text>
+<path fill="none" stroke="#ff8c00" d="M274.7912,-80.5452C338.467,-70.4579 438.7527,-54.5711 502.4793,-44.4759"/>
+<polygon fill="#ff8c00" stroke="#ff8c00" points="503.0528,-47.9288 512.382,-42.9071 501.9575,-41.015 503.0528,-47.9288"/>
+<text text-anchor="middle" x="455.4386" y="-31.7071" font-family="Times,serif" font-size="14.00" fill="#ff8c00">user=invite:&lt;token&gt;</text>
 </g>
 <!-- unknown_user_key&#45;&gt;err_and_exit -->
 <g id="edge13" class="edge">
