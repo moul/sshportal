@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
+	"strings"
 	"time"
 
 	"github.com/go-gormigrate/gormigrate"
@@ -522,9 +524,20 @@ func dbInit(db *gorm.DB) error {
 		if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
 			return err
 		}
+		var username string
+		if currentUser, err := user.Current(); err == nil {
+			username = currentUser.Username
+		}
+		if username == "" {
+			username = os.Getenv("USER")
+		}
+		username = strings.ToLower(username)
+		if username == "" {
+			username = "admin" // fallback username
+		}
 		user := User{
-			Name:        "admin",
-			Email:       "admin@sshportal",
+			Name:        username,
+			Email:       fmt.Sprintf("%s@localhost", username),
 			Comment:     "created by sshportal",
 			Roles:       []*UserRole{&adminRole},
 			InviteToken: inviteToken,
