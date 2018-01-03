@@ -6,9 +6,10 @@ import (
 	"strings"
 	"time"
 	"os"
+	"log"
 	
 	"github.com/gliderlabs/ssh"
-	"github.com/sabban/sshportal/pkg/logchannel"
+	"github.com/moul/sshportal/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
 )
 
@@ -52,19 +53,23 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logs_locat
 	}()
 
 	errch := make(chan error, 1)
-	file_name := strings.Join([]string{logs_location, "/", user, "-", time.Now().Format("RFC3339")}, "") // get user
+	file_name := strings.Join([]string{logs_location, "/", user, "-", time.Now().Format(time.RFC3339)}, "") // get user
 	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
 	if err != nil {
-		errch <- errors.New("Opening session file" + file_name + "failed.")
+		go func() {
+			_, _ = io.Copy(lch, rch)
+			errch <- errors.New("lch closed the connection")
+		}()
+	} else {
+		log.Printf("Session is recorded in %v", file_name)
+		wrappedlch := logchannel.New(lch, f)
+		go func() {
+			_, _ = io.Copy(wrappedlch, rch)
+			errch <- errors.New("lch closed the connection")
+		}()
 	}
 	defer f.Close()
-	wrappedlch := logchannel.New(lch, f) 
 	
-	go func() {
-		_, _ = io.Copy(wrappedlch, rch)
-		errch <- errors.New("lch closed the connection")
-	}()
-
 	go func() {
 		_, _ = io.Copy(rch, lch)
 		errch <- errors.New("rch closed the connection")
