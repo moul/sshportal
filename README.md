@@ -42,6 +42,10 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * ipv4 and ipv6 support
 * [`scp`](https://linux.die.net/man/1/scp) support
 * [`rsync`](https://linux.die.net/man/1/rsync) support
+* [tunneling](https://www.ssh.com/ssh/tunneling/example) (local forward, remote forward, dynamic forward) support
+* [`sftp`](https://www.ssh.com/ssh/sftp/) support
+* [`ssh-agent`](https://www.ssh.com/ssh/agent) support
+* [`X11 forwarding`](http://en.tldp.org/HOWTO/XDMCP-HOWTO/ssh.html) support
 * Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
 * Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH
 
@@ -228,7 +232,7 @@ An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/ss
 ```console
 # Start a server in background
 #   mount `pwd` to persist the sqlite database file
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.7.0
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.7.1
 
 # check logs (mandatory on first run to get the administrator invite token)
 docker logs -f sshportal
@@ -237,7 +241,7 @@ docker logs -f sshportal
 The easier way to upgrade sshportal is to do the following:
 
 ```sh
-# we consider you were using an old version and you want to use the new version v1.7.0
+# we consider you were using an old version and you want to use the new version v1.7.1
 
 # stop and rename the last working container + backup the database
 docker stop sshportal
@@ -245,7 +249,7 @@ docker rename sshportal sshportal_old
 cp sshportal.db sshportal.db.bkp
 
 # run the new version
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.7.0
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.7.1
 # check the logs for migration or cross-version incompabitility errors
 docker logs -f sshportal
 ```

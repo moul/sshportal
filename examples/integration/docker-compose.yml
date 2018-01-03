@@ -6,6 +6,14 @@ services:
     environment:
       - SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN=integration
     command: server --debug
+    depends_on:
+      - testserver
+    ports:
+      - 2222
+
+  testserver:
+    image: moul/sshportal
+    command: _test_server
     ports:
       - 2222
 
@@ -13,6 +21,7 @@ services:
     build: .
     depends_on:
       - sshportal
+      - testserver
     #volumes:
     #  - .:/integration
     tty: true
