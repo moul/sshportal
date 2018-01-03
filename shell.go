@@ -635,7 +635,7 @@ GLOBAL OPTIONS:
 				{
 					Name:        "create",
 					Usage:       "Creates a new host",
-					ArgsUsage:   "<user>[:<password>]@<host>[:<port>]",
+					ArgsUsage:   "[scheme://]<user>[:<password>]@<host>[:<port>]",
 					Description: "$> host create bart@foo.org\n   $> host create bob:marley@example.com:2222",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Assigns a name to the host"},
@@ -653,9 +653,13 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						host, err := NewHostFromURL(c.Args().First())
+						u, err := ParseInputURL(c.Args().First())
 						if err != nil {
 							return err
+						}
+						host := &Host{
+							URL:     u.String(),
+							Comment: c.String("comment"),
 						}
 						if c.String("password") != "" {
 							host.Password = c.String("password")
@@ -666,7 +670,6 @@ GLOBAL OPTIONS:
 							host.Name = c.String("name")
 						}
 						// FIXME: check if name already exists
-						host.Comment = c.String("comment")
 
 						if _, err := govalidator.ValidateStruct(host); err != nil {
 							return err
@@ -773,14 +776,11 @@ GLOBAL OPTIONS:
 						}
 
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Pass", "Groups", "Updated", "Created", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
-							authKey, authPass := "", ""
-							if host.Password != "" {
-								authPass = "yes"
-							}
+							authKey := ""
 							if host.SSHKeyID > 0 {
 								var key SSHKey
 								db.Model(&host).Related(&key)
@@ -793,9 +793,8 @@ GLOBAL OPTIONS:
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
 								host.Name,
-								host.URL(),
+								host.String(),
 								authKey,
-								authPass,
 								strings.Join(groupNames, ", "),
 								humanize.Time(host.UpdatedAt),
 								humanize.Time(host.CreatedAt),
@@ -827,7 +826,7 @@ GLOBAL OPTIONS:
 					ArgsUsage: "HOST...",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Rename the host"},
-						cli.StringFlag{Name: "password, p", Usage: "Update/set a password, use \"none\" to unset"},
+						cli.StringFlag{Name: "url, u", Usage: "Update connection URL"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
 						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
@@ -855,12 +854,25 @@ GLOBAL OPTIONS:
 						for _, host := range hosts {
 							model := tx.Model(&host)
 							// simple fields
-							for _, fieldname := range []string{"name", "comment", "password"} {
+							for _, fieldname := range []string{"name", "comment"} {
 								if c.String(fieldname) != "" {
 									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
 										tx.Rollback()
 										return err
 									}
+								}
+							}
+
+							// url
+							if c.String("url") != "" {
+								u, err := ParseInputURL(c.String("url"))
+								if err != nil {
+									tx.Rollback()
+									return err
+								}
+								if err := model.Update("url", u.String()).Error; err != nil {
+									tx.Rollback()
+									return err
 								}
 							}
 
