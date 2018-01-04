@@ -56,18 +56,16 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 	file_name := strings.Join([]string{logsLocation, "/", user, "-", time.Now().Format(time.RFC3339)}, "") // get user
 	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
 	if err != nil {
-		go func() {
-			_, _ = io.Copy(lch, rch)
-			errch <- errors.New("lch closed the connection")
-		}()
-	} else {
-		log.Printf("Session is recorded in %v", file_name)
-		wrappedlch := logchannel.New(lch, f)
-		go func() {
-			_, _ = io.Copy(wrappedlch, rch)
-			errch <- errors.New("lch closed the connection")
-		}()
-	}
+		log.Fatalf("error: %v", err)
+	} 
+
+	log.Printf("Session is recorded in %v", file_name)
+	wrappedlch := logchannel.New(lch, f)
+	go func() {
+		_, _ = io.Copy(wrappedlch, rch)
+		errch <- errors.New("lch closed the connection")
+	}()
+	
 	defer f.Close()
 	
 	go func() {
