@@ -46,14 +46,14 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	return pipe(lreqs, rreqs, lch, rch, config.Logs, user)
 }
 
-func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logs_location string, user string) error {
+func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocation string, user string) error {
 	defer func() {
 		_ = lch.Close()
 		_ = rch.Close()
 	}()
 
 	errch := make(chan error, 1)
-	file_name := strings.Join([]string{logs_location, "/", user, "-", time.Now().Format(time.RFC3339)}, "") // get user
+	file_name := strings.Join([]string{logsLocation, "/", user, "-", time.Now().Format(time.RFC3339)}, "") // get user
 	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
 	if err != nil {
 		go func() {
