@@ -88,7 +88,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	switch newChan.ChannelType() {
 	case "session":
 	default:
-		// TODO: handle direct-tcp
+		// TODO: handle direct-tcp (only for ssh scheme)
 		if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
 			log.Printf("error: failed to reject channel: %v", err)
 		}
@@ -100,7 +100,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	switch actx.userType() {
 	case UserTypeBastion:
 		log.Printf("New connection(bastion): sshUser=%q remote=%q local=%q dbUser=id:%q,email:%s", conn.User(), conn.RemoteAddr(), conn.LocalAddr(), actx.user.ID, actx.user.Email)
-		host, clientConfig, err := bastionConfig(ctx)
+		host, err := HostByName(actx.db, actx.inputUsername)
 		if err != nil {
 			ch, _, err2 := newChan.Accept()
 			if err2 != nil {
@@ -112,66 +112,90 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			return
 		}
 
-		sess := Session{
-			UserID: actx.user.ID,
-			HostID: host.ID,
-			Status: SessionStatusActive,
-		}
-		if err = actx.db.Create(&sess).Error; err != nil {
+		switch host.Scheme() {
+		case BastionSchemeSSH:
+			clientConfig, err := bastionClientConfig(ctx, host)
+			if err != nil {
+				ch, _, err2 := newChan.Accept()
+				if err2 != nil {
+					return
+				}
+				fmt.Fprintf(ch, "error: %v\n", err)
+				// FIXME: force close all channels
+				_ = ch.Close()
+				return
+			}
+
+			sess := Session{
+				UserID: actx.user.ID,
+				HostID: host.ID,
+				Status: SessionStatusActive,
+			}
+			if err = actx.db.Create(&sess).Error; err != nil {
+				ch, _, err2 := newChan.Accept()
+				if err2 != nil {
+					return
+				}
+				fmt.Fprintf(ch, "error: %v\n", err)
+				_ = ch.Close()
+				return
+			}
+
+			err = bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionsession.Config{
+				Addr:         host.DialAddr(),
+				ClientConfig: clientConfig,
+			})
+
+			now := time.Now()
+			sessUpdate := Session{
+				Status:    SessionStatusClosed,
+				ErrMsg:    fmt.Sprintf("%v", err),
+				StoppedAt: &now,
+			}
+			switch sessUpdate.ErrMsg {
+			case "lch closed the connection", "rch closed the connection":
+				sessUpdate.ErrMsg = ""
+			}
+			actx.db.Model(&sess).Updates(&sessUpdate)
+		case BastionSchemeTelnet:
+			tmpSrv := ssh.Server{
+				// PtyCallback: srv.PtyCallback,
+				Handler: telnetHandler(host),
+			}
+			ssh.DefaultChannelHandler(&tmpSrv, conn, newChan, ctx)
+		default:
 			ch, _, err2 := newChan.Accept()
 			if err2 != nil {
 				return
 			}
-			fmt.Fprintf(ch, "error: %v\n", err)
+			fmt.Fprintf(ch, "error: unknown bastion scheme: %q\n", host.Scheme())
+			// FIXME: force close all channels
 			_ = ch.Close()
-			return
 		}
-
-		err = bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionsession.Config{
-			Addr:         host.DialAddr(),
-			ClientConfig: clientConfig,
-		})
-
-		now := time.Now()
-		sessUpdate := Session{
-			Status:    SessionStatusClosed,
-			ErrMsg:    fmt.Sprintf("%v", err),
-			StoppedAt: &now,
-		}
-		switch sessUpdate.ErrMsg {
-		case "lch closed the connection", "rch closed the connection":
-			sessUpdate.ErrMsg = ""
-		}
-		actx.db.Model(&sess).Updates(&sessUpdate)
 	default: // shell
 		ssh.DefaultChannelHandler(srv, conn, newChan, ctx)
 	}
 }
 
-func bastionConfig(ctx ssh.Context) (*Host, *gossh.ClientConfig, error) {
+func bastionClientConfig(ctx ssh.Context, host *Host) (*gossh.ClientConfig, error) {
 	actx := ctx.Value(authContextKey).(*authContext)
-
-	host, err := HostByName(actx.db, actx.inputUsername)
-	if err != nil {
-		return nil, nil, err
-	}
 
 	clientConfig, err := host.clientConfig(dynamicHostKey(actx.db, host))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var tmpUser User
 	if err = actx.db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", actx.user.ID).First(&tmpUser).Error; err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	var tmpHost Host
 	if err = actx.db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	action, err2 := CheckACLs(tmpUser, tmpHost)
 	if err2 != nil {
-		return nil, nil, err2
+		return nil, err2
 	}
 
 	HostDecrypt(actx.globalContext.String("aes-key"), host)
@@ -180,11 +204,11 @@ func bastionConfig(ctx ssh.Context) (*Host, *gossh.ClientConfig, error) {
 	switch action {
 	case ACLActionAllow:
 	case ACLActionDeny:
-		return nil, nil, fmt.Errorf("you don't have permission to that host")
+		return nil, fmt.Errorf("you don't have permission to that host")
 	default:
-		return nil, nil, fmt.Errorf("invalid ACL action: %q", action)
+		return nil, fmt.Errorf("invalid ACL action: %q", action)
 	}
-	return host, clientConfig, nil
+	return clientConfig, nil
 }
 
 func shellHandler(s ssh.Session) {

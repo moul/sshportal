@@ -158,6 +158,13 @@ const (
 	ACLActionDeny              = "deny"
 )
 
+type BastionScheme string
+
+const (
+	BastionSchemeSSH    BastionScheme = "ssh"
+	BastionSchemeTelnet               = "telnet"
+)
+
 func init() {
 	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
 
@@ -171,6 +178,7 @@ func init() {
 }
 
 // Host helpers
+
 func ParseInputURL(input string) (*url.URL, error) {
 	if !strings.Contains(input, "://") {
 		input = "ssh://" + input
@@ -195,15 +203,15 @@ func (host *Host) String() string {
 	}
 	return ""
 }
-func (host *Host) Scheme() string {
+func (host *Host) Scheme() BastionScheme {
 	if host.URL != "" {
 		u, err := url.Parse(host.URL)
 		if err != nil {
-			return "ssh"
+			return BastionSchemeSSH
 		}
-		return u.Scheme
+		return BastionScheme(u.Scheme)
 	} else if host.Addr != "" {
-		return "ssh"
+		return BastionSchemeSSH
 	}
 	return ""
 }
@@ -268,9 +276,9 @@ func (host *Host) Port() uint64 {
 	}
 defaultPort:
 	switch host.Scheme() {
-	case "ssh":
+	case BastionSchemeSSH:
 		return 22
-	case "telnet":
+	case BastionSchemeTelnet:
 		return 23
 	default:
 		return 0
