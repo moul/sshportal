@@ -135,6 +135,19 @@ func server(c *cli.Context) error {
 		return err
 	}
 
+	// check for the logdir existence
+	logsLocation, e := os.Stat(c.String("logs-location"))
+	if e != nil {
+		err = os.MkdirAll(c.String("logs-location"), os.ModeDir | os.FileMode(0750) )
+		if err != nil {
+			return err
+		}
+	} else {
+		if !logsLocation.IsDir() {
+			log.Fatal("log directory cannnot be created")
+		}
+	}
+	
 	opts := []ssh.Option{}
 	// custom PublicKeyAuth handler
 	opts = append(opts, ssh.PublicKeyAuth(publicKeyAuthHandler(db, c)))
