@@ -76,7 +76,7 @@ func main() {
 				},
 				cli.StringFlag{
 					Name: "logs-location",
-					Value: "./sshportal",
+					Value: "./log",
 					Usage: "Store user session files",
 				},
 			},
