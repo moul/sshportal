@@ -9,6 +9,12 @@
 			"revisionTime": "2016-10-02T11:37:05Z"
 		},
 		{
+			"checksumSHA1": "MHJo0MQ1wV3xSm0ncSn/aHaZR3Y=",
+			"path": "github.com/arkan/bastion/pkg/logchannel",
+			"revision": "0eb93ed2121907205ca69f46667a25f8b4320fde",
+			"revisionTime": "2018-01-04T15:54:52Z"
+		},
+		{
 			"checksumSHA1": "qe14CYEIsrbHmel1u0gsdZNFPLQ=",
 			"path": "github.com/asaskevich/govalidator",
 			"revision": "2c14e1cca90af49b3b21fe2d7aaa8cc7f9da2ff8",

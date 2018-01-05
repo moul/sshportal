@@ -96,6 +96,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	}
 
 	actx := ctx.Value(authContextKey).(*authContext)
+	logsLocation := actx.globalContext.String("logs-location")
 
 	switch actx.userType() {
 	case UserTypeBastion:
@@ -144,6 +145,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			err = bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionsession.Config{
 				Addr:         host.DialAddr(),
 				ClientConfig: clientConfig,
+				Logs:         logsLocation,
 			})
 
 			now := time.Now()
