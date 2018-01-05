@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,9 +54,10 @@ type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
 	Name     string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
-	Addr     string       `valid:"required"`
-	User     string       `valid:"optional"`
-	Password string       `valid:"optional"`
+	Addr     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
+	User     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
+	Password string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
+	URL      string       `valid:"optional"`
 	SSHKey   *SSHKey      `gorm:"ForeignKey:SSHKeyID"` // SSHKey used to connect by the client
 	SSHKeyID uint         `gorm:"index"`
 	HostKey  []byte       `sql:"size:10000" valid:"optional"`
@@ -156,6 +158,13 @@ const (
 	ACLActionDeny              = "deny"
 )
 
+type BastionScheme string
+
+const (
+	BastionSchemeSSH    BastionScheme = "ssh"
+	BastionSchemeTelnet               = "telnet"
+)
+
 func init() {
 	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
 
@@ -168,37 +177,113 @@ func init() {
 	}))
 }
 
-func (host *Host) URL() string {
-	return fmt.Sprintf("%s@%s", host.User, host.Addr)
-}
+// Host helpers
 
-func NewHostFromURL(rawurl string) (*Host, error) {
-	if !strings.Contains(rawurl, "://") {
-		rawurl = "ssh://" + rawurl
+func ParseInputURL(input string) (*url.URL, error) {
+	if !strings.Contains(input, "://") {
+		input = "ssh://" + input
 	}
-	u, err := url.Parse(rawurl)
+	u, err := url.Parse(input)
 	if err != nil {
 		return nil, err
 	}
-	host := Host{Addr: u.Host}
-	if !strings.Contains(host.Addr, ":") {
-		host.Addr += ":22" // add port if not present
-	}
-	host.User = "root" // default username
-	if u.User != nil {
-		password, _ := u.User.Password()
-		host.Password = password
-		host.User = u.User.Username()
-	}
-	return &host, nil
+	return u, nil
 }
-
+func (host *Host) DialAddr() string {
+	return fmt.Sprintf("%s:%d", host.Hostname(), host.Port())
+}
+func (host *Host) String() string {
+	if host.URL != "" {
+		return host.URL
+	} else if host.Addr != "" { // to be removed in a future version in favor of URL
+		if host.Password != "" {
+			return fmt.Sprintf("ssh://%s:%s@%s", host.User, strings.Repeat("*", 4), host.Addr)
+		}
+		return fmt.Sprintf("ssh://%s@%s", host.User, host.Addr)
+	}
+	return ""
+}
+func (host *Host) Scheme() BastionScheme {
+	if host.URL != "" {
+		u, err := url.Parse(host.URL)
+		if err != nil {
+			return BastionSchemeSSH
+		}
+		return BastionScheme(u.Scheme)
+	} else if host.Addr != "" {
+		return BastionSchemeSSH
+	}
+	return ""
+}
 func (host *Host) Hostname() string {
-	return strings.Split(host.Addr, ":")[0]
+	if host.URL != "" {
+		u, err := url.Parse(host.URL)
+		if err != nil {
+			return ""
+		}
+		return u.Hostname()
+	} else if host.Addr != "" { // to be removed in a future version in favor of URL
+		return strings.Split(host.Addr, ":")[0]
+	}
+	return ""
 }
-
-// Host helpers
-
+func (host *Host) Username() string {
+	if host.URL != "" {
+		u, err := url.Parse(host.URL)
+		if err != nil {
+			return "root"
+		}
+		if u.User != nil {
+			return u.User.Username()
+		}
+	} else if host.User != "" { // to be removed in a future version in favor of URL
+		return host.User
+	}
+	return "root"
+}
+func (host *Host) Passwd() string {
+	if host.URL != "" {
+		u, err := url.Parse(host.URL)
+		if err != nil {
+			return ""
+		}
+		if u.User != nil {
+			password, _ := u.User.Password()
+			return password
+		}
+	} else if host.Password != "" { // to be removed in a future version in favor of URL
+		return host.Password
+	}
+	return ""
+}
+func (host *Host) Port() uint64 {
+	var portString string
+	if host.URL != "" {
+		u, err := url.Parse(host.URL)
+		if err != nil {
+			goto defaultPort
+		}
+		portString = u.Port()
+	} else if host.Addr != "" { // to be removed in a future version in favor of URL
+		portString = strings.Split(host.Addr, ":")[1]
+	}
+	if portString != "" {
+		port, err := strconv.ParseUint(portString, 10, 64)
+		if err != nil {
+			goto defaultPort
+		}
+		return port
+	}
+defaultPort:
+	switch host.Scheme() {
+	case BastionSchemeSSH:
+		return 22
+	case BastionSchemeTelnet:
+		return 23
+	default:
+		return 0
+	}
+}
 func HostsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Groups").Preload("SSHKey")
 }
@@ -217,7 +302,7 @@ func HostByName(db *gorm.DB, name string) (*Host, error) {
 
 func (host *Host) clientConfig(hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
 	config := gossh.ClientConfig{
-		User:            host.User,
+		User:            host.Username(),
 		HostKeyCallback: hk,
 		Auth:            []gossh.AuthMethod{},
 	}
@@ -228,8 +313,8 @@ func (host *Host) clientConfig(hk gossh.HostKeyCallback) (*gossh.ClientConfig, e
 		}
 		config.Auth = append(config.Auth, gossh.PublicKeys(signer))
 	}
-	if host.Password != "" {
-		config.Auth = append(config.Auth, gossh.Password(host.Password))
+	if host.Passwd() != "" {
+		config.Auth = append(config.Auth, gossh.Password(host.Passwd()))
 	}
 	if len(config.Auth) == 0 {
 		return nil, fmt.Errorf("no valid authentication method for host %q", host.Name)

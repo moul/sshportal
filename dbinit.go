@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
+	"strings"
 	"time"
 
 	"github.com/go-gormigrate/gormigrate"
@@ -434,6 +436,28 @@ func dbInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
 			},
+		}, {
+			ID: "28",
+			Migrate: func(tx *gorm.DB) error {
+				type Host struct {
+					// FIXME: use uuid for ID
+					gorm.Model
+					Name     string `gorm:"size:32"`
+					Addr     string
+					User     string
+					Password string
+					URL      string
+					SSHKey   *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
+					SSHKeyID uint         `gorm:"index"`
+					HostKey  []byte       `sql:"size:10000"`
+					Groups   []*HostGroup `gorm:"many2many:host_host_groups;"`
+					Comment  string
+				}
+				return tx.AutoMigrate(&Host{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {
@@ -522,9 +546,20 @@ func dbInit(db *gorm.DB) error {
 		if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
 			return err
 		}
+		var username string
+		if currentUser, err := user.Current(); err == nil {
+			username = currentUser.Username
+		}
+		if username == "" {
+			username = os.Getenv("USER")
+		}
+		username = strings.ToLower(username)
+		if username == "" {
+			username = "admin" // fallback username
+		}
 		user := User{
-			Name:        "admin",
-			Email:       "admin@sshportal",
+			Name:        username,
+			Email:       fmt.Sprintf("%s@localhost", username),
 			Comment:     "created by sshportal",
 			Roles:       []*UserRole{&adminRole},
 			InviteToken: inviteToken,
