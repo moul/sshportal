@@ -145,7 +145,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			err = bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionsession.Config{
 				Addr:         host.DialAddr(),
 				ClientConfig: clientConfig,
-  			Logs:         logsLocation,
+				Logs:         logsLocation,
 			})
 
 			now := time.Now()

@@ -33,7 +33,7 @@ test:
 
 .PHONY: lint
 lint:
-	gometalinter --disable-all --enable=errcheck --enable=vet --enable=vetshadow --enable=golint --enable=gas --enable=ineffassign --enable=goconst --enable=goimports --enable=gofmt --exclude="should have comment" --enable=staticcheck --enable=gosimple --enable=misspell --deadline=20s .
+	gometalinter --disable-all --enable=errcheck --enable=vet --enable=vetshadow --enable=golint --enable=gas --enable=ineffassign --enable=goconst --enable=goimports --enable=gofmt --exclude="should have comment" --enable=staticcheck --enable=gosimple --enable=misspell --deadline=60s .
 
 .PHONY: backup
 backup:

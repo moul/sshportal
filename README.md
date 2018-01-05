@@ -37,6 +37,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Sensitive data encryption
 * Session management (see active connections, history, stats, stop)
 * Audit log (logging every user action)
+* Record TTY Session
 * Host Keys verifications shared across users
 * Healthcheck user (replying OK to any user)
 * SSH compatibility

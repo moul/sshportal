@@ -75,7 +75,7 @@ func main() {
 					Usage: "Encrypt sensitive data in database (length: 16, 24 or 32)",
 				},
 				cli.StringFlag{
-					Name: "logs-location",
+					Name:  "logs-location",
 					Value: "./log",
 					Usage: "Store user session files",
 				},
@@ -138,16 +138,16 @@ func server(c *cli.Context) error {
 	// check for the logdir existence
 	logsLocation, e := os.Stat(c.String("logs-location"))
 	if e != nil {
-		err = os.MkdirAll(c.String("logs-location"), os.ModeDir | os.FileMode(0750) )
+		err = os.MkdirAll(c.String("logs-location"), os.ModeDir|os.FileMode(0750))
 		if err != nil {
 			return err
 		}
 	} else {
 		if !logsLocation.IsDir() {
-			log.Fatal("log directory cannnot be created")
+			log.Fatal("log directory cannot be created")
 		}
 	}
-	
+
 	opts := []ssh.Option{}
 	// custom PublicKeyAuth handler
 	opts = append(opts, ssh.PublicKeyAuth(publicKeyAuthHandler(db, c)))
