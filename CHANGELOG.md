@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * The default created user now has the same username as the user starting sshportal (was hardcoded "admin")
+* Add Telnet support
 
 ## v1.7.1 (2018-01-03)
 
