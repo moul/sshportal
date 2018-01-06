@@ -535,7 +535,9 @@ func dbInit(db *gorm.DB) error {
 	// create admin user
 	var defaultUserGroup UserGroup
 	db.Where("name = ?", "default").First(&defaultUserGroup)
-	db.Table("users").Count(&count)
+	if err := db.Table("users").Count(&count).Error; err != nil {
+		return err
+	}
 	if count == 0 {
 		// if no admin, create an account for the first connection
 		inviteToken := randStringBytes(16)
@@ -588,14 +590,10 @@ func dbInit(db *gorm.DB) error {
 	}
 
 	// close unclosed connections
-	if err := db.Table("sessions").Where("status = ?", "active").Updates(&Session{
+	return db.Table("sessions").Where("status = ?", "active").Updates(&Session{
 		Status: SessionStatusClosed,
 		ErrMsg: "sshportal was halted while the connection was still active",
-	}).Error; err != nil {
-		return err
-	}
-
-	return nil
+	}).Error
 }
 
 func hardDeleteCallback(scope *gorm.Scope) {

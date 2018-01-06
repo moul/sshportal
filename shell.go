@@ -323,11 +323,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 						for _, key := range config.SSHKeys {
-							SSHKeyDecrypt(actx.globalContext.String("aes-key"), key)
+							SSHKeyDecrypt(actx.config.aesKey, key)
 						}
 						if !c.Bool("decrypt") {
 							for _, key := range config.SSHKeys {
-								if err := SSHKeyEncrypt(actx.globalContext.String("aes-key"), key); err != nil {
+								if err := SSHKeyEncrypt(actx.config.aesKey, key); err != nil {
 									return err
 								}
 							}
@@ -337,11 +337,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 						for _, host := range config.Hosts {
-							HostDecrypt(actx.globalContext.String("aes-key"), host)
+							HostDecrypt(actx.config.aesKey, host)
 						}
 						if !c.Bool("decrypt") {
 							for _, host := range config.Hosts {
-								if err := HostEncrypt(actx.globalContext.String("aes-key"), host); err != nil {
+								if err := HostEncrypt(actx.config.aesKey, host); err != nil {
 									return err
 								}
 							}
@@ -456,9 +456,9 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, host := range config.Hosts {
-							HostDecrypt(actx.globalContext.String("aes-key"), host)
+							HostDecrypt(actx.config.aesKey, host)
 							if !c.Bool("decrypt") {
-								if err := HostEncrypt(actx.globalContext.String("aes-key"), host); err != nil {
+								if err := HostEncrypt(actx.config.aesKey, host); err != nil {
 									return err
 								}
 							}
@@ -492,9 +492,9 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, sshKey := range config.SSHKeys {
-							SSHKeyDecrypt(actx.globalContext.String("aes-key"), sshKey)
+							SSHKeyDecrypt(actx.config.aesKey, sshKey)
 							if !c.Bool("decrypt") {
-								if err := SSHKeyEncrypt(actx.globalContext.String("aes-key"), sshKey); err != nil {
+								if err := SSHKeyEncrypt(actx.config.aesKey, sshKey); err != nil {
 									return err
 								}
 							}
@@ -697,7 +697,7 @@ GLOBAL OPTIONS:
 						}
 
 						// encrypt
-						if err := HostEncrypt(actx.globalContext.String("aes-key"), host); err != nil {
+						if err := HostEncrypt(actx.config.aesKey, host); err != nil {
 							return err
 						}
 
@@ -734,7 +734,7 @@ GLOBAL OPTIONS:
 
 						if c.Bool("decrypt") {
 							for _, host := range hosts {
-								HostDecrypt(actx.globalContext.String("aes-key"), host)
+								HostDecrypt(actx.config.aesKey, host)
 							}
 						}
 
@@ -1042,14 +1042,14 @@ GLOBAL OPTIONS:
 					return err
 				}
 
-				fmt.Fprintf(s, "Debug mode (server): %v\n", actx.globalContext.Bool("debug"))
+				fmt.Fprintf(s, "debug mode (server): %v\n", actx.config.debug)
 				hostname, _ := os.Hostname()
 				fmt.Fprintf(s, "Hostname: %s\n", hostname)
 				fmt.Fprintf(s, "CPUs: %d\n", runtime.NumCPU())
-				fmt.Fprintf(s, "Demo mode: %v\n", actx.globalContext.Bool("demo"))
-				fmt.Fprintf(s, "DB Driver: %s\n", actx.globalContext.String("db-driver"))
-				fmt.Fprintf(s, "DB Conn: %s\n", actx.globalContext.String("db-conn"))
-				fmt.Fprintf(s, "Bind Address: %s\n", actx.globalContext.String("bind-address"))
+				fmt.Fprintf(s, "Demo mode: %v\n", actx.config.demo)
+				fmt.Fprintf(s, "DB Driver: %s\n", actx.config.dbDriver)
+				fmt.Fprintf(s, "DB Conn: %s\n", actx.config.dbURL)
+				fmt.Fprintf(s, "Bind Address: %s\n", actx.config.bindAddr)
 				fmt.Fprintf(s, "System Time: %v\n", time.Now().Format(time.RFC3339Nano))
 				fmt.Fprintf(s, "OS Type: %s\n", runtime.GOOS)
 				fmt.Fprintf(s, "OS Architecture: %s\n", runtime.GOARCH)
@@ -1095,8 +1095,8 @@ GLOBAL OPTIONS:
 						}
 
 						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
-						if actx.globalContext.String("aes-key") != "" {
-							if err2 := SSHKeyEncrypt(actx.globalContext.String("aes-key"), key); err2 != nil {
+						if actx.config.aesKey != "" {
+							if err2 := SSHKeyEncrypt(actx.config.aesKey, key); err2 != nil {
 								return err2
 							}
 						}
@@ -1141,7 +1141,7 @@ GLOBAL OPTIONS:
 
 						if c.Bool("decrypt") {
 							for _, key := range keys {
-								SSHKeyDecrypt(actx.globalContext.String("aes-key"), key)
+								SSHKeyDecrypt(actx.config.aesKey, key)
 							}
 						}
 
@@ -1250,7 +1250,7 @@ GLOBAL OPTIONS:
 						if err := SSHKeysByIdentifiers(SSHKeysPreload(db), c.Args()).First(&key).Error; err != nil {
 							return err
 						}
-						SSHKeyDecrypt(actx.globalContext.String("aes-key"), &key)
+						SSHKeyDecrypt(actx.config.aesKey, &key)
 
 						type line struct {
 							key   string
