@@ -80,6 +80,11 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 				return nil
 			}
 			b, err := rch.SendRequest(req.Type, req.WantReply, req.Payload)
+			if req.Type == "exec" {
+				command := append(req.Payload, []byte("\n")...)
+				wrappedlch.LogWrite(command)
+			}
+			
 			if err != nil {
 				return err
 			}
