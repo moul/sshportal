@@ -25,9 +25,9 @@ func (caller bastionTelnetCaller) CallTELNET(ctx telnet.Context, w telnet.Writer
 		for {
 			// Read 1 byte.
 			n, err := reader.Read(p)
-			if n <= 0 && nil == err {
+			if n <= 0 && err == nil {
 				continue
-			} else if n <= 0 && nil != err {
+			} else if n <= 0 && err != nil {
 				break
 			}
 

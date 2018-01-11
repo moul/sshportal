@@ -366,15 +366,10 @@ func (u *User) HasRole(name string) bool {
 	return false
 }
 func (u *User) CheckRoles(names []string) error {
-	ok := false
 	for _, name := range names {
 		if u.HasRole(name) {
-			ok = true
-			break
+			return nil
 		}
-	}
-	if ok {
-		return nil
 	}
 	return fmt.Errorf("you don't have permission to access this feature (requires any of these roles: '%s')", strings.Join(names, "', '"))
 }

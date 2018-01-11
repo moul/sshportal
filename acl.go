@@ -30,7 +30,7 @@ func CheckACLs(user User, host Host) (string, error) {
 	}
 
 	// transform map to slice and sort it
-	acls := []*ACL{}
+	acls := make([]*ACL, 0, len(aclMap))
 	for _, acl := range aclMap {
 		acls = append(acls, acl)
 	}

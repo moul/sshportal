@@ -12,7 +12,6 @@ import (
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
 	"github.com/moul/sshportal/pkg/bastionsession"
-	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
 )
 
@@ -27,7 +26,7 @@ type authContext struct {
 	inputUsername string
 	db            *gorm.DB
 	userKey       UserKey
-	globalContext *cli.Context
+	config        *configServe
 	authMethod    string
 	authSuccess   bool
 }
@@ -96,7 +95,6 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	}
 
 	actx := ctx.Value(authContextKey).(*authContext)
-	logsLocation := actx.globalContext.String("logs-location")
 
 	switch actx.userType() {
 	case UserTypeBastion:
@@ -145,7 +143,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			err = bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionsession.Config{
 				Addr:         host.DialAddr(),
 				ClientConfig: clientConfig,
-				Logs:         logsLocation,
+				Logs:         actx.config.logsLocation,
 			})
 
 			now := time.Now()
@@ -200,8 +198,8 @@ func bastionClientConfig(ctx ssh.Context, host *Host) (*gossh.ClientConfig, erro
 		return nil, err2
 	}
 
-	HostDecrypt(actx.globalContext.String("aes-key"), host)
-	SSHKeyDecrypt(actx.globalContext.String("aes-key"), host.SSHKey)
+	HostDecrypt(actx.config.aesKey, host)
+	SSHKeyDecrypt(actx.config.aesKey, host.SSHKey)
 
 	switch action {
 	case ACLActionAllow:
@@ -246,12 +244,12 @@ func shellHandler(s ssh.Session) {
 	panic("should not happen")
 }
 
-func passwordAuthHandler(db *gorm.DB, globalContext *cli.Context) ssh.PasswordHandler {
+func passwordAuthHandler(db *gorm.DB, cfg *configServe) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pass string) bool {
 		actx := &authContext{
 			db:            db,
 			inputUsername: ctx.User(),
-			globalContext: globalContext,
+			config:        cfg,
 			authMethod:    "password",
 		}
 		actx.authSuccess = actx.userType() == UserTypeHealthcheck
@@ -260,12 +258,29 @@ func passwordAuthHandler(db *gorm.DB, globalContext *cli.Context) ssh.PasswordHa
 	}
 }
 
-func publicKeyAuthHandler(db *gorm.DB, globalContext *cli.Context) ssh.PublicKeyHandler {
+func privateKeyFromDB(db *gorm.DB, aesKey string) func(*ssh.Server) error {
+	return func(srv *ssh.Server) error {
+		var key SSHKey
+		if err := SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
+			return err
+		}
+		SSHKeyDecrypt(aesKey, &key)
+
+		signer, err := gossh.ParsePrivateKey([]byte(key.PrivKey))
+		if err != nil {
+			return err
+		}
+		srv.AddHostKey(signer)
+		return nil
+	}
+}
+
+func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
 	return func(ctx ssh.Context, key ssh.PublicKey) bool {
 		actx := &authContext{
 			db:            db,
 			inputUsername: ctx.User(),
-			globalContext: globalContext,
+			config:        cfg,
 			authMethod:    "pubkey",
 			authSuccess:   true,
 		}

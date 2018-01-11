@@ -95,17 +95,14 @@ func safeDecrypt(key []byte, cryptoText string) string {
 	return out
 }
 
-func HostEncrypt(aesKey string, host *Host) error {
+func HostEncrypt(aesKey string, host *Host) (err error) {
 	if aesKey == "" {
 		return nil
 	}
-	var err error
 	if host.Password != "" {
-		if host.Password, err = encrypt([]byte(aesKey), host.Password); err != nil {
-			return err
-		}
+		host.Password, err = encrypt([]byte(aesKey), host.Password)
 	}
-	return nil
+	return
 }
 func HostDecrypt(aesKey string, host *Host) {
 	if aesKey == "" {
@@ -116,13 +113,12 @@ func HostDecrypt(aesKey string, host *Host) {
 	}
 }
 
-func SSHKeyEncrypt(aesKey string, key *SSHKey) error {
+func SSHKeyEncrypt(aesKey string, key *SSHKey) (err error) {
 	if aesKey == "" {
 		return nil
 	}
-	var err error
 	key.PrivKey, err = encrypt([]byte(aesKey), key.PrivKey)
-	return err
+	return
 }
 func SSHKeyDecrypt(aesKey string, key *SSHKey) {
 	if aesKey == "" {
