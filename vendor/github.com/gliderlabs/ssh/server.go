@@ -26,7 +26,6 @@ type Server struct {
 
 	PasswordHandler             PasswordHandler             // password authentication handler
 	PublicKeyHandler            PublicKeyHandler            // public key authentication handler
-	ChannelHandler              ChannelHandler              // channel handler
 	PtyCallback                 PtyCallback                 // callback for allowing PTY sessions, allows all if nil
 	ConnCallback                ConnCallback                // optional callback for wrapping net.Conn before handling
 	LocalPortForwardingCallback LocalPortForwardingCallback // callback for allowing local port forwarding, denies all if nil
@@ -34,13 +33,16 @@ type Server struct {
 	IdleTimeout time.Duration // connection timeout when no activity, none if empty
 	MaxTimeout  time.Duration // absolute connection timeout, none if empty
 
+	channelHandlers map[string]channelHandler
+
 	mu        sync.Mutex
 	listeners map[net.Listener]struct{}
 	conns     map[*gossh.ServerConn]struct{}
 	doneChan  chan struct{}
 }
 
-type ChannelHandler func(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx Context)
+// internal for now
+type channelHandler func(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx Context)
 
 func (srv *Server) ensureHostSigner() error {
 	if len(srv.HostSigners) == 0 {
@@ -54,6 +56,10 @@ func (srv *Server) ensureHostSigner() error {
 }
 
 func (srv *Server) config(ctx Context) *gossh.ServerConfig {
+	srv.channelHandlers = map[string]channelHandler{
+		"session":      sessionHandler,
+		"direct-tcpip": directTcpipHandler,
+	}
 	config := &gossh.ServerConfig{}
 	for _, signer := range srv.HostSigners {
 		config.AddHostKey(signer)
@@ -220,22 +226,12 @@ func (srv *Server) handleConn(newConn net.Conn) {
 	applyConnMetadata(ctx, sshConn)
 	go gossh.DiscardRequests(reqs)
 	for ch := range chans {
-		if srv.ChannelHandler == nil {
-			DefaultChannelHandler(srv, sshConn, ch, ctx)
-		} else {
-			srv.ChannelHandler(srv, sshConn, ch, ctx)
+		handler, found := srv.channelHandlers[ch.ChannelType()]
+		if !found {
+			ch.Reject(gossh.UnknownChannelType, "unsupported channel type")
+			continue
 		}
-	}
-}
-
-func DefaultChannelHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx Context) {
-	switch newChan.ChannelType() {
-	case "session":
-		go sessionHandler(srv, conn, newChan, ctx)
-	case "direct-tcpip":
-		go directTcpipHandler(srv, conn, newChan, ctx)
-	default:
-		newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
+		go handler(srv, sshConn, ch, ctx)
 	}
 }
 
