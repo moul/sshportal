@@ -11,7 +11,7 @@ If this is a FEATURE REQUEST, please:
 
 **What you expected to happen**:
 
-**How to reproduce it (as minimally and precisely as possible):
+**How to reproduce it (as minimally and precisely as possible)**:
 
 **Anything else we need to know?**:
 
