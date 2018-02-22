@@ -642,6 +642,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "password, p", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "comment, c"},
 						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
+						cli.StringFlag{Name: "hop, o", Usage: "Hop to use for connecting to the server"},
 						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `HOSTGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
@@ -665,7 +666,13 @@ GLOBAL OPTIONS:
 							host.Password = c.String("password")
 						}
 						host.Name = strings.Split(host.Hostname(), ".")[0]
-
+						if c.String("hop") != "" {
+							hop, err := HostByName(db, c.String("hop"))
+							if err != nil {
+								return err
+							}
+							host.Hop = hop
+						}
 						if c.String("name") != "" {
 							host.Name = c.String("name")
 						}
@@ -776,7 +783,7 @@ GLOBAL OPTIONS:
 						}
 
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment", "Hop"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
@@ -790,6 +797,14 @@ GLOBAL OPTIONS:
 							for _, hostGroup := range host.Groups {
 								groupNames = append(groupNames, hostGroup.Name)
 							}
+							var hop string
+							if host.HopID != 0 {
+								var hopHost Host
+								db.Model(&host).Related(&hopHost, "HopID")
+								hop = hopHost.Name
+							} else {
+								hop = ""
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
 								host.Name,
@@ -799,6 +814,7 @@ GLOBAL OPTIONS:
 								humanize.Time(host.UpdatedAt),
 								humanize.Time(host.CreatedAt),
 								host.Comment,
+								hop,
 								//FIXME: add some stats about last access time etc
 							})
 						}
