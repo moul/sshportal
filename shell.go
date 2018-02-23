@@ -845,6 +845,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "url, u", Usage: "Update connection URL"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
 						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
+						cli.StringFlag{Name: "hop, o", Usage: "Change the hop to use for connecting to the server"},
+						cli.BoolFlag{Name: "unset-hop", Usage: "Remove the hop set for this host"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
 						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `HOSTGROUPS`"},
 					},
@@ -887,6 +889,29 @@ GLOBAL OPTIONS:
 									return err
 								}
 								if err := model.Update("url", u.String()).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+
+							// hop
+							if c.String("hop") != "" {
+								hop, err := HostByName(db, c.String("hop"))
+								if err != nil {
+									tx.Rollback()
+									return err
+								}
+								if err := model.Association("Hop").Replace(hop).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+
+							// remove the hop
+							if c.Bool("unset-hop") {
+								var hopHost Host
+								db.Model(&host).Related(&hopHost, "HopID")
+								if err := model.Association("Hop").Delete(hopHost).Error; err != nil {
 									tx.Rollback()
 									return err
 								}
