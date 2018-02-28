@@ -3,13 +3,13 @@ package bastionsession
 import (
 	"errors"
 	"io"
+	"log"
+	"os"
 	"strings"
 	"time"
-	"os"
-	"log"
-	
-	"github.com/gliderlabs/ssh"
+
 	"github.com/arkan/bastion/pkg/logchannel"
+	"github.com/gliderlabs/ssh"
 	gossh "golang.org/x/crypto/ssh"
 )
 
@@ -19,7 +19,7 @@ type Config struct {
 	ClientConfig *gossh.ClientConfig
 }
 
-func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, config Config) error {
+func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []Config) error {
 	if newChan.ChannelType() != "session" {
 		newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
 		return nil
@@ -31,19 +31,37 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 		return nil
 	}
 
-	// open client channel
-	rconn, err := gossh.Dial("tcp", config.Addr, config.ClientConfig)
-	if err != nil {
-		return err
+	var lastClient *gossh.Client
+
+    // go through all the hops
+	for _, config := range configs {
+		var client *gossh.Client
+		if lastClient == nil {
+			client, err = gossh.Dial("tcp", config.Addr, config.ClientConfig)
+		} else {
+			rconn, err := lastClient.Dial("tcp", config.Addr)
+			if err != nil {
+				return err
+			}
+			ncc, chans, reqs, err := gossh.NewClientConn(rconn, config.Addr, config.ClientConfig)
+			if err != nil {
+				return err
+			}
+			client = gossh.NewClient(ncc, chans, reqs)
+		}
+		if err != nil {
+			return err
+		}
+		defer func() { _ = client.Close() }()
+		lastClient = client
 	}
-	defer func() { _ = rconn.Close() }()
-	rch, rreqs, err := rconn.OpenChannel("session", []byte{})
+	rch, rreqs, err := lastClient.OpenChannel("session", []byte{})
 	if err != nil {
 		return err
 	}
 	user := conn.User()
 	// pipe everything
-	return pipe(lreqs, rreqs, lch, rch, config.Logs, user)
+	return pipe(lreqs, rreqs, lch, rch, configs[len(configs)-1].Logs, user)
 }
 
 func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocation string, user string) error {
@@ -57,7 +75,7 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
 	if err != nil {
 		log.Fatalf("error: %v", err)
-	} 
+	}
 
 	log.Printf("Session is recorded in %v", file_name)
 	wrappedlch := logchannel.New(lch, f)
@@ -65,9 +83,9 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 		_, _ = io.Copy(wrappedlch, rch)
 		errch <- errors.New("lch closed the connection")
 	}()
-	
+
 	defer f.Close()
-	
+
 	go func() {
 		_, _ = io.Copy(rch, lch)
 		errch <- errors.New("rch closed the connection")

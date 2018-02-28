@@ -654,6 +654,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "password, p", Usage: "If present, sshportal will use password-based authentication"},
 						cli.StringFlag{Name: "comment, c"},
 						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
+						cli.StringFlag{Name: "hop, o", Usage: "Hop to use for connecting to the server"},
 						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `HOSTGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
@@ -677,7 +678,13 @@ GLOBAL OPTIONS:
 							host.Password = c.String("password")
 						}
 						host.Name = strings.Split(host.Hostname(), ".")[0]
-
+						if c.String("hop") != "" {
+							hop, err := HostByName(db, c.String("hop"))
+							if err != nil {
+								return err
+							}
+							host.Hop = hop
+						}
 						if c.String("name") != "" {
 							host.Name = c.String("name")
 						}
@@ -788,7 +795,7 @@ GLOBAL OPTIONS:
 						}
 
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment", "Hop"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
@@ -802,6 +809,14 @@ GLOBAL OPTIONS:
 							for _, hostGroup := range host.Groups {
 								groupNames = append(groupNames, hostGroup.Name)
 							}
+							var hop string
+							if host.HopID != 0 {
+								var hopHost Host
+								db.Model(&host).Related(&hopHost, "HopID")
+								hop = hopHost.Name
+							} else {
+								hop = ""
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", host.ID),
 								host.Name,
@@ -811,6 +826,7 @@ GLOBAL OPTIONS:
 								humanize.Time(host.UpdatedAt),
 								humanize.Time(host.CreatedAt),
 								host.Comment,
+								hop,
 								//FIXME: add some stats about last access time etc
 							})
 						}
@@ -841,6 +857,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "url, u", Usage: "Update connection URL"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
 						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
+						cli.StringFlag{Name: "hop, o", Usage: "Change the hop to use for connecting to the server"},
+						cli.BoolFlag{Name: "unset-hop", Usage: "Remove the hop set for this host"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
 						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `HOSTGROUPS`"},
 					},
@@ -883,6 +901,29 @@ GLOBAL OPTIONS:
 									return err
 								}
 								if err := model.Update("url", u.String()).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+
+							// hop
+							if c.String("hop") != "" {
+								hop, err := HostByName(db, c.String("hop"))
+								if err != nil {
+									tx.Rollback()
+									return err
+								}
+								if err := model.Association("Hop").Replace(hop).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+
+							// remove the hop
+							if c.Bool("unset-hop") {
+								var hopHost Host
+								db.Model(&host).Related(&hopHost, "HopID")
+								if err := model.Association("Hop").Delete(hopHost).Error; err != nil {
 									tx.Rollback()
 									return err
 								}
