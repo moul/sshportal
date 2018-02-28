@@ -271,9 +271,15 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("UserGroups").Append(&appendUserGroups).Delete(deleteUserGroups).Error; err != nil {
+							if err := model.Association("UserGroups").Append(&appendUserGroups).Error; err != nil {
 								tx.Rollback()
 								return err
+							}
+							if len(deleteUserGroups) > 0 {
+								if err := model.Association("UserGroups").Delete(deleteUserGroups).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
 							}
 
 							var appendHostGroups []HostGroup
@@ -286,9 +292,15 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("HostGroups").Append(&appendHostGroups).Delete(deleteHostGroups).Error; err != nil {
+							if err := model.Association("HostGroups").Append(&appendHostGroups).Error; err != nil {
 								tx.Rollback()
 								return err
+							}
+							if len(deleteHostGroups) > 0 {
+								if err := model.Association("HostGroups").Delete(deleteHostGroups).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
 							}
 						}
 
@@ -898,9 +910,15 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+							if err := model.Association("Groups").Append(&appendGroups).Error; err != nil {
 								tx.Rollback()
 								return err
+							}
+							if len(deleteGroups) > 0 {
+								if err := model.Association("Groups").Delete(deleteGroups).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
 							}
 						}
 
@@ -1525,11 +1543,16 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("Groups").Append(&appendGroups).Delete(deleteGroups).Error; err != nil {
+							if err := model.Association("Groups").Append(&appendGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
-
+							if len(deleteGroups) > 0 {
+								if err := model.Association("Groups").Delete(deleteGroups).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
 							var appendRoles []UserRole
 							if err := UserRolesByIdentifiers(db, c.StringSlice("assign-role")).Find(&appendRoles).Error; err != nil {
 								tx.Rollback()
@@ -1540,12 +1563,17 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("Roles").Append(&appendRoles).Delete(deleteRoles).Error; err != nil {
+							if err := model.Association("Roles").Append(&appendRoles).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
+							if len(deleteRoles) > 0 {
+								if err := model.Association("Roles").Delete(deleteRoles).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
 						}
-
 						return tx.Commit().Error
 					},
 				},
