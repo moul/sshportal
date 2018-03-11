@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -31,6 +32,42 @@ func NewSSHKey(keyType string, length uint) (*SSHKey, error) {
 		return nil, err
 	}
 
+	// convert priv key to x509 format
+	var pemKey = &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	}
+	buf := bytes.NewBufferString("")
+	if err = pem.Encode(buf, pemKey); err != nil {
+		return nil, err
+	}
+	key.PrivKey = buf.String()
+
+	// generte authorized-key formatted pubkey output
+	pub, err := gossh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+	key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(pub)))
+
+	return &key, nil
+}
+
+func ImportSSHKey(keyValue string) (*SSHKey, error) {
+	key := SSHKey{
+		Type: "rsa",
+	}
+
+	parsedKey, err := gossh.ParseRawPrivateKey([]byte(keyValue))
+	if err != nil {
+		return nil, err
+	}
+	var privateKey *rsa.PrivateKey
+	var ok bool
+	if privateKey, ok = parsedKey.(*rsa.PrivateKey); !ok {
+		return nil, errors.New("key type not supported")
+	}
+	key.Length = uint(privateKey.PublicKey.N.BitLen())
 	// convert priv key to x509 format
 	var pemKey = &pem.Block{
 		Type:  "RSA PRIVATE KEY",

@@ -1182,6 +1182,60 @@ GLOBAL OPTIONS:
 						return nil
 					},
 				}, {
+					Name:        "import",
+					Usage:       "Imports an existing private key",
+					Description: "$> key import\n   $> key import --name=mykey",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						var name string
+						if c.String("name") != "" {
+							name = c.String("name")
+						} else {
+							name = namesgenerator.GetRandomName(0)
+						}
+
+						var value string
+						term := terminal.NewTerminal(s, "Paste your key and end with a blank line> ")
+						for {
+							line, err := term.ReadLine()
+							if err != nil {
+								return err
+							}
+							if line != "" {
+								value += line + "\n"
+							} else {
+								break
+							}
+						}
+						key, err := ImportSSHKey(value)
+						if err != nil {
+							return err
+						}
+
+						key.Name = name
+						key.Comment = c.String("comment")
+
+						if _, err := govalidator.ValidateStruct(key); err != nil {
+							return err
+						}
+						// FIXME: check if name already exists
+
+						// save the key in database
+						if err := db.Create(&key).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", key.ID)
+
+						return nil
+					},
+				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more keys",
 					ArgsUsage: "KEY...",
