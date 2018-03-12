@@ -114,16 +114,33 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 
 		switch host.Scheme() {
 		case BastionSchemeSSH:
-			clientConfig, err := bastionClientConfig(ctx, host)
-			if err != nil {
-				ch, _, err2 := newChan.Accept()
+			sessionConfigs := make([]bastionsession.Config, 0)
+			currentHost := host
+			for currentHost != nil {
+				clientConfig, err2 := bastionClientConfig(ctx, currentHost)
 				if err2 != nil {
+					ch, _, err3 := newChan.Accept()
+					if err3 != nil {
+						return
+					}
+					fmt.Fprintf(ch, "error: %v\n", err2)
+					// FIXME: force close all channels
+					_ = ch.Close()
 					return
 				}
-				fmt.Fprintf(ch, "error: %v\n", err)
-				// FIXME: force close all channels
-				_ = ch.Close()
-				return
+				sessionConfigs = append([]bastionsession.Config{{
+					Addr:         currentHost.DialAddr(),
+					ClientConfig: clientConfig,
+					Logs:         actx.config.logsLocation,
+				}}, sessionConfigs...)
+				if currentHost.HopID != 0 {
+					var newHost Host
+					actx.db.Model(currentHost).Related(&newHost, "HopID")
+					hostname := newHost.Name
+					currentHost, _ = HostByName(actx.db, hostname)
+				} else {
+					currentHost = nil
+				}
 			}
 
 			sess := Session{
@@ -141,11 +158,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				return
 			}
 
-			go bastionsession.ChannelHandler(srv, conn, newChan, ctx, bastionsession.Config{ // nolint: errcheck
-				Addr:         host.DialAddr(),
-				ClientConfig: clientConfig,
-				Logs:         actx.config.logsLocation,
-			})
+			err = bastionsession.MultiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
 
 			now := time.Now()
 			sessUpdate := Session{

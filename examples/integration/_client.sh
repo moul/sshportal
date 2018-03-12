@@ -47,6 +47,10 @@ ssh sshportal -l admin host create test42
 ssh sshportal -l admin host create --name=testtest --comment=test --password=test test@test.test
 ssh sshportal -l admin host create --group=hg1 --group=hg2 hostwithgroups.org
 ssh sshportal -l admin host inspect example test42 testtest hostwithgroups
+ssh sshportal -l admin host update --assign-group=hg1 test42
+ssh sshportal -l admin host update --unassign-group=hg1 test42
+ssh sshportal -l admin host update --assign-group=hg1 test42
+ssh sshportal -l admin host update --assign-group=hg2 --unassign-group=hg2 test42
 ssh sshportal -l admin host ls
 
 # backup/restore

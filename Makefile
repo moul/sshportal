@@ -24,7 +24,7 @@ _docker_install:
 .PHONY: dev
 dev:
 	-go get github.com/githubnemo/CompileDaemon
-	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal --debug --bind-address=:$(PORT) --aes-key=$(AES_KEY) $(EXTRA_RUN_OPTS)" .
+	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal server --debug --bind-address=:$(PORT) --aes-key=$(AES_KEY) $(EXTRA_RUN_OPTS)" .
 
 .PHONY: test
 test:
