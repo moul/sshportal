@@ -29,6 +29,7 @@ type Config struct {
 }
 
 func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []Config) error {
+	var lastClient *gossh.Client
 	switch newChan.ChannelType() {
 	case "session" :
 		lch, lreqs, err := newChan.Accept()
@@ -38,7 +39,6 @@ func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 			return nil
 		}
 
-	var lastClient *gossh.Client
 
 		// go through all the hops
 		for _, config := range configs {
@@ -62,6 +62,7 @@ func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 			defer func() { _ = client.Close() }()
 			lastClient = client
 		}
+
 		rch, rreqs, err := lastClient.OpenChannel("session", []byte{})
 		if err != nil {
 			return err
@@ -76,24 +77,41 @@ func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 			// TODO: trigger event callback
 			return nil
 		}
-		
-		// open client channel
-		rconn, err := gossh.Dial("tcp", config.Addr, config.ClientConfig)
-		if err != nil {
-			return err
+
+		// go through all the hops
+		for _, config := range configs {
+			var client *gossh.Client
+			if lastClient == nil {
+				client, err = gossh.Dial("tcp", config.Addr, config.ClientConfig)
+			} else {
+				rconn, err := lastClient.Dial("tcp", config.Addr)
+				if err != nil {
+					return err
+				}
+				ncc, chans, reqs, err := gossh.NewClientConn(rconn, config.Addr, config.ClientConfig)
+				if err != nil {
+					return err
+				}
+				client = gossh.NewClient(ncc, chans, reqs)
+			}
+			if err != nil {
+				return err
+			}
+			defer func() { _ = client.Close() }()
+			lastClient = client
 		}
-		defer func() { _ = rconn.Close() }()
+
 		d := logtunnel.ForwardData{}
 		if err := gossh.Unmarshal(newChan.ExtraData(), &d); err != nil {
 			return err
 		}
-		rch, rreqs, err := rconn.OpenChannel("direct-tcpip", newChan.ExtraData())
+		rch, rreqs, err := lastClient.OpenChannel("direct-tcpip", newChan.ExtraData())
 		if err != nil {
 			return err
 		}
 		user := conn.User()
 		// pipe everything
-		return pipe(lreqs, rreqs, lch, rch, config.Logs, user, newChan)
+		return pipe(lreqs, rreqs, lch, rch, configs[len(configs)-1].Logs, user, newChan)
 	default:
 		newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
 		return nil

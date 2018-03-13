@@ -158,7 +158,12 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				return
 			}
 
-			err = bastionsession.MultiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
+			go func() {
+				err = bastionsession.MultiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
+				if err != nil {
+					log.Printf("Error: %v", err)
+				}
+			}()
 
 			now := time.Now()
 			sessUpdate := Session{
