@@ -1862,9 +1862,15 @@ GLOBAL OPTIONS:
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userKeys)))
 						for _, userkey := range userKeys {
+							var email string
+							if userkey.User != nil {
+									email = userkey.User.Email
+							} else {
+									email = "n/a"
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", userkey.ID),
-								userkey.User.Email,
+								email,
 								// FIXME: add fingerprint
 								humanize.Time(userkey.UpdatedAt),
 								humanize.Time(userkey.CreatedAt),
@@ -1961,10 +1967,22 @@ GLOBAL OPTIONS:
 								duration = humanize.RelTime(session.CreatedAt, *session.StoppedAt, "", "")
 							}
 							duration = strings.Replace(duration, "now", "1 second", 1)
+							var hostname string
+							if session.Host != nil {
+									hostname = session.Host.Name
+							} else {
+									hostname = "n/a"
+							}
+							var username string
+							if session.User != nil {
+									username = session.User.Name
+							} else {
+									username = "n/a"
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", session.ID),
-								session.User.Name,
-								session.Host.Name,
+								username,
+								hostname,
 								session.Status,
 								humanize.Time(session.CreatedAt),
 								duration,
