@@ -32,6 +32,10 @@ var banner = `
 `
 var startTime = time.Now()
 
+const (
+	naMessage = "n/a"
+)
+
 func shell(s ssh.Session) error {
 	var (
 		sshCommand = s.Command()
@@ -1862,11 +1866,9 @@ GLOBAL OPTIONS:
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userKeys)))
 						for _, userkey := range userKeys {
-							var email string
+							email := naMessage
 							if userkey.User != nil {
-									email = userkey.User.Email
-							} else {
-									email = "n/a"
+								email = userkey.User.Email
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", userkey.ID),
@@ -1967,17 +1969,13 @@ GLOBAL OPTIONS:
 								duration = humanize.RelTime(session.CreatedAt, *session.StoppedAt, "", "")
 							}
 							duration = strings.Replace(duration, "now", "1 second", 1)
-							var hostname string
+							hostname := naMessage
 							if session.Host != nil {
-									hostname = session.Host.Name
-							} else {
-									hostname = "n/a"
+								hostname = session.Host.Name
 							}
-							var username string
+							username := naMessage
 							if session.User != nil {
-									username = session.User.Name
-							} else {
-									username = "n/a"
+								username = session.User.Name
 							}
 							table.Append([]string{
 								fmt.Sprintf("%d", session.ID),

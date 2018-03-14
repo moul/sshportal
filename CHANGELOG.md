@@ -7,6 +7,7 @@
 * Add TTY audit feature ([#23](https://github.com/moul/sshportal/issues/23)) by [@sabban](https://github.com/sabban)
 * Fix `--assign-*` commands when using MySQL driver ([#45](https://github.com/moul/sshportal/issues/45))
 * Add *HOP* support, an efficient and integrated way of using a jump host transparently ([#47](https://github.com/moul/sshportal/issues/47)) by [@mathieui](https://github.com/mathieui)
+* Fix panic on some `ls` commands ([#54](https://github.com/moul/sshportal/pull/54)) by [@jle64](https://github.com/jle64)
 
 ## v1.7.1 (2018-01-03)
 
