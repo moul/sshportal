@@ -10,6 +10,7 @@
 * Fix panic on some `ls` commands ([#54](https://github.com/moul/sshportal/pull/54)) by [@jle64](https://github.com/jle64)
 * Add tunnels (`direct-tcp`) support with logging ([#44](https://github.com/moul/sshportal/issues/44)) by [@sabban](https://github.com/sabban)
 * Add `key import` command ([#52](https://github.com/moul/sshportal/issues/52)) by [@adyxax](https://github.com/adyxax)
+* Add 'exec' logging ([#40](https://github.com/moul/sshportal/issues/40)) by [@sabban](https://github.com/sabban)
 
 ## v1.7.1 (2018-01-03)
 
