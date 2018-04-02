@@ -9,17 +9,16 @@ import (
 	"time"
 
 	"github.com/arkan/bastion/pkg/logchannel"
-	"github.com/moul/sshportal/pkg/logtunnel"
 	"github.com/gliderlabs/ssh"
+	"github.com/moul/sshportal/pkg/logtunnel"
 	gossh "golang.org/x/crypto/ssh"
 )
-
 
 type ForwardData struct {
 	DestinationHost string
 	DestinationPort uint32
-	SourceHost string
-	SourcePort uint32
+	SourceHost      string
+	SourcePort      uint32
 }
 
 type Config struct {
@@ -31,14 +30,13 @@ type Config struct {
 func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []Config) error {
 	var lastClient *gossh.Client
 	switch newChan.ChannelType() {
-	case "session" :
+	case "session":
 		lch, lreqs, err := newChan.Accept()
 		// TODO: defer clean closer
 		if err != nil {
 			// TODO: trigger event callback
 			return nil
 		}
-
 
 		// go through all the hops
 		for _, config := range configs {
@@ -142,13 +140,13 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 			_, _ = io.Copy(wrappedlch, rch)
 			errch <- errors.New("lch closed the connection")
 		}()
-		
+
 		go func() {
 			_, _ = io.Copy(rch, lch)
 			errch <- errors.New("rch closed the connection")
 		}()
 	}
- 	if channeltype == "direct-tcpip" {
+	if channeltype == "direct-tcpip" {
 		d := logtunnel.ForwardData{}
 		if err := gossh.Unmarshal(newChan.ExtraData(), &d); err != nil {
 			return err
@@ -159,14 +157,13 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 			_, _ = io.Copy(wrappedlch, rch)
 			errch <- errors.New("lch closed the connection")
 		}()
-		
+
 		go func() {
 			_, _ = io.Copy(wrappedrch, lch)
 			errch <- errors.New("rch closed the connection")
 		}()
 	}
-		
-		
+
 	for {
 		select {
 		case req := <-lreqs: // forward ssh requests from local to remote
@@ -175,10 +172,11 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 			}
 			b, err := rch.SendRequest(req.Type, req.WantReply, req.Payload)
 			if req.Type == "exec" {
+				wrappedlch := logchannel.New(lch, f)
 				command := append(req.Payload, []byte("\n")...)
 				wrappedlch.LogWrite(command)
 			}
-			
+
 			if err != nil {
 				return err
 			}
