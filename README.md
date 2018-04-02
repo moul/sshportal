@@ -28,7 +28,8 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Admin commands can be run directly or in an interactive shell
 * Host management
 * User management (invite, group, stats)
-* Host Key management (remote host key learning)
+* Host Key management (create, remove, update, import)
+* Automatic remote host key learning
 * User Key management (multile keys per user)
 * ACL management (acl+user-groups+host-groups)
 * User roles (admin, trusted, standard, ...)
@@ -38,6 +39,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Session management (see active connections, history, stats, stop)
 * Audit log (logging every user action)
 * Record TTY Session
+* Tunnels logging
 * Host Keys verifications shared across users
 * Healthcheck user (replying OK to any user)
 * SSH compatibility
