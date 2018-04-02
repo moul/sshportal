@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.8.0 (2018-04-02)
 
 * The default created user now has the same username as the user starting sshportal (was hardcoded "admin")
 * Add Telnet support
