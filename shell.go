@@ -1095,6 +1095,47 @@ GLOBAL OPTIONS:
 
 						return HostGroupsByIdentifiers(db, c.Args()).Delete(&HostGroup{}).Error
 					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates a host group",
+					ArgsUsage: "HOSTGROUP...",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a new name to the host group"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						var hostgroups []HostGroup
+						if err := HostGroupsByIdentifiers(db, c.Args()).Find(&hostgroups).Error; err != nil {
+							return err
+						}
+
+						if len(hostgroups) > 1 && c.String("name") != "" {
+							return fmt.Errorf("cannot set --name when editing multiple hostgroups at once")
+						}
+
+						tx := db.Begin()
+						for _, hostgroup := range hostgroups {
+							model := tx.Model(&hostgroup)
+							// simple fields
+							for _, fieldname := range []string{"name", "comment"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+						}
+						return tx.Commit().Error
+					},
 				},
 			},
 		}, {
@@ -1803,6 +1844,47 @@ GLOBAL OPTIONS:
 						}
 
 						return UserGroupsByIdentifiers(db, c.Args()).Delete(&UserGroup{}).Error
+					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates a user group",
+					ArgsUsage: "USERGROUP...",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a new name to the user group"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						var usergroups []UserGroup
+						if err := UserGroupsByIdentifiers(db, c.Args()).Find(&usergroups).Error; err != nil {
+							return err
+						}
+
+						if len(usergroups) > 1 && c.String("name") != "" {
+							return fmt.Errorf("cannot set --name when editing multiple usergroups at once")
+						}
+
+						tx := db.Begin()
+						for _, usergroup := range usergroups {
+							model := tx.Model(&usergroup)
+							// simple fields
+							for _, fieldname := range []string{"name", "comment"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+						}
+						return tx.Commit().Error
 					},
 				},
 			},
