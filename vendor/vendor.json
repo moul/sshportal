@@ -63,6 +63,12 @@
 			"revisionTime": "2017-01-02T12:52:26Z"
 		},
 		{
+			"checksumSHA1": "KGAX0C/36vHJiw04Nrm3rohzW00=",
+			"path": "github.com/jtblin/go-ldap-client",
+			"revision": "b73f66626b33ca4ac4fd6558efbb062c4fe4e52c",
+			"revisionTime": "2017-02-23T12:19:19Z"
+		},
+		{
 			"checksumSHA1": "gGDSJToIqPYPEnKst2qLfuTeIZU=",
 			"path": "github.com/kr/pty",
 			"revision": "2c10821df3c3cf905230d078702dfbe9404c9b23",
@@ -175,6 +181,18 @@
 			"path": "golang.org/x/sys/windows",
 			"revision": "95c6576299259db960f6c5b9b69ea52422860fce",
 			"revisionTime": "2017-10-30T10:08:44Z"
+		},
+		{
+			"checksumSHA1": "xsaHqy6/sonLV6xIxTNh4FfkWbU=",
+			"path": "gopkg.in/asn1-ber.v1",
+			"revision": "379148ca0225df7a432012b8df0355c2a2063ac0",
+			"revisionTime": "2017-05-11T16:59:59Z"
+		},
+		{
+			"checksumSHA1": "IElTu6wDmpCv8h3JPXAHjuy0Gb8=",
+			"path": "gopkg.in/ldap.v2",
+			"revision": "bb7a9ca6e4fbc2129e3db588a34bc970ffe811a9",
+			"revisionTime": "2017-11-23T04:56:18Z"
 		}
 	],
 	"rootPath": "github.com/moul/sshportal"

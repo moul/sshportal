@@ -11,6 +11,7 @@ import (
 
 	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
+	"github.com/jtblin/go-ldap-client"
 	"github.com/moul/sshportal/pkg/bastionsession"
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -265,15 +266,49 @@ func shellHandler(s ssh.Session) {
 
 func passwordAuthHandler(db *gorm.DB, cfg *configServe) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pass string) bool {
-		actx := &authContext{
-			db:            db,
-			inputUsername: ctx.User(),
-			config:        cfg,
-			authMethod:    "password",
+		var actx *authContext
+
+		if ctx.Value(authContextKey) != nil {
+			actx = ctx.Value(authContextKey).(*authContext)
+			actx.authMethod = "password"
+		} else {
+			actx = &authContext{
+				db:            db,
+				inputUsername: ctx.User(),
+				config:        cfg,
+				authMethod:    "password",
+			}
 		}
-		actx.authSuccess = actx.userType() == UserTypeHealthcheck
-		ctx.SetValue(authContextKey, actx)
-		return actx.authSuccess
+		if actx.userType() == UserTypeHealthcheck {
+			ctx.SetValue(authContextKey, actx)
+			return true
+		} else if actx.user.ID > 0 && cfg.ldapServer != "" {
+			client := &ldap.LDAPClient{
+				Base:        cfg.ldapBase,
+				Host:        cfg.ldapServer,
+				ServerName:  cfg.ldapServer,
+				Port:        636,
+				UseSSL:      true,
+				UserFilter:  "(uid=%s)",
+				GroupFilter: "(objectClass=%s)",
+				Attributes:  []string{"givenName", "sn", "mail", "uid"},
+			}
+			defer client.Close()
+			ok, _, err := client.Authenticate(ctx.User(), pass)
+			if err != nil {
+				log.Println(err)
+				return false
+			}
+			if ok {
+				//force invite message handler
+				actx.inputUsername = "invite:"
+				actx.message = fmt.Sprintf("Welcome %s!\n\nYour key is now associated with the user %q.\n", actx.user.Name, actx.user.Email)
+				ctx.SetValue(authContextKey, actx)
+				db.Create(&actx.userKey)
+				return true
+			}
+		}
+		return false
 	}
 }
 
@@ -325,7 +360,7 @@ func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
 				actx.userKey = UserKey{
 					UserID:        actx.user.ID,
 					Key:           key.Marshal(),
-					Comment:       "created by sshportal",
+					Comment:       "created by sshportal via invite",
 					AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
 				}
 				db.Create(&actx.userKey)
@@ -340,6 +375,19 @@ func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
 				actx.err = errors.New("your token is invalid or expired")
 			}
 			return true
+		}
+
+		// store key for user with account, but not yet associated
+		res := db.Where("name = ?", actx.inputUsername).First(&actx.user)
+		if res != nil {
+			actx.userKey = UserKey{
+				UserID:        actx.user.ID,
+				Key:           key.Marshal(),
+				Comment:       "created by sshportal via password",
+				AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
+			}
+			//return false to trigger password auth attempt
+			return false
 		}
 
 		// fallback

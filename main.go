@@ -85,6 +85,14 @@ func main() {
 					Value: 0,
 					Usage: "Duration before an inactive connection is timed out (0 to disable)",
 				},
+				cli.StringFlag{
+					Name:  "ldap-server",
+					Usage: "Hostname of the LDAP server",
+				},
+				cli.StringFlag{
+					Name:  "ldap-base",
+					Usage: "Base DN for LDAP queries",
+				},
 			},
 		}, {
 			Name:   "healthcheck",
