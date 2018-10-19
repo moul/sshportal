@@ -414,4 +414,4 @@ This is totally experimental for now, so please file issues to let me know what 
 
 
 ## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmoul%2Fsshportal.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmoul%2Fsshportal?ref=badge_large)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmoul%2Fsshportal.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmoul%2Fsshportal?ref=badge_large) [![GuardRails badge](https://badges.production.guardrails.io/moul/sshportal.svg)](https://www.guardrails.io)
