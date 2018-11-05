@@ -926,8 +926,9 @@ GLOBAL OPTIONS:
 							// remove the hop
 							if c.Bool("unset-hop") {
 								var hopHost Host
+
 								db.Model(&host).Related(&hopHost, "HopID")
-								if err := model.Association("Hop").Delete(hopHost).Error; err != nil {
+								if err := model.Association("Hop").Clear().Error; err != nil {
 									tx.Rollback()
 									return err
 								}
