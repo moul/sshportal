@@ -163,19 +163,19 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				if err != nil {
 					log.Printf("Error: %v", err)
 				}
-			}()
 
-			now := time.Now()
-			sessUpdate := Session{
-				Status:    SessionStatusClosed,
-				ErrMsg:    fmt.Sprintf("%v", err),
-				StoppedAt: &now,
-			}
-			switch sessUpdate.ErrMsg {
-			case "lch closed the connection", "rch closed the connection":
-				sessUpdate.ErrMsg = ""
-			}
-			actx.db.Model(&sess).Updates(&sessUpdate)
+				now := time.Now()
+				sessUpdate := Session{
+					Status:    SessionStatusClosed,
+					ErrMsg:    fmt.Sprintf("%v", err),
+					StoppedAt: &now,
+				}
+				switch sessUpdate.ErrMsg {
+				case "lch closed the connection", "rch closed the connection":
+					sessUpdate.ErrMsg = ""
+				}
+				actx.db.Model(&sess).Updates(&sessUpdate)
+			}()
 		case BastionSchemeTelnet:
 			tmpSrv := ssh.Server{
 				// PtyCallback: srv.PtyCallback,
