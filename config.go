@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/urfave/cli"
 )
@@ -13,6 +14,7 @@ type configServe struct {
 	logsLocation    string
 	bindAddr        string
 	debug, demo     bool
+	idleTimeout     time.Duration
 }
 
 func parseServeConfig(c *cli.Context) (*configServe, error) {
@@ -24,6 +26,7 @@ func parseServeConfig(c *cli.Context) (*configServe, error) {
 		debug:        c.Bool("debug"),
 		demo:         c.Bool("demo"),
 		logsLocation: c.String("logs-location"),
+		idleTimeout:  c.Duration("idle-timeout"),
 	}
 	switch len(ret.aesKey) {
 	case 0, 16, 24, 32:
