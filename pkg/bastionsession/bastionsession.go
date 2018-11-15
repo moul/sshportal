@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -124,8 +126,8 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 
 	errch := make(chan error, 1)
 	channeltype := newChan.ChannelType()
-
-	file_name := strings.Join([]string{logsLocation, "/", user, "-", channeltype, "-", time.Now().Format(time.RFC3339)}, "") // get user
+	fileNameUnix := strings.Join([]string{logsLocation, "/", user, "-", channeltype, "-", strconv.FormatInt(time.Now().UnixNano(), 10)}, "") // get user
+	file_name := filepath.FromSlash(fileNameUnix)
 	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
 	defer f.Close()
 
