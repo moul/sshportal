@@ -169,6 +169,6 @@ func server(c *configServe) (err error) {
 		}
 	}
 
-	log.Printf("info: SSH Server accepting connections on %s", c.bindAddr)
+	log.Printf("info: SSH Server accepting connections on %s, idle-timout=%v", c.bindAddr, c.idleTimeout)
 	return srv.Serve(ln)
 }
