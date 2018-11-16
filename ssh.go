@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
+	"github.com/moul/ssh"
 	"github.com/moul/sshportal/pkg/bastionsession"
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -181,7 +181,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				// PtyCallback: srv.PtyCallback,
 				Handler: telnetHandler(host),
 			}
-			ssh.DefaultChannelHandler(&tmpSrv, conn, newChan, ctx)
+			defaultChannelHandler(&tmpSrv, conn, newChan, ctx)
 		default:
 			ch, _, err2 := newChan.Accept()
 			if err2 != nil {
@@ -192,7 +192,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			_ = ch.Close()
 		}
 	default: // shell
-		ssh.DefaultChannelHandler(srv, conn, newChan, ctx)
+		defaultChannelHandler(srv, conn, newChan, ctx)
 	}
 }
 

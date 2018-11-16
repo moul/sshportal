@@ -1,7 +1,9 @@
 defaults: &defaults
   working_directory: /go/src/github.com/moul/sshportal
   docker:
-    - image: circleci/golang:1.8
+    - image: circleci/golang:1.11
+  environment:
+    GO111MODULE: "on"
 
 version: 2
 jobs:
@@ -10,8 +12,9 @@ jobs:
     steps:
       - checkout
       - run: make install
-      - run: go get -v -t .
-      - run: make test
+      - run: go mod download
+      - run: go mod vendor
+      - run: GO111MODULE=off go test -v ./...
       # - run: make integration
       #- run: go get -u github.com/alecthomas/gometalinter
       #- run: gometalinter --install

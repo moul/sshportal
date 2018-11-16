@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/arkan/bastion/pkg/logchannel"
-	"github.com/gliderlabs/ssh"
+	"github.com/moul/ssh"
 	"github.com/moul/sshportal/pkg/logtunnel"
+	"github.com/sabban/bastion/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
 )
 
