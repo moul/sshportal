@@ -15,6 +15,8 @@ type configServe struct {
 	bindAddr        string
 	debug, demo     bool
 	idleTimeout     time.Duration
+	ldapServer      string
+	ldapBase        string
 }
 
 func parseServeConfig(c *cli.Context) (*configServe, error) {
@@ -27,6 +29,8 @@ func parseServeConfig(c *cli.Context) (*configServe, error) {
 		demo:         c.Bool("demo"),
 		logsLocation: c.String("logs-location"),
 		idleTimeout:  c.Duration("idle-timeout"),
+		ldapServer:   c.String("ldap-server"),
+		ldapBase:     c.String("ldap-base"),
 	}
 	switch len(ret.aesKey) {
 	case 0, 16, 24, 32:
