@@ -2187,7 +2187,7 @@ GLOBAL OPTIONS:
 			if len(words) == 0 {
 				continue
 			}
-			NewEvent("shell", words[0]).SetAuthor(myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
+			NewEvent("shell", words[0]).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
 				if cliErr, ok := err.(*cli.ExitError); ok {
 					if cliErr.ExitCode() != 0 {
