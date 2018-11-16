@@ -10,11 +10,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/moul/ssh"
 	"github.com/urfave/cli"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var (
@@ -115,6 +116,8 @@ func main() {
 	}
 }
 
+var defaultChannelHandler ssh.ChannelHandler
+
 func server(c *configServe) (err error) {
 	var db = (*gorm.DB)(nil)
 
@@ -145,11 +148,28 @@ func server(c *configServe) (err error) {
 
 	// configure server
 	srv := &ssh.Server{
-		Addr:           c.bindAddr,
-		Handler:        shellHandler, // ssh.Server.Handler is the handler for the DefaultSessionHandler
-		Version:        fmt.Sprintf("sshportal-%s", Version),
-		ChannelHandler: channelHandler,
+		Addr:    c.bindAddr,
+		Handler: shellHandler, // ssh.Server.Handler is the handler for the DefaultSessionHandler
+		Version: fmt.Sprintf("sshportal-%s", Version),
 	}
+
+	// configure channel handler
+	defaultSessionHandler := srv.GetChannelHandler("session")
+	defaultDirectTcpipHandler := srv.GetChannelHandler("direct-tcpip")
+	defaultChannelHandler = func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
+		switch newChan.ChannelType() {
+		case "session":
+			go defaultSessionHandler(srv, conn, newChan, ctx)
+		case "direct-tcpip":
+			go defaultDirectTcpipHandler(srv, conn, newChan, ctx)
+		default:
+			newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
+		}
+	}
+	srv.SetChannelHandler("session", nil)
+	srv.SetChannelHandler("direct-tcpip", nil)
+	srv.SetChannelHandler("default", channelHandler)
+
 	if c.idleTimeout != 0 {
 		srv.IdleTimeout = c.idleTimeout
 		// gliderlabs/ssh requires MaxTimeout to be non-zero if we want to use IdleTimeout.

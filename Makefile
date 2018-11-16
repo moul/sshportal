@@ -4,10 +4,11 @@ GIT_BRANCH ?=	$(shell git rev-parse --abbrev-ref HEAD)
 LDFLAGS ?=	-X main.GitSha=$(GIT_SHA) -X main.GitTag=$(GIT_TAG) -X main.GitBranch=$(GIT_BRANCH)
 VERSION ?=	$(shell grep 'VERSION =' main.go | cut -d'"' -f2)
 AES_KEY ?=	my-dummy-aes-key
+GO ?=		GO111MODULE=on go
 
 .PHONY: install
 install:
-	go install -v -ldflags '$(LDFLAGS)' .
+	$(GO) install -v -ldflags '$(LDFLAGS)' .
 
 .PHONY: docker.build
 docker.build:
@@ -19,17 +20,17 @@ integration:
 
 .PHONY: _docker_install
 _docker_install:
-	CGO_ENABLED=1 go build -ldflags '-extldflags "-static" $(LDFLAGS)' -tags netgo -v -o /go/bin/sshportal
+	CGO_ENABLED=1 $(GO) build -ldflags '-extldflags "-static" $(LDFLAGS)' -tags netgo -v -o /go/bin/sshportal
 
 .PHONY: dev
 dev:
-	-go get github.com/githubnemo/CompileDaemon
+	-$(GO) get github.com/githubnemo/CompileDaemon
 	CompileDaemon -exclude-dir=.git -exclude=".#*" -color=true -command="./sshportal server --debug --bind-address=:$(PORT) --aes-key=$(AES_KEY) $(EXTRA_RUN_OPTS)" .
 
 .PHONY: test
 test:
-	go test -i .
-	go test -v .
+	$(GO) test -i ./...
+	$(GO) test -v ./...
 
 .PHONY: lint
 lint:

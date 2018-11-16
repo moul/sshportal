@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/gliderlabs/ssh"
+	"github.com/moul/ssh"
 	oi "github.com/reiver/go-oi"
 	telnet "github.com/reiver/go-telnet"
 )
