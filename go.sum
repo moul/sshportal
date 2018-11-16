@@ -53,6 +53,7 @@ github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b h1:j7+1HpAFS1zy5+Q4qx1f
 github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b/go.mod h1:01TrycV0kFyexm33Z7vhZRXopbI8J3TDReVlkTgMUxE=
 github.com/moby/moby v0.0.0-20171102073902-76531ccdeb58 h1:ce/WsOd8CTi+SX+mtZolkjdHRFh4WSqqV9pnedmqY1w=
 github.com/moby/moby v0.0.0-20171102073902-76531ccdeb58/go.mod h1:fDXVQ6+S340veQPv35CzDahGBmHsiclFwfEygB/TWMc=
+github.com/moby/moby v0.12.0/go.mod h1:fDXVQ6+S340veQPv35CzDahGBmHsiclFwfEygB/TWMc=
 github.com/moul/ssh v0.1.1-0.20181116134500-51417a721208 h1:Y97oa5mCq1XZ+46noGJySDjs6Kf8iY0FqfEa4wPutdc=
 github.com/moul/ssh v0.1.1-0.20181116134500-51417a721208/go.mod h1:7g1Z1WW1l5W9MgjgsE6ehNzvjmA8qe9kJ/G8kdanYEg=
 github.com/moul/ssh v0.1.1-0.20181116135657-8b3cdd49b6d2 h1:IAH3/wuCKXdfGf4zrH2PtTnp0PhWtL+Cld840EfLQ5o=
