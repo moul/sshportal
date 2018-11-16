@@ -28,7 +28,8 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Admin commands can be run directly or in an interactive shell
 * Host management
 * User management (invite, group, stats)
-* Host Key management (remote host key learning)
+* Host Key management (create, remove, update, import)
+* Automatic remote host key learning
 * User Key management (multile keys per user)
 * ACL management (acl+user-groups+host-groups)
 * User roles (admin, trusted, standard, ...)
@@ -38,6 +39,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 * Session management (see active connections, history, stats, stop)
 * Audit log (logging every user action)
 * Record TTY Session
+* Tunnels logging
 * Host Keys verifications shared across users
 * Healthcheck user (replying OK to any user)
 * SSH compatibility
@@ -194,6 +196,7 @@ hostgroup rm [-h] HOSTGROUP...
 # key management
 key help
 key create [-h] [--name=<value>] [--type=<value>] [--length=<value>] [--comment=<value>]
+key import [-h] [--name=<value>] [--comment=<value>]
 key inspect [-h] [--decrypt] KEY...
 key ls [-h] [--latest] [--quiet]
 key rm [-h] KEY...
@@ -236,7 +239,7 @@ An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/ss
 ```console
 # Start a server in background
 #   mount `pwd` to persist the sqlite database file
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.7.1
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.8.0
 
 # check logs (mandatory on first run to get the administrator invite token)
 docker logs -f sshportal
@@ -245,7 +248,7 @@ docker logs -f sshportal
 The easier way to upgrade sshportal is to do the following:
 
 ```sh
-# we consider you were using an old version and you want to use the new version v1.7.1
+# we consider you were using an old version and you want to use the new version v1.8.0
 
 # stop and rename the last working container + backup the database
 docker stop sshportal
@@ -253,7 +256,7 @@ docker rename sshportal sshportal_old
 cp sshportal.db sshportal.db.bkp
 
 # run the new version
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.7.1
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.8.0
 # check the logs for migration or cross-version incompabitility errors
 docker logs -f sshportal
 ```

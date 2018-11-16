@@ -42,6 +42,11 @@ func (l *logChannel) Write(data []byte) (int, error) {
 	return l.channel.Write(data)
 }
 
+func (l *logChannel) LogWrite(data []byte) (int, error) {
+	writeTTYRecHeader(l.writer, len(data))
+	return l.writer.Write(data)
+}
+
 func (l *logChannel) Close() error {
 	l.writer.Close()
 

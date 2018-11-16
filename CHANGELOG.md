@@ -2,11 +2,19 @@
 
 ## master (unreleased)
 
+* No entry
+
+## v1.8.0 (2018-04-02)
+
 * The default created user now has the same username as the user starting sshportal (was hardcoded "admin")
 * Add Telnet support
 * Add TTY audit feature ([#23](https://github.com/moul/sshportal/issues/23)) by [@sabban](https://github.com/sabban)
 * Fix `--assign-*` commands when using MySQL driver ([#45](https://github.com/moul/sshportal/issues/45))
 * Add *HOP* support, an efficient and integrated way of using a jump host transparently ([#47](https://github.com/moul/sshportal/issues/47)) by [@mathieui](https://github.com/mathieui)
+* Fix panic on some `ls` commands ([#54](https://github.com/moul/sshportal/pull/54)) by [@jle64](https://github.com/jle64)
+* Add tunnels (`direct-tcp`) support with logging ([#44](https://github.com/moul/sshportal/issues/44)) by [@sabban](https://github.com/sabban)
+* Add `key import` command ([#52](https://github.com/moul/sshportal/issues/52)) by [@adyxax](https://github.com/adyxax)
+* Add 'exec' logging ([#40](https://github.com/moul/sshportal/issues/40)) by [@sabban](https://github.com/sabban)
 
 ## v1.7.1 (2018-01-03)
 

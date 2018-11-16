@@ -32,6 +32,10 @@ var banner = `
 `
 var startTime = time.Now()
 
+const (
+	naMessage = "n/a"
+)
+
 func shell(s ssh.Session) error {
 	var (
 		sshCommand = s.Command()
@@ -1091,6 +1095,47 @@ GLOBAL OPTIONS:
 
 						return HostGroupsByIdentifiers(db, c.Args()).Delete(&HostGroup{}).Error
 					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates a host group",
+					ArgsUsage: "HOSTGROUP...",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a new name to the host group"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						var hostgroups []HostGroup
+						if err := HostGroupsByIdentifiers(db, c.Args()).Find(&hostgroups).Error; err != nil {
+							return err
+						}
+
+						if len(hostgroups) > 1 && c.String("name") != "" {
+							return fmt.Errorf("cannot set --name when editing multiple hostgroups at once")
+						}
+
+						tx := db.Begin()
+						for _, hostgroup := range hostgroups {
+							model := tx.Model(&hostgroup)
+							// simple fields
+							for _, fieldname := range []string{"name", "comment"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+						}
+						return tx.Commit().Error
+					},
 				},
 			},
 		}, {
@@ -1175,6 +1220,60 @@ GLOBAL OPTIONS:
 							return err
 						}
 						fmt.Fprintf(s, "%d\n", key.ID)
+						return nil
+					},
+				}, {
+					Name:        "import",
+					Usage:       "Imports an existing private key",
+					Description: "$> key import\n   $> key import --name=mykey",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						var name string
+						if c.String("name") != "" {
+							name = c.String("name")
+						} else {
+							name = namesgenerator.GetRandomName(0)
+						}
+
+						var value string
+						term := terminal.NewTerminal(s, "Paste your key and end with a blank line> ")
+						for {
+							line, err := term.ReadLine()
+							if err != nil {
+								return err
+							}
+							if line != "" {
+								value += line + "\n"
+							} else {
+								break
+							}
+						}
+						key, err := ImportSSHKey(value)
+						if err != nil {
+							return err
+						}
+
+						key.Name = name
+						key.Comment = c.String("comment")
+
+						if _, err := govalidator.ValidateStruct(key); err != nil {
+							return err
+						}
+						// FIXME: check if name already exists
+
+						// save the key in database
+						if err := db.Create(&key).Error; err != nil {
+							return err
+						}
+						fmt.Fprintf(s, "%d\n", key.ID)
+
 						return nil
 					},
 				}, {
@@ -1746,6 +1845,47 @@ GLOBAL OPTIONS:
 
 						return UserGroupsByIdentifiers(db, c.Args()).Delete(&UserGroup{}).Error
 					},
+				}, {
+					Name:      "update",
+					Usage:     "Updates a user group",
+					ArgsUsage: "USERGROUP...",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a new name to the user group"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() < 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						var usergroups []UserGroup
+						if err := UserGroupsByIdentifiers(db, c.Args()).Find(&usergroups).Error; err != nil {
+							return err
+						}
+
+						if len(usergroups) > 1 && c.String("name") != "" {
+							return fmt.Errorf("cannot set --name when editing multiple usergroups at once")
+						}
+
+						tx := db.Begin()
+						for _, usergroup := range usergroups {
+							model := tx.Model(&usergroup)
+							// simple fields
+							for _, fieldname := range []string{"name", "comment"} {
+								if c.String(fieldname) != "" {
+									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
+										tx.Rollback()
+										return err
+									}
+								}
+							}
+						}
+						return tx.Commit().Error
+					},
 				},
 			},
 		}, {
@@ -1862,9 +2002,13 @@ GLOBAL OPTIONS:
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d userkeys.", len(userKeys)))
 						for _, userkey := range userKeys {
+							email := naMessage
+							if userkey.User != nil {
+								email = userkey.User.Email
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", userkey.ID),
-								userkey.User.Email,
+								email,
 								// FIXME: add fingerprint
 								humanize.Time(userkey.UpdatedAt),
 								humanize.Time(userkey.CreatedAt),
@@ -1961,10 +2105,18 @@ GLOBAL OPTIONS:
 								duration = humanize.RelTime(session.CreatedAt, *session.StoppedAt, "", "")
 							}
 							duration = strings.Replace(duration, "now", "1 second", 1)
+							hostname := naMessage
+							if session.Host != nil {
+								hostname = session.Host.Name
+							}
+							username := naMessage
+							if session.User != nil {
+								username = session.User.Name
+							}
 							table.Append([]string{
 								fmt.Sprintf("%d", session.ID),
-								session.User.Name,
-								session.Host.Name,
+								username,
+								hostname,
 								session.Status,
 								humanize.Time(session.CreatedAt),
 								duration,
