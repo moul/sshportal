@@ -81,7 +81,7 @@ GLOBAL OPTIONS:
 						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `USERGROUP` to the acl"},
 						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
-						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: ACLActionAllow},
+						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: string(ACLActionAllow)},
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
 					Action: func(c *cli.Context) error {
@@ -96,7 +96,7 @@ GLOBAL OPTIONS:
 							Weight:      c.Uint("weight"),
 							Action:      c.String("action"),
 						}
-						if acl.Action != ACLActionAllow && acl.Action != ACLActionDeny {
+						if acl.Action != string(ACLActionAllow) && acl.Action != string(ACLActionDeny) {
 							return fmt.Errorf("invalid action %q, allowed values: allow, deny", acl.Action)
 						}
 						if _, err := govalidator.ValidateStruct(acl); err != nil {

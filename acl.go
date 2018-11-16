@@ -26,7 +26,7 @@ func CheckACLs(user User, host Host) (string, error) {
 
 	// deny by default if no shared ACL
 	if len(aclMap) == 0 {
-		return ACLActionDeny, nil // default action
+		return string(ACLActionDeny), nil // default action
 	}
 
 	// transform map to slice and sort it

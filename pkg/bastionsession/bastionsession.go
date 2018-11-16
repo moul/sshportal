@@ -112,7 +112,9 @@ func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 		// pipe everything
 		return pipe(lreqs, rreqs, lch, rch, configs[len(configs)-1].Logs, user, newChan)
 	default:
-		newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
+		if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
+			log.Printf("failed to reject chan: %v", err)
+		}
 		return nil
 	}
 }
@@ -126,15 +128,17 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 	errch := make(chan error, 1)
 	channeltype := newChan.ChannelType()
 
-	file_name := strings.Join([]string{logsLocation, "/", user, "-", channeltype, "-", time.Now().Format(time.RFC3339)}, "") // get user
-	f, err := os.OpenFile(file_name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
-	defer f.Close()
+	filename := strings.Join([]string{logsLocation, "/", user, "-", channeltype, "-", time.Now().Format(time.RFC3339)}, "") // get user
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
+	defer func() {
+		_ = f.Close()
+	}()
 
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
 
-	log.Printf("Session %v is recorded in %v", channeltype, file_name)
+	log.Printf("Session %v is recorded in %v", channeltype, filename)
 	if channeltype == "session" {
 		wrappedlch := logchannel.New(lch, f)
 		go func() {
@@ -175,7 +179,9 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 			if req.Type == "exec" {
 				wrappedlch := logchannel.New(lch, f)
 				command := append(req.Payload, []byte("\n")...)
-				wrappedlch.LogWrite(command)
+				if _, err := wrappedlch.LogWrite(command); err != nil {
+					log.Printf("failed to write log: %v", err)
+				}
 			}
 
 			if err != nil {

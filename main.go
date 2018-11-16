@@ -163,7 +163,9 @@ func server(c *configServe) (err error) {
 		case "direct-tcpip":
 			go defaultDirectTcpipHandler(srv, conn, newChan, ctx)
 		default:
-			newChan.Reject(gossh.UnknownChannelType, "unsupported channel type")
+			if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
+				log.Printf("failed to reject chan: %v", err)
+			}
 		}
 	}
 	srv.SetChannelHandler("session", nil)

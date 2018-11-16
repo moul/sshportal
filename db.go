@@ -148,23 +148,22 @@ type SessionStatus string
 
 const (
 	SessionStatusUnknown SessionStatus = "unknown"
-	SessionStatusActive                = "active"
-	SessionStatusClosed                = "closed"
+	SessionStatusActive  SessionStatus = "active"
+	SessionStatusClosed  SessionStatus = "closed"
 )
 
 type ACLAction string
 
 const (
-	ACLActionUnknown ACLAction = "unknown"
-	ACLActionAllow             = "allow"
-	ACLActionDeny              = "deny"
+	ACLActionAllow ACLAction = "allow"
+	ACLActionDeny  ACLAction = "deny"
 )
 
 type BastionScheme string
 
 const (
 	BastionSchemeSSH    BastionScheme = "ssh"
-	BastionSchemeTelnet               = "telnet"
+	BastionSchemeTelnet BastionScheme = "telnet"
 )
 
 func init() {
@@ -297,7 +296,7 @@ func HostByName(db *gorm.DB, name string) (*Host, error) {
 	db.Preload("SSHKey").Where("name = ?", name).Find(&host)
 	if host.Name == "" {
 		// FIXME: add available hosts
-		return nil, fmt.Errorf("No such target: %q", name)
+		return nil, fmt.Errorf("no such target: %q", name)
 	}
 	return &host, nil
 }
@@ -396,9 +395,9 @@ func UserKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 
 // UserRole helpers
 
-func UserRolesPreload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Users")
-}
+//func UserRolesPreload(db *gorm.DB) *gorm.DB {
+//	return db.Preload("Users")
+//}
 func UserRolesByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
