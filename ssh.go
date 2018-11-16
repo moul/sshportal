@@ -36,16 +36,9 @@ type UserType string
 
 const (
 	UserTypeHealthcheck UserType = "healthcheck"
-	UserTypeBastion              = "bastion"
-	UserTypeInvite               = "invite"
-	UserTypeShell                = "shell"
-)
-
-type SessionType string
-
-const (
-	SessionTypeBastion SessionType = "bastion"
-	SessionTypeShell               = "shell"
+	UserTypeBastion     UserType = "bastion"
+	UserTypeInvite      UserType = "invite"
+	UserTypeShell       UserType = "shell"
 )
 
 func (c authContext) userType() UserType {
@@ -58,15 +51,6 @@ func (c authContext) userType() UserType {
 		return UserTypeInvite
 	default:
 		return UserTypeBastion
-	}
-}
-
-func (c authContext) sessionType() SessionType {
-	switch c.userType() {
-	case "bastion":
-		return SessionTypeBastion
-	default:
-		return SessionTypeShell
 	}
 }
 
@@ -147,7 +131,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			sess := Session{
 				UserID: actx.user.ID,
 				HostID: host.ID,
-				Status: SessionStatusActive,
+				Status: string(SessionStatusActive),
 			}
 			if err = actx.db.Create(&sess).Error; err != nil {
 				ch, _, err2 := newChan.Accept()
@@ -167,7 +151,7 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 
 				now := time.Now()
 				sessUpdate := Session{
-					Status:    SessionStatusClosed,
+					Status:    string(SessionStatusClosed),
 					ErrMsg:    fmt.Sprintf("%v", err),
 					StoppedAt: &now,
 				}
@@ -222,8 +206,8 @@ func bastionClientConfig(ctx ssh.Context, host *Host) (*gossh.ClientConfig, erro
 	SSHKeyDecrypt(actx.config.aesKey, host.SSHKey)
 
 	switch action {
-	case ACLActionAllow:
-	case ACLActionDeny:
+	case string(ACLActionAllow):
+	case string(ACLActionDeny):
 		return nil, fmt.Errorf("you don't have permission to that host")
 	default:
 		return nil, fmt.Errorf("invalid ACL action: %q", action)

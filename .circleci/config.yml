@@ -5,20 +5,29 @@ defaults: &defaults
   environment:
     GO111MODULE: "on"
 
+install_retry: &install_retry
+  run:
+    name: install retry
+    command: |
+      command -v wget &>/dev/null && wget -O /tmp/retry "https://github.com/moul/retry/releases/download/v0.5.0/retry_$(uname -s)_$(uname -m)" || true
+      if [ ! -f /tmp/retry ]; then command -v curl &>/dev/null && curl -L -o /tmp/retry "https://github.com/moul/retry/releases/download/v0.5.0/retry_$(uname -s)_$(uname -m)"; fi
+      chmod +x /tmp/retry
+      /tmp/retry --version
+
 version: 2
 jobs:
   go.build:
     <<: *defaults
     steps:
       - checkout
-      - run: make install
-      - run: go mod download
-      - run: go mod vendor
-      - run: GO111MODULE=off go test -v ./...
-      # - run: make integration
-      #- run: go get -u github.com/alecthomas/gometalinter
-      #- run: gometalinter --install
-      #- run: make lint
+      - *install_retry
+      - run: /tmp/retry -m 3 go mod download
+      - run: /tmp/retry -m 3 go mod vendor
+      - run: /tmp/retry -m 3 make install
+      - run: GO111MODULE=off /tmp/retry -m 3 go test -v ./...
+      - run: /tmp/retry -m 3 curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.12.2
+      - run: PATH=$PATH:$(pwd)/bin /tmp/retry -m 3 make lint
+
   docker.integration:
     <<: *defaults
     steps:
@@ -30,8 +39,9 @@ jobs:
             curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
       - setup_remote_docker:
           docker_layer_caching: true
-      - run: docker build -t moul/sshportal .
-      - run: make integration
+      - *install_retry
+      - run: /tmp/retry -m 3 docker build -t moul/sshportal .
+      - run: /tmp/retry -m 3 make integration
 
 
 workflows:

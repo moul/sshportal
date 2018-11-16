@@ -2,7 +2,9 @@ package logtunnel // import "moul.io/sshportal/pkg/logtunnel"
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
+	"log"
 	"syscall"
 	"time"
 
@@ -27,12 +29,18 @@ func writeHeader(fd io.Writer, length int) {
 
 	tv := syscall.NsecToTimeval(t.UnixNano())
 
-	binary.Write(fd, binary.LittleEndian, int32(tv.Sec))
-	binary.Write(fd, binary.LittleEndian, int32(tv.Usec))
-	binary.Write(fd, binary.LittleEndian, int32(length))
+	if err := binary.Write(fd, binary.LittleEndian, int32(tv.Sec)); err != nil {
+		log.Printf("failed to write log header: %v", err)
+	}
+	if err := binary.Write(fd, binary.LittleEndian, tv.Usec); err != nil {
+		log.Printf("failed to write log header: %v", err)
+	}
+	if err := binary.Write(fd, binary.LittleEndian, int32(length)); err != nil {
+		log.Printf("failed to write log header: %v", err)
+	}
 }
 
-func New(channel ssh.Channel, writer io.WriteCloser, host string) *logTunnel {
+func New(channel ssh.Channel, writer io.WriteCloser, host string) io.ReadWriteCloser {
 	return &logTunnel{
 		host:    host,
 		channel: channel,
@@ -41,13 +49,17 @@ func New(channel ssh.Channel, writer io.WriteCloser, host string) *logTunnel {
 }
 
 func (l *logTunnel) Read(data []byte) (int, error) {
-	return l.Read(data)
+	return 0, errors.New("logTunnel.Read is not implemented")
 }
 
 func (l *logTunnel) Write(data []byte) (int, error) {
 	writeHeader(l.writer, len(data)+len(l.host+": "))
-	l.writer.Write([]byte(l.host + ": "))
-	l.writer.Write(data)
+	if _, err := l.writer.Write([]byte(l.host + ": ")); err != nil {
+		log.Printf("failed to write log: %v", err)
+	}
+	if _, err := l.writer.Write(data); err != nil {
+		log.Printf("failed to write log: %v", err)
+	}
 
 	return l.channel.Write(data)
 }

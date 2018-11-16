@@ -615,7 +615,7 @@ func dbInit(db *gorm.DB) error {
 
 	// close unclosed connections
 	return db.Table("sessions").Where("status = ?", "active").Updates(&Session{
-		Status: SessionStatusClosed,
+		Status: string(SessionStatusClosed),
 		ErrMsg: "sshportal was halted while the connection was still active",
 	}).Error
 }
