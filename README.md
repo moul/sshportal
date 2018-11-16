@@ -2,8 +2,8 @@
 
 [![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
 [![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)](https://hub.docker.com/r/moul/sshportal/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/moul/sshportal)](https://goreportcard.com/report/github.com/moul/sshportal)
-[![GoDoc](https://godoc.org/github.com/moul/sshportal?status.svg)](https://godoc.org/github.com/moul/sshportal)
+[![Go Report Card](https://goreportcard.com/moul.io/sshportal)](https://goreportcard.com/report/moul.io/sshportal)
+[![GoDoc](https://godoc.org/moul.io/sshportal?status.svg)](https://godoc.org/moul.io/sshportal)
 [![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/moul/sshportal.svg)](https://github.com/moul/sshportal/releases)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmoul%2Fsshportal.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmoul%2Fsshportal?ref=badge_shield)
@@ -279,7 +279,7 @@ docker logs -f sshportal
 Get the latest version using GO.
 
 ```sh
-go get -u github.com/moul/sshportal
+go get -u moul.io/sshportal
 ```
 
 ## portal alias (.ssh/config)

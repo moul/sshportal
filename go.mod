@@ -1,4 +1,4 @@
-module github.com/moul/sshportal
+module moul.io/sshportal
 
 require (
 	cloud.google.com/go v0.33.1 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/kr/pty v1.1.3
 	github.com/lib/pq v1.0.0 // indirect
-	github.com/mattn/go-colorable v0.0.0-20171111065953-6fcc0c1fd9b6 // indirect
+	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mattn/go-runewidth v0.0.3 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect

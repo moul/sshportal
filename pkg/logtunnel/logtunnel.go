@@ -1,4 +1,4 @@
-package logtunnel
+package logtunnel // import "moul.io/sshportal/pkg/logtunnel"
 
 import (
 	"encoding/binary"
@@ -18,8 +18,8 @@ type logTunnel struct {
 type ForwardData struct {
 	DestinationHost string
 	DestinationPort uint32
-	SourceHost string
-	SourcePort uint32
+	SourceHost      string
+	SourcePort      uint32
 }
 
 func writeHeader(fd io.Writer, length int) {
@@ -34,7 +34,7 @@ func writeHeader(fd io.Writer, length int) {
 
 func New(channel ssh.Channel, writer io.WriteCloser, host string) *logTunnel {
 	return &logTunnel{
-		host: host,
+		host:    host,
 		channel: channel,
 		writer:  writer,
 	}
@@ -45,7 +45,7 @@ func (l *logTunnel) Read(data []byte) (int, error) {
 }
 
 func (l *logTunnel) Write(data []byte) (int, error) {
-	writeHeader(l.writer, len(data) + len(l.host + ": "))
+	writeHeader(l.writer, len(data)+len(l.host+": "))
 	l.writer.Write([]byte(l.host + ": "))
 	l.writer.Write(data)
 
