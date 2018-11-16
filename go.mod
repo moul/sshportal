@@ -35,7 +35,7 @@ require (
 	github.com/sabban/bastion v0.0.0-20180110125408-b9d3c9b1f4d3
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c
-	github.com/urfave/cli v0.0.0-20171031025534-7f4b273a0585
+	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20181112202954-3d3f9f413869
 	golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8 // indirect
 	google.golang.org/appengine v1.3.0 // indirect
