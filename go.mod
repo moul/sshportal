@@ -3,7 +3,7 @@ module github.com/moul/sshportal
 require (
 	cloud.google.com/go v0.33.1 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239
-	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
+	github.com/asaskevich/govalidator 0.0.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20181014144952-4e0d7dc8888f // indirect
 	github.com/dustin/go-humanize v1.0.0
