@@ -1,5 +1,5 @@
 # build
-FROM            golang:1.9 as builder
+FROM golang:1.11 as builder
 COPY            . /go/src/github.com/moul/sshportal
 WORKDIR         /go/src/github.com/moul/sshportal
 RUN             make _docker_install
