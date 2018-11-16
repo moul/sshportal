@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"net"
 	"os"
@@ -79,6 +80,11 @@ func main() {
 					Value: "./log",
 					Usage: "Store user session files",
 				},
+				cli.DurationFlag{
+					Name:  "idle-timeout",
+					Value: 0,
+					Usage: "Duration before an inactive connection is timed out (0 to disable)",
+				},
 			},
 		}, {
 			Name:   "healthcheck",
@@ -144,6 +150,12 @@ func server(c *configServe) (err error) {
 		Version:        fmt.Sprintf("sshportal-%s", Version),
 		ChannelHandler: channelHandler,
 	}
+	if c.idleTimeout != 0 {
+		srv.IdleTimeout = c.idleTimeout
+		// gliderlabs/ssh requires MaxTimeout to be non-zero if we want to use IdleTimeout.
+		// So, set it to the max value, because we don't want a max timeout.
+		srv.MaxTimeout = math.MaxInt64
+	}
 
 	for _, opt := range []ssh.Option{
 		// custom PublicKeyAuth handler
@@ -157,6 +169,6 @@ func server(c *configServe) (err error) {
 		}
 	}
 
-	log.Printf("info: SSH Server accepting connections on %s", c.bindAddr)
+	log.Printf("info: SSH Server accepting connections on %s, idle-timout=%v", c.bindAddr, c.idleTimeout)
 	return srv.Serve(ln)
 }
