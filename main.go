@@ -1,4 +1,4 @@
-package main
+package main // import "moul.io/sshportal"
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ func main() {
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
 	app.Version = Version + " (" + GitSha + ")"
-	app.Email = "https://github.com/moul/sshportal"
+	app.Email = "https://moul.io/sshportal"
 	app.Commands = []cli.Command{
 		{
 			Name:  "server",

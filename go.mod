@@ -1,4 +1,4 @@
-module github.com/moul/sshportal
+module moul.io/sshportal
 
 require (
 	cloud.google.com/go v0.33.1 // indirect

@@ -1,4 +1,4 @@
-package bastionsession
+package bastionsession // import "moul.io/sshportal/pkg/bastionsession"
 
 import (
 	"errors"
@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/moul/ssh"
-	"github.com/moul/sshportal/pkg/logtunnel"
 	"github.com/sabban/bastion/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
+
+	"moul.io/sshportal/pkg/logtunnel"
 )
 
 type ForwardData struct {

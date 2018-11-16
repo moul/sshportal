@@ -11,8 +11,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/moul/ssh"
-	"github.com/moul/sshportal/pkg/bastionsession"
 	gossh "golang.org/x/crypto/ssh"
+
+	"moul.io/sshportal/pkg/bastionsession"
 )
 
 type sshportalContextKey string
