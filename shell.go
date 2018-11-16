@@ -2066,6 +2066,7 @@ GLOBAL OPTIONS:
 					Usage: "Lists sessions",
 					Flags: []cli.Flag{
 						cli.BoolFlag{Name: "latest, l", Usage: "Show the latest session"},
+						cli.BoolFlag{Name: "active, a", Usage: "Show only active session"},
 						cli.BoolFlag{Name: "quiet, q", Usage: "Only display IDs"},
 					},
 					Action: func(c *cli.Context) error {
@@ -2074,7 +2075,14 @@ GLOBAL OPTIONS:
 						}
 
 						var sessions []*Session
-						query := db.Order("created_at desc").Preload("User").Preload("Host")
+
+						limit, offset, status := 60000, -1, []string{string(SessionStatusActive), string(SessionStatusClosed), string(SessionStatusUnknown)}
+						if c.Bool("active") {
+							status = status[:1]
+						}
+
+						query := db.Order("created_at desc").Limit(limit).Offset(offset).Where("status in (?)", status).Preload("User").Preload("Host")
+
 						if c.Bool("latest") {
 							var session Session
 							if err := query.First(&session).Error; err != nil {
@@ -2084,6 +2092,20 @@ GLOBAL OPTIONS:
 						} else {
 							if err := query.Find(&sessions).Error; err != nil {
 								return err
+							}
+
+							factor := 1
+							for len(sessions) >= limit*factor {
+
+								var additionnalSessions []*Session
+
+								offset = limit * factor
+								query := db.Order("created_at desc").Limit(limit).Offset(offset).Where("status in (?)", status).Preload("User").Preload("Host")
+								if err := query.Find(&additionnalSessions).Error; err != nil {
+									return err
+								}
+								sessions = append(sessions, additionnalSessions...)
+								factor++
 							}
 						}
 						if c.Bool("quiet") {
