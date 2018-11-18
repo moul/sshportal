@@ -1,8 +1,17 @@
 # Changelog
 
-## master (unreleased)
+## v1.9.0 (2018-11-18)
 
-* No entry
+* Add `hostgroup update` and `usergroup update` commands ([#58](https://github.com/moul/sshportal/pull/58)) by [@adyxax](https://github.com/adyxax)
+* Add socket timeout ([#80](https://github.com/moul/sshportal/pull/80)) by [@ahhx](https://github.com/ahhx)
+* Add a flag to list only active sessions ([#76](https://github.com/moul/sshportal/pull/76)) by [@vdaviot](https://github.com/vdaviot)
+* Unset hop on host ([#74](https://github.com/moul/sshportal/pull/74)) by [@vdaviot](https://github.com/vdaviot)
+* Fix session status and duration display ([#75](https://github.com/moul/sshportal/pull/75)) by [@vdaviot](https://github.com/vdaviot)
+* Fix log path and filename on Windows ([#78](https://github.com/moul/sshportal/pull/78)) by [@Raerten](https://github.com/Raerten)
+* Admin user is not editable ([#69](https://github.com/moul/sshportal/pull/69)) by [@alenn-m](https://github.com/alenn-m)
+* Switch to go modules (go1.11) ([#83](https://github.com/moul/sshportal/pull/83))
+* Switch to moul.io/sshportal canonical URL ([#86](https://github.com/moul/sshportal/pull/86))
+* Switch to golangci-lint ([#87](https://github.com/moul/sshportal/pull/87))
 
 ## v1.8.0 (2018-04-02)
 
