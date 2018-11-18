@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* No entry
+* Bump deps
 
 ## v1.9.0 (2018-11-18)
 
