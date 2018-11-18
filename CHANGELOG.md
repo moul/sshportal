@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.9.0 (2018-11-18)
 
 * Add `hostgroup update` and `usergroup update` commands ([#58](https://github.com/moul/sshportal/pull/58)) by [@adyxax](https://github.com/adyxax)
