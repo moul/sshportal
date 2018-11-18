@@ -446,7 +446,7 @@ func (e *Event) Log(db *gorm.DB) {
 }
 
 func (e *Event) SetAuthor(user *User) *Event {
-	e.Author = user
+	//e.Author = user
 	e.AuthorID = user.ID
 	return e
 }
