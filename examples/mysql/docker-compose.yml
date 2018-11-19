@@ -4,12 +4,16 @@ services:
   sshportal:
     build: ../..
     restart: unless-stopped
+    environment:
+      SSHPORTAL_DB_DRIVER: mysql
+      SSHPORTAL_DATABASE_URL: "root:root@tcp(mysql:3306)/db?charset=utf8&parseTime=true&loc=Local"
+      SSHPORTAL_DEBUG: 1
     depends_on:
       mysql:
         condition: service_healthy
     links:
       - mysql
-    command: server --db-driver=mysql --debug --db-conn="root:root@tcp(mysql:3306)/db?charset=utf8&parseTime=true&loc=Local"
+    command: server
     ports:
       - 2222:2222
 
