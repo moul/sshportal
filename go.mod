@@ -37,7 +37,7 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c
 	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20181112202954-3d3f9f413869
-	golang.org/x/sys v0.0.0-20181116161606-93218def8b18 // indirect
+	golang.org/x/sys v0.0.0-20181122154908-62eef0e2fa9b // indirect
 	google.golang.org/appengine v1.3.0 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 )
