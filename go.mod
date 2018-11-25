@@ -6,6 +6,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20181014144952-4e0d7dc8888f // indirect
+	github.com/docker/docker v1.13.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
@@ -37,7 +38,8 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c
 	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20181112202954-3d3f9f413869
-	golang.org/x/sys v0.0.0-20181116161606-93218def8b18 // indirect
+	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a // indirect
+	golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b // indirect
 	google.golang.org/appengine v1.3.0 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 )
