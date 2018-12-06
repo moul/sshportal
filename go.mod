@@ -39,7 +39,7 @@ require (
 	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20181112202954-3d3f9f413869
 	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a // indirect
-	golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b // indirect
+	golang.org/x/sys v0.0.0-20181206082833-70b957f3b65e // indirect
 	google.golang.org/appengine v1.3.0 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 )
