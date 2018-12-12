@@ -16,6 +16,8 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/moul/ssh"
+	gossh "golang.org/x/crypto/ssh"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh/terminal"
@@ -1925,9 +1927,10 @@ GLOBAL OPTIONS:
 						}
 
 						userkey := UserKey{
-							User:    &user,
-							Key:     key.Marshal(),
-							Comment: comment,
+							User:          &user,
+							Key:           key.Marshal(),
+							Comment:       comment,
+							AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
 						}
 						if c.String("comment") != "" {
 							userkey.Comment = c.String("comment")
