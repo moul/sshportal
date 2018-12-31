@@ -1,4 +1,4 @@
-package main
+package crypto // import "moul.io/sshportal/pkg/crypto"
 
 import (
 	"bytes"
@@ -15,10 +15,11 @@ import (
 	"strings"
 
 	gossh "golang.org/x/crypto/ssh"
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
-func NewSSHKey(keyType string, length uint) (*SSHKey, error) {
-	key := SSHKey{
+func NewSSHKey(keyType string, length uint) (*dbmodels.SSHKey, error) {
+	key := dbmodels.SSHKey{
 		Type:   keyType,
 		Length: length,
 	}
@@ -53,8 +54,8 @@ func NewSSHKey(keyType string, length uint) (*SSHKey, error) {
 	return &key, nil
 }
 
-func ImportSSHKey(keyValue string) (*SSHKey, error) {
-	key := SSHKey{
+func ImportSSHKey(keyValue string) (*dbmodels.SSHKey, error) {
+	key := dbmodels.SSHKey{
 		Type: "rsa",
 	}
 
@@ -132,7 +133,7 @@ func safeDecrypt(key []byte, cryptoText string) string {
 	return out
 }
 
-func HostEncrypt(aesKey string, host *Host) (err error) {
+func HostEncrypt(aesKey string, host *dbmodels.Host) (err error) {
 	if aesKey == "" {
 		return nil
 	}
@@ -141,7 +142,7 @@ func HostEncrypt(aesKey string, host *Host) (err error) {
 	}
 	return
 }
-func HostDecrypt(aesKey string, host *Host) {
+func HostDecrypt(aesKey string, host *dbmodels.Host) {
 	if aesKey == "" {
 		return
 	}
@@ -150,14 +151,14 @@ func HostDecrypt(aesKey string, host *Host) {
 	}
 }
 
-func SSHKeyEncrypt(aesKey string, key *SSHKey) (err error) {
+func SSHKeyEncrypt(aesKey string, key *dbmodels.SSHKey) (err error) {
 	if aesKey == "" {
 		return nil
 	}
 	key.PrivKey, err = encrypt([]byte(aesKey), key.PrivKey)
 	return
 }
-func SSHKeyDecrypt(aesKey string, key *SSHKey) {
+func SSHKeyDecrypt(aesKey string, key *dbmodels.SSHKey) {
 	if aesKey == "" {
 		return
 	}

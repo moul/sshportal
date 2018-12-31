@@ -1,9 +1,10 @@
-package main
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"os/user"
 	"strings"
@@ -12,9 +13,11 @@ import (
 	"github.com/go-gormigrate/gormigrate"
 	"github.com/jinzhu/gorm"
 	gossh "golang.org/x/crypto/ssh"
+	"moul.io/sshportal/pkg/crypto"
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
-func dbInit(db *gorm.DB) error {
+func DBInit(db *gorm.DB) error {
 	log.SetOutput(ioutil.Discard)
 	db.Callback().Delete().Replace("gorm:delete", hardDeleteCallback)
 	log.SetOutput(os.Stderr)
@@ -43,9 +46,9 @@ func dbInit(db *gorm.DB) error {
 					Type        string
 					Length      uint
 					Fingerprint string
-					PrivKey     string  `sql:"size:10000"`
-					PubKey      string  `sql:"size:10000"`
-					Hosts       []*Host `gorm:"ForeignKey:SSHKeyID"`
+					PrivKey     string           `sql:"size:10000"`
+					PubKey      string           `sql:"size:10000"`
+					Hosts       []*dbmodels.Host `gorm:"ForeignKey:SSHKeyID"`
 					Comment     string
 				}
 				return tx.AutoMigrate(&SSHKey{}).Error
@@ -63,9 +66,9 @@ func dbInit(db *gorm.DB) error {
 					Addr        string
 					User        string
 					Password    string
-					SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
-					SSHKeyID    uint         `gorm:"index"`
-					Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
+					SSHKey      *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
+					SSHKeyID    uint                  `gorm:"index"`
+					Groups      []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Fingerprint string
 					Comment     string
 				}
@@ -79,9 +82,9 @@ func dbInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type UserKey struct {
 					gorm.Model
-					Key     []byte `sql:"size:10000"`
-					UserID  uint   ``
-					User    *User  `gorm:"ForeignKey:UserID"`
+					Key     []byte         `sql:"size:10000"`
+					UserID  uint           ``
+					User    *dbmodels.User `gorm:"ForeignKey:UserID"`
 					Comment string
 				}
 				return tx.AutoMigrate(&UserKey{}).Error
@@ -98,8 +101,8 @@ func dbInit(db *gorm.DB) error {
 					IsAdmin     bool
 					Email       string
 					Name        string
-					Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
-					Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
+					Keys        []*dbmodels.UserKey   `gorm:"ForeignKey:UserID"`
+					Groups      []*dbmodels.UserGroup `gorm:"many2many:user_user_groups;"`
 					Comment     string
 					InviteToken string
 				}
@@ -114,8 +117,8 @@ func dbInit(db *gorm.DB) error {
 				type UserGroup struct {
 					gorm.Model
 					Name    string
-					Users   []*User `gorm:"many2many:user_user_groups;"`
-					ACLs    []*ACL  `gorm:"many2many:user_group_acls;"`
+					Users   []*dbmodels.User `gorm:"many2many:user_user_groups;"`
+					ACLs    []*dbmodels.ACL  `gorm:"many2many:user_group_acls;"`
 					Comment string
 				}
 				return tx.AutoMigrate(&UserGroup{}).Error
@@ -129,8 +132,8 @@ func dbInit(db *gorm.DB) error {
 				type HostGroup struct {
 					gorm.Model
 					Name    string
-					Hosts   []*Host `gorm:"many2many:host_host_groups;"`
-					ACLs    []*ACL  `gorm:"many2many:host_group_acls;"`
+					Hosts   []*dbmodels.Host `gorm:"many2many:host_host_groups;"`
+					ACLs    []*dbmodels.ACL  `gorm:"many2many:host_group_acls;"`
 					Comment string
 				}
 				return tx.AutoMigrate(&HostGroup{}).Error
@@ -143,8 +146,8 @@ func dbInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type ACL struct {
 					gorm.Model
-					HostGroups  []*HostGroup `gorm:"many2many:host_group_acls;"`
-					UserGroups  []*UserGroup `gorm:"many2many:user_group_acls;"`
+					HostGroups  []*dbmodels.HostGroup `gorm:"many2many:host_group_acls;"`
+					UserGroups  []*dbmodels.UserGroup `gorm:"many2many:user_group_acls;"`
 					HostPattern string
 					Action      string
 					Weight      uint
@@ -159,64 +162,64 @@ func dbInit(db *gorm.DB) error {
 		}, {
 			ID: "9",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&Setting{}).RemoveIndex("uix_settings_name")
-				return db.Model(&Setting{}).AddUniqueIndex("uix_settings_name", "name").Error
+				db.Model(&dbmodels.Setting{}).RemoveIndex("uix_settings_name")
+				return db.Model(&dbmodels.Setting{}).AddUniqueIndex("uix_settings_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&Setting{}).RemoveIndex("uix_settings_name").Error
+				return db.Model(&dbmodels.Setting{}).RemoveIndex("uix_settings_name").Error
 			},
 		}, {
 			ID: "10",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&SSHKey{}).RemoveIndex("uix_keys_name")
-				return db.Model(&SSHKey{}).AddUniqueIndex("uix_keys_name", "name").Error
+				db.Model(&dbmodels.SSHKey{}).RemoveIndex("uix_keys_name")
+				return db.Model(&dbmodels.SSHKey{}).AddUniqueIndex("uix_keys_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&SSHKey{}).RemoveIndex("uix_keys_name").Error
+				return db.Model(&dbmodels.SSHKey{}).RemoveIndex("uix_keys_name").Error
 			},
 		}, {
 			ID: "11",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&Host{}).RemoveIndex("uix_hosts_name")
-				return db.Model(&Host{}).AddUniqueIndex("uix_hosts_name", "name").Error
+				db.Model(&dbmodels.Host{}).RemoveIndex("uix_hosts_name")
+				return db.Model(&dbmodels.Host{}).AddUniqueIndex("uix_hosts_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&Host{}).RemoveIndex("uix_hosts_name").Error
+				return db.Model(&dbmodels.Host{}).RemoveIndex("uix_hosts_name").Error
 			},
 		}, {
 			ID: "12",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&User{}).RemoveIndex("uix_users_name")
-				return db.Model(&User{}).AddUniqueIndex("uix_users_name", "name").Error
+				db.Model(&dbmodels.User{}).RemoveIndex("uix_users_name")
+				return db.Model(&dbmodels.User{}).AddUniqueIndex("uix_users_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&User{}).RemoveIndex("uix_users_name").Error
+				return db.Model(&dbmodels.User{}).RemoveIndex("uix_users_name").Error
 			},
 		}, {
 			ID: "13",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&UserGroup{}).RemoveIndex("uix_usergroups_name")
-				return db.Model(&UserGroup{}).AddUniqueIndex("uix_usergroups_name", "name").Error
+				db.Model(&dbmodels.UserGroup{}).RemoveIndex("uix_usergroups_name")
+				return db.Model(&dbmodels.UserGroup{}).AddUniqueIndex("uix_usergroups_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&UserGroup{}).RemoveIndex("uix_usergroups_name").Error
+				return db.Model(&dbmodels.UserGroup{}).RemoveIndex("uix_usergroups_name").Error
 			},
 		}, {
 			ID: "14",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&HostGroup{}).RemoveIndex("uix_hostgroups_name")
-				return db.Model(&HostGroup{}).AddUniqueIndex("uix_hostgroups_name", "name").Error
+				db.Model(&dbmodels.HostGroup{}).RemoveIndex("uix_hostgroups_name")
+				return db.Model(&dbmodels.HostGroup{}).AddUniqueIndex("uix_hostgroups_name", "name").Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&HostGroup{}).RemoveIndex("uix_hostgroups_name").Error
+				return db.Model(&dbmodels.HostGroup{}).RemoveIndex("uix_hostgroups_name").Error
 			},
 		}, {
 			ID: "15",
 			Migrate: func(tx *gorm.DB) error {
 				type UserRole struct {
 					gorm.Model
-					Name  string  `valid:"required,length(1|32),unix_user"`
-					Users []*User `gorm:"many2many:user_user_roles"`
+					Name  string           `valid:"required,length(1|32),unix_user"`
+					Users []*dbmodels.User `gorm:"many2many:user_user_roles"`
 				}
 				return tx.AutoMigrate(&UserRole{}).Error
 			},
@@ -229,13 +232,13 @@ func dbInit(db *gorm.DB) error {
 				type User struct {
 					gorm.Model
 					IsAdmin     bool
-					Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
-					Email       string       `valid:"required,email"`
-					Name        string       `valid:"required,length(1|32),unix_user"`
-					Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
-					Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
-					Comment     string       `valid:"optional"`
-					InviteToken string       `valid:"optional,length(10|60)"`
+					Roles       []*dbmodels.UserRole  `gorm:"many2many:user_user_roles"`
+					Email       string                `valid:"required,email"`
+					Name        string                `valid:"required,length(1|32),unix_user"`
+					Keys        []*dbmodels.UserKey   `gorm:"ForeignKey:UserID"`
+					Groups      []*dbmodels.UserGroup `gorm:"many2many:user_user_groups;"`
+					Comment     string                `valid:"optional"`
+					InviteToken string                `valid:"optional,length(10|60)"`
 				}
 				return tx.AutoMigrate(&User{}).Error
 			},
@@ -245,20 +248,20 @@ func dbInit(db *gorm.DB) error {
 		}, {
 			ID: "17",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.Create(&UserRole{Name: "admin"}).Error
+				return tx.Create(&dbmodels.UserRole{Name: "admin"}).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Where("name = ?", "admin").Delete(&UserRole{}).Error
+				return tx.Where("name = ?", "admin").Delete(&dbmodels.UserRole{}).Error
 			},
 		}, {
 			ID: "18",
 			Migrate: func(tx *gorm.DB) error {
-				var adminRole UserRole
+				var adminRole dbmodels.UserRole
 				if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
 					return err
 				}
 
-				var users []User
+				var users []dbmodels.User
 				if err := db.Preload("Roles").Where("is_admin = ?", true).Find(&users).Error; err != nil {
 					return err
 				}
@@ -279,13 +282,13 @@ func dbInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type User struct {
 					gorm.Model
-					Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
-					Email       string       `valid:"required,email"`
-					Name        string       `valid:"required,length(1|32),unix_user"`
-					Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
-					Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
-					Comment     string       `valid:"optional"`
-					InviteToken string       `valid:"optional,length(10|60)"`
+					Roles       []*dbmodels.UserRole  `gorm:"many2many:user_user_roles"`
+					Email       string                `valid:"required,email"`
+					Name        string                `valid:"required,length(1|32),unix_user"`
+					Keys        []*dbmodels.UserKey   `gorm:"ForeignKey:UserID"`
+					Groups      []*dbmodels.UserGroup `gorm:"many2many:user_user_groups;"`
+					Comment     string                `valid:"optional"`
+					InviteToken string                `valid:"optional,length(10|60)"`
 				}
 				return tx.AutoMigrate(&User{}).Error
 			},
@@ -295,24 +298,24 @@ func dbInit(db *gorm.DB) error {
 		}, {
 			ID: "20",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.Create(&UserRole{Name: "listhosts"}).Error
+				return tx.Create(&dbmodels.UserRole{Name: "listhosts"}).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Where("name = ?", "listhosts").Delete(&UserRole{}).Error
+				return tx.Where("name = ?", "listhosts").Delete(&dbmodels.UserRole{}).Error
 			},
 		}, {
 			ID: "21",
 			Migrate: func(tx *gorm.DB) error {
 				type Session struct {
 					gorm.Model
-					StoppedAt time.Time `valid:"optional"`
-					Status    string    `valid:"required"`
-					User      *User     `gorm:"ForeignKey:UserID"`
-					Host      *Host     `gorm:"ForeignKey:HostID"`
-					UserID    uint      `valid:"optional"`
-					HostID    uint      `valid:"optional"`
-					ErrMsg    string    `valid:"optional"`
-					Comment   string    `valid:"optional"`
+					StoppedAt time.Time      `valid:"optional"`
+					Status    string         `valid:"required"`
+					User      *dbmodels.User `gorm:"ForeignKey:UserID"`
+					Host      *dbmodels.Host `gorm:"ForeignKey:HostID"`
+					UserID    uint           `valid:"optional"`
+					HostID    uint           `valid:"optional"`
+					ErrMsg    string         `valid:"optional"`
+					Comment   string         `valid:"optional"`
 				}
 				return tx.AutoMigrate(&Session{}).Error
 			},
@@ -324,12 +327,12 @@ func dbInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Event struct {
 					gorm.Model
-					Author   *User  `gorm:"ForeignKey:AuthorID"`
-					AuthorID uint   `valid:"optional"`
-					Domain   string `valid:"required"`
-					Action   string `valid:"required"`
-					Entity   string `valid:"optional"`
-					Args     []byte `sql:"size:10000" valid:"optional,length(1|10000)"`
+					Author   *dbmodels.User `gorm:"ForeignKey:AuthorID"`
+					AuthorID uint           `valid:"optional"`
+					Domain   string         `valid:"required"`
+					Action   string         `valid:"required"`
+					Entity   string         `valid:"optional"`
+					Args     []byte         `sql:"size:10000" valid:"optional,length(1|10000)"`
 				}
 				return tx.AutoMigrate(&Event{}).Error
 			},
@@ -341,11 +344,11 @@ func dbInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type UserKey struct {
 					gorm.Model
-					Key           []byte `sql:"size:10000" valid:"required,length(1|10000)"`
-					AuthorizedKey string `sql:"size:10000" valid:"required,length(1|10000)"`
-					UserID        uint   ``
-					User          *User  `gorm:"ForeignKey:UserID"`
-					Comment       string `valid:"optional"`
+					Key           []byte         `sql:"size:10000" valid:"required,length(1|10000)"`
+					AuthorizedKey string         `sql:"size:10000" valid:"required,length(1|10000)"`
+					UserID        uint           ``
+					User          *dbmodels.User `gorm:"ForeignKey:UserID"`
+					Comment       string         `valid:"optional"`
 				}
 				return tx.AutoMigrate(&UserKey{}).Error
 			},
@@ -355,7 +358,7 @@ func dbInit(db *gorm.DB) error {
 		}, {
 			ID: "24",
 			Migrate: func(tx *gorm.DB) error {
-				var userKeys []UserKey
+				var userKeys []dbmodels.UserKey
 				if err := db.Find(&userKeys).Error; err != nil {
 					return err
 				}
@@ -381,16 +384,16 @@ func dbInit(db *gorm.DB) error {
 				type Host struct {
 					// FIXME: use uuid for ID
 					gorm.Model
-					Name        string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
-					Addr        string       `valid:"required"`
-					User        string       `valid:"optional"`
-					Password    string       `valid:"optional"`
-					SSHKey      *SSHKey      `gorm:"ForeignKey:SSHKeyID"` // SSHKey used to connect by the client
-					SSHKeyID    uint         `gorm:"index"`
-					HostKey     []byte       `sql:"size:10000" valid:"optional"`
-					Groups      []*HostGroup `gorm:"many2many:host_host_groups;"`
-					Fingerprint string       `valid:"optional"` // FIXME: replace with hostKey ?
-					Comment     string       `valid:"optional"`
+					Name        string                `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+					Addr        string                `valid:"required"`
+					User        string                `valid:"optional"`
+					Password    string                `valid:"optional"`
+					SSHKey      *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"` // SSHKey used to connect by the client
+					SSHKeyID    uint                  `gorm:"index"`
+					HostKey     []byte                `sql:"size:10000" valid:"optional"`
+					Groups      []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
+					Fingerprint string                `valid:"optional"` // FIXME: replace with hostKey ?
+					Comment     string                `valid:"optional"`
 				}
 				return tx.AutoMigrate(&Host{}).Error
 			},
@@ -402,14 +405,14 @@ func dbInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Session struct {
 					gorm.Model
-					StoppedAt *time.Time `sql:"index" valid:"optional"`
-					Status    string     `valid:"required"`
-					User      *User      `gorm:"ForeignKey:UserID"`
-					Host      *Host      `gorm:"ForeignKey:HostID"`
-					UserID    uint       `valid:"optional"`
-					HostID    uint       `valid:"optional"`
-					ErrMsg    string     `valid:"optional"`
-					Comment   string     `valid:"optional"`
+					StoppedAt *time.Time     `sql:"index" valid:"optional"`
+					Status    string         `valid:"required"`
+					User      *dbmodels.User `gorm:"ForeignKey:UserID"`
+					Host      *dbmodels.Host `gorm:"ForeignKey:HostID"`
+					UserID    uint           `valid:"optional"`
+					HostID    uint           `valid:"optional"`
+					ErrMsg    string         `valid:"optional"`
+					Comment   string         `valid:"optional"`
 				}
 				return tx.AutoMigrate(&Session{}).Error
 			},
@@ -419,7 +422,7 @@ func dbInit(db *gorm.DB) error {
 		}, {
 			ID: "27",
 			Migrate: func(tx *gorm.DB) error {
-				var sessions []Session
+				var sessions []dbmodels.Session
 				if err := db.Find(&sessions).Error; err != nil {
 					return err
 				}
@@ -447,10 +450,10 @@ func dbInit(db *gorm.DB) error {
 					User     string
 					Password string
 					URL      string
-					SSHKey   *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
-					SSHKeyID uint         `gorm:"index"`
-					HostKey  []byte       `sql:"size:10000"`
-					Groups   []*HostGroup `gorm:"many2many:host_host_groups;"`
+					SSHKey   *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
+					SSHKeyID uint                  `gorm:"index"`
+					HostKey  []byte                `sql:"size:10000"`
+					Groups   []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Comment  string
 				}
 				return tx.AutoMigrate(&Host{}).Error
@@ -469,12 +472,12 @@ func dbInit(db *gorm.DB) error {
 					User     string
 					Password string
 					URL      string
-					SSHKey   *SSHKey      `gorm:"ForeignKey:SSHKeyID"`
-					SSHKeyID uint         `gorm:"index"`
-					HostKey  []byte       `sql:"size:10000"`
-					Groups   []*HostGroup `gorm:"many2many:host_host_groups;"`
+					SSHKey   *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
+					SSHKeyID uint                  `gorm:"index"`
+					HostKey  []byte                `sql:"size:10000"`
+					Groups   []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Comment  string
-					Hop      *Host
+					Hop      *dbmodels.Host
 					HopID    uint
 				}
 				return tx.AutoMigrate(&Host{}).Error
@@ -487,7 +490,7 @@ func dbInit(db *gorm.DB) error {
 	if err := m.Migrate(); err != nil {
 		return err
 	}
-	NewEvent("system", "migrated").Log(db)
+	dbmodels.NewEvent("system", "migrated").Log(db)
 
 	// create default ssh key
 	var count uint
@@ -495,7 +498,7 @@ func dbInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		key, err := NewSSHKey("rsa", 2048)
+		key, err := crypto.NewSSHKey("rsa", 2048)
 		if err != nil {
 			return err
 		}
@@ -511,7 +514,7 @@ func dbInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		hostGroup := HostGroup{
+		hostGroup := dbmodels.HostGroup{
 			Name:    "default",
 			Comment: "created by sshportal",
 		}
@@ -525,7 +528,7 @@ func dbInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		userGroup := UserGroup{
+		userGroup := dbmodels.UserGroup{
 			Name:    "default",
 			Comment: "created by sshportal",
 		}
@@ -539,13 +542,13 @@ func dbInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		var defaultUserGroup UserGroup
+		var defaultUserGroup dbmodels.UserGroup
 		db.Where("name = ?", "default").First(&defaultUserGroup)
-		var defaultHostGroup HostGroup
+		var defaultHostGroup dbmodels.HostGroup
 		db.Where("name = ?", "default").First(&defaultHostGroup)
-		acl := ACL{
-			UserGroups: []*UserGroup{&defaultUserGroup},
-			HostGroups: []*HostGroup{&defaultHostGroup},
+		acl := dbmodels.ACL{
+			UserGroups: []*dbmodels.UserGroup{&defaultUserGroup},
+			HostGroups: []*dbmodels.HostGroup{&defaultHostGroup},
 			Action:     "allow",
 			//HostPattern: "",
 			//Weight:      0,
@@ -557,7 +560,7 @@ func dbInit(db *gorm.DB) error {
 	}
 
 	// create admin user
-	var defaultUserGroup UserGroup
+	var defaultUserGroup dbmodels.UserGroup
 	db.Where("name = ?", "default").First(&defaultUserGroup)
 	if err := db.Table("users").Count(&count).Error; err != nil {
 		return err
@@ -568,7 +571,7 @@ func dbInit(db *gorm.DB) error {
 		if os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN") != "" {
 			inviteToken = os.Getenv("SSHPORTAL_DEFAULT_ADMIN_INVITE_TOKEN")
 		}
-		var adminRole UserRole
+		var adminRole dbmodels.UserRole
 		if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
 			return err
 		}
@@ -583,13 +586,13 @@ func dbInit(db *gorm.DB) error {
 		if username == "" {
 			username = "admin" // fallback username
 		}
-		user := User{
+		user := dbmodels.User{
 			Name:        username,
 			Email:       fmt.Sprintf("%s@localhost", username),
 			Comment:     "created by sshportal",
-			Roles:       []*UserRole{&adminRole},
+			Roles:       []*dbmodels.UserRole{&adminRole},
 			InviteToken: inviteToken,
-			Groups:      []*UserGroup{&defaultUserGroup},
+			Groups:      []*dbmodels.UserGroup{&defaultUserGroup},
 		}
 		if err := db.Create(&user).Error; err != nil {
 			return err
@@ -602,7 +605,7 @@ func dbInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		key, err := NewSSHKey("rsa", 2048)
+		key, err := crypto.NewSSHKey("rsa", 2048)
 		if err != nil {
 			return err
 		}
@@ -614,8 +617,8 @@ func dbInit(db *gorm.DB) error {
 	}
 
 	// close unclosed connections
-	return db.Table("sessions").Where("status = ?", "active").Updates(&Session{
-		Status: string(SessionStatusClosed),
+	return db.Table("sessions").Where("status = ?", "active").Updates(&dbmodels.Session{
+		Status: string(dbmodels.SessionStatusClosed),
 		ErrMsg: "sshportal was halted while the connection was still active",
 	}).Error
 }
@@ -642,4 +645,14 @@ func addExtraSpaceIfExist(str string) string {
 		return " " + str
 	}
 	return ""
+}
+
+func randStringBytes(n int) string {
+	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
