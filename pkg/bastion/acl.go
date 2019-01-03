@@ -1,8 +1,9 @@
 package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
-	"moul.io/sshportal/pkg/dbmodels"
 	"sort"
+
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
 type byWeight []*dbmodels.ACL

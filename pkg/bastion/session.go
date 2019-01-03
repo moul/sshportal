@@ -13,13 +13,6 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-type forwardData struct {
-	DestinationHost string
-	DestinationPort uint32
-	SourceHost      string
-	SourcePort      uint32
-}
-
 type sessionConfig struct {
 	Addr         string
 	Logs         string
