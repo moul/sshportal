@@ -1,4 +1,4 @@
-package main
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"io/ioutil"
@@ -7,7 +7,10 @@ import (
 	"testing"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	. "github.com/smartystreets/goconvey/convey"
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
 func TestCheckACLs(t *testing.T) {
@@ -23,25 +26,25 @@ func TestCheckACLs(t *testing.T) {
 		db, err := gorm.Open("sqlite3", filepath.Join(tempDir, "sshportal.db"))
 		So(err, ShouldBeNil)
 		db.LogMode(false)
-		So(dbInit(db), ShouldBeNil)
+		So(DBInit(db), ShouldBeNil)
 
 		// create dummy objects
-		var hostGroup HostGroup
-		err = HostGroupsByIdentifiers(db, []string{"default"}).First(&hostGroup).Error
+		var hostGroup dbmodels.HostGroup
+		err = dbmodels.HostGroupsByIdentifiers(db, []string{"default"}).First(&hostGroup).Error
 		So(err, ShouldBeNil)
-		db.Create(&Host{Groups: []*HostGroup{&hostGroup}})
+		db.Create(&dbmodels.Host{Groups: []*dbmodels.HostGroup{&hostGroup}})
 
 		//. load db
 		var (
-			hosts []Host
-			users []User
+			hosts []dbmodels.Host
+			users []dbmodels.User
 		)
 		db.Preload("Groups").Preload("Groups.ACLs").Find(&hosts)
 		db.Preload("Groups").Preload("Groups.ACLs").Find(&users)
 
 		// test
-		action, err := CheckACLs(users[0], hosts[0])
+		action, err := checkACLs(users[0], hosts[0])
 		So(err, ShouldBeNil)
-		So(action, ShouldEqual, ACLActionAllow)
+		So(action, ShouldEqual, dbmodels.ACLActionAllow)
 	})
 }

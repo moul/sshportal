@@ -1,4 +1,4 @@
-package main
+package dbmodels // import "moul.io/sshportal/pkg/dbmodels"
 
 import (
 	"encoding/json"
@@ -180,16 +180,6 @@ func init() {
 
 // Host helpers
 
-func ParseInputURL(input string) (*url.URL, error) {
-	if !strings.Contains(input, "://") {
-		input = "ssh://" + input
-	}
-	u, err := url.Parse(input)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
 func (host *Host) DialAddr() string {
 	return fmt.Sprintf("%s:%d", host.Hostname(), host.Port())
 }
@@ -301,7 +291,7 @@ func HostByName(db *gorm.DB, name string) (*Host, error) {
 	return &host, nil
 }
 
-func (host *Host) clientConfig(hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
+func (host *Host) ClientConfig(hk gossh.HostKeyCallback) (*gossh.ClientConfig, error) {
 	config := gossh.ClientConfig{
 		User:            host.Username(),
 		HostKeyCallback: hk,

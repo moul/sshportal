@@ -1,4 +1,4 @@
-package main
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ import (
 	"github.com/moul/ssh"
 	oi "github.com/reiver/go-oi"
 	telnet "github.com/reiver/go-telnet"
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
 type bastionTelnetCaller struct {
@@ -75,7 +76,7 @@ func scannerSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err e
 	return bufio.ScanLines(data, atEOF)
 }
 
-func telnetHandler(host *Host) ssh.Handler {
+func telnetHandler(host *dbmodels.Host) ssh.Handler {
 	return func(s ssh.Session) {
 		// FIXME: log session in db
 		//actx := s.Context().Value(authContextKey).(*authContext)

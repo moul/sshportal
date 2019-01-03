@@ -1,4 +1,4 @@
-package logtunnel // import "moul.io/sshportal/pkg/logtunnel"
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"encoding/binary"
@@ -17,7 +17,7 @@ type logTunnel struct {
 	writer  io.WriteCloser
 }
 
-type ForwardData struct {
+type logTunnelForwardData struct {
 	DestinationHost string
 	DestinationPort uint32
 	SourceHost      string
@@ -40,7 +40,7 @@ func writeHeader(fd io.Writer, length int) {
 	}
 }
 
-func New(channel ssh.Channel, writer io.WriteCloser, host string) io.ReadWriteCloser {
+func newLogTunnel(channel ssh.Channel, writer io.WriteCloser, host string) io.ReadWriteCloser {
 	return &logTunnel{
 		host:    host,
 		channel: channel,

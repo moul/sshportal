@@ -1,4 +1,4 @@
-package main
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/moul/ssh"
 	gossh "golang.org/x/crypto/ssh"
-
-	"moul.io/sshportal/pkg/bastionsession"
+	"moul.io/sshportal/pkg/crypto"
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
 type sshportalContextKey string
@@ -21,40 +21,44 @@ type sshportalContextKey string
 var authContextKey = sshportalContextKey("auth")
 
 type authContext struct {
-	message       string
-	err           error
-	user          User
-	inputUsername string
-	db            *gorm.DB
-	userKey       UserKey
-	config        *configServe
-	authMethod    string
-	authSuccess   bool
+	message         string
+	err             error
+	user            dbmodels.User
+	inputUsername   string
+	db              *gorm.DB
+	userKey         dbmodels.UserKey
+	logsLocation    string
+	aesKey          string
+	dbDriver, dbURL string
+	bindAddr        string
+	demo, debug     bool
+	authMethod      string
+	authSuccess     bool
 }
 
-type UserType string
+type userType string
 
 const (
-	UserTypeHealthcheck UserType = "healthcheck"
-	UserTypeBastion     UserType = "bastion"
-	UserTypeInvite      UserType = "invite"
-	UserTypeShell       UserType = "shell"
+	userTypeHealthcheck userType = "healthcheck"
+	userTypeBastion     userType = "bastion"
+	userTypeInvite      userType = "invite"
+	userTypeShell       userType = "shell"
 )
 
-func (c authContext) userType() UserType {
+func (c authContext) userType() userType {
 	switch {
 	case c.inputUsername == "healthcheck":
-		return UserTypeHealthcheck
+		return userTypeHealthcheck
 	case c.inputUsername == c.user.Name || c.inputUsername == c.user.Email || c.inputUsername == "admin":
-		return UserTypeShell
+		return userTypeShell
 	case strings.HasPrefix(c.inputUsername, "invite:"):
-		return UserTypeInvite
+		return userTypeInvite
 	default:
-		return UserTypeBastion
+		return userTypeBastion
 	}
 }
 
-func dynamicHostKey(db *gorm.DB, host *Host) gossh.HostKeyCallback {
+func dynamicHostKey(db *gorm.DB, host *dbmodels.Host) gossh.HostKeyCallback {
 	return func(hostname string, remote net.Addr, key gossh.PublicKey) error {
 		if len(host.HostKey) == 0 {
 			log.Println("Discovering host fingerprint...")
@@ -68,7 +72,9 @@ func dynamicHostKey(db *gorm.DB, host *Host) gossh.HostKeyCallback {
 	}
 }
 
-func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
+var DefaultChannelHandler ssh.ChannelHandler = func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {}
+
+func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
 	switch newChan.ChannelType() {
 	case "session":
 	case "direct-tcpip":
@@ -83,9 +89,9 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 	actx := ctx.Value(authContextKey).(*authContext)
 
 	switch actx.userType() {
-	case UserTypeBastion:
+	case userTypeBastion:
 		log.Printf("New connection(bastion): sshUser=%q remote=%q local=%q dbUser=id:%q,email:%s", conn.User(), conn.RemoteAddr(), conn.LocalAddr(), actx.user.ID, actx.user.Email)
-		host, err := HostByName(actx.db, actx.inputUsername)
+		host, err := dbmodels.HostByName(actx.db, actx.inputUsername)
 		if err != nil {
 			ch, _, err2 := newChan.Accept()
 			if err2 != nil {
@@ -98,8 +104,8 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 		}
 
 		switch host.Scheme() {
-		case BastionSchemeSSH:
-			sessionConfigs := make([]bastionsession.Config, 0)
+		case dbmodels.BastionSchemeSSH:
+			sessionConfigs := make([]sessionConfig, 0)
 			currentHost := host
 			for currentHost != nil {
 				clientConfig, err2 := bastionClientConfig(ctx, currentHost)
@@ -113,25 +119,25 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 					_ = ch.Close()
 					return
 				}
-				sessionConfigs = append([]bastionsession.Config{{
+				sessionConfigs = append([]sessionConfig{{
 					Addr:         currentHost.DialAddr(),
 					ClientConfig: clientConfig,
-					Logs:         actx.config.logsLocation,
+					Logs:         actx.logsLocation,
 				}}, sessionConfigs...)
 				if currentHost.HopID != 0 {
-					var newHost Host
+					var newHost dbmodels.Host
 					actx.db.Model(currentHost).Related(&newHost, "HopID")
 					hostname := newHost.Name
-					currentHost, _ = HostByName(actx.db, hostname)
+					currentHost, _ = dbmodels.HostByName(actx.db, hostname)
 				} else {
 					currentHost = nil
 				}
 			}
 
-			sess := Session{
+			sess := dbmodels.Session{
 				UserID: actx.user.ID,
 				HostID: host.ID,
-				Status: string(SessionStatusActive),
+				Status: string(dbmodels.SessionStatusActive),
 			}
 			if err = actx.db.Create(&sess).Error; err != nil {
 				ch, _, err2 := newChan.Accept()
@@ -144,14 +150,14 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			}
 
 			go func() {
-				err = bastionsession.MultiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
+				err = multiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
 				if err != nil {
 					log.Printf("Error: %v", err)
 				}
 
 				now := time.Now()
-				sessUpdate := Session{
-					Status:    string(SessionStatusClosed),
+				sessUpdate := dbmodels.Session{
+					Status:    string(dbmodels.SessionStatusClosed),
 					ErrMsg:    fmt.Sprintf("%v", err),
 					StoppedAt: &now,
 				}
@@ -161,12 +167,12 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				}
 				actx.db.Model(&sess).Updates(&sessUpdate)
 			}()
-		case BastionSchemeTelnet:
+		case dbmodels.BastionSchemeTelnet:
 			tmpSrv := ssh.Server{
 				// PtyCallback: srv.PtyCallback,
 				Handler: telnetHandler(host),
 			}
-			defaultChannelHandler(&tmpSrv, conn, newChan, ctx)
+			DefaultChannelHandler(&tmpSrv, conn, newChan, ctx)
 		default:
 			ch, _, err2 := newChan.Accept()
 			if err2 != nil {
@@ -177,37 +183,37 @@ func channelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 			_ = ch.Close()
 		}
 	default: // shell
-		defaultChannelHandler(srv, conn, newChan, ctx)
+		DefaultChannelHandler(srv, conn, newChan, ctx)
 	}
 }
 
-func bastionClientConfig(ctx ssh.Context, host *Host) (*gossh.ClientConfig, error) {
+func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientConfig, error) {
 	actx := ctx.Value(authContextKey).(*authContext)
 
-	clientConfig, err := host.clientConfig(dynamicHostKey(actx.db, host))
+	clientConfig, err := host.ClientConfig(dynamicHostKey(actx.db, host))
 	if err != nil {
 		return nil, err
 	}
 
-	var tmpUser User
+	var tmpUser dbmodels.User
 	if err = actx.db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", actx.user.ID).First(&tmpUser).Error; err != nil {
 		return nil, err
 	}
-	var tmpHost Host
+	var tmpHost dbmodels.Host
 	if err = actx.db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err != nil {
 		return nil, err
 	}
-	action, err2 := CheckACLs(tmpUser, tmpHost)
+	action, err2 := checkACLs(tmpUser, tmpHost)
 	if err2 != nil {
 		return nil, err2
 	}
 
-	HostDecrypt(actx.config.aesKey, host)
-	SSHKeyDecrypt(actx.config.aesKey, host.SSHKey)
+	crypto.HostDecrypt(actx.aesKey, host)
+	crypto.SSHKeyDecrypt(actx.aesKey, host.SSHKey)
 
 	switch action {
-	case string(ACLActionAllow):
-	case string(ACLActionDeny):
+	case string(dbmodels.ACLActionAllow):
+	case string(dbmodels.ACLActionDeny):
 		return nil, fmt.Errorf("you don't have permission to that host")
 	default:
 		return nil, fmt.Errorf("invalid ACL action: %q", action)
@@ -215,9 +221,9 @@ func bastionClientConfig(ctx ssh.Context, host *Host) (*gossh.ClientConfig, erro
 	return clientConfig, nil
 }
 
-func shellHandler(s ssh.Session) {
+func ShellHandler(s ssh.Session, version, gitSha, gitTag, gitBranch string) {
 	actx := s.Context().Value(authContextKey).(*authContext)
-	if actx.userType() != UserTypeHealthcheck {
+	if actx.userType() != userTypeHealthcheck {
 		log.Printf("New connection(shell): sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), actx.user.ID, actx.user.Email)
 	}
 
@@ -232,43 +238,48 @@ func shellHandler(s ssh.Session) {
 	}
 
 	switch actx.userType() {
-	case UserTypeHealthcheck:
+	case userTypeHealthcheck:
 		fmt.Fprintln(s, "OK")
 		return
-	case UserTypeShell:
-		if err := shell(s); err != nil {
+	case userTypeShell:
+		if err := shell(s, version, gitSha, gitTag, gitBranch); err != nil {
 			fmt.Fprintf(s, "error: %v\n", err)
 			_ = s.Exit(1)
 		}
 		return
-	case UserTypeInvite:
+	case userTypeInvite:
 		// do nothing (message was printed at the beginning of the function)
 		return
 	}
 	panic("should not happen")
 }
 
-func passwordAuthHandler(db *gorm.DB, cfg *configServe) ssh.PasswordHandler {
+func PasswordAuthHandler(db *gorm.DB, logsLocation, aesKey, dbDriver, dbURL, bindAddr string, demo bool) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pass string) bool {
 		actx := &authContext{
 			db:            db,
 			inputUsername: ctx.User(),
-			config:        cfg,
+			logsLocation:  logsLocation,
+			aesKey:        aesKey,
+			dbDriver:      dbDriver,
+			dbURL:         dbURL,
+			bindAddr:      bindAddr,
+			demo:          demo,
 			authMethod:    "password",
 		}
-		actx.authSuccess = actx.userType() == UserTypeHealthcheck
+		actx.authSuccess = actx.userType() == userTypeHealthcheck
 		ctx.SetValue(authContextKey, actx)
 		return actx.authSuccess
 	}
 }
 
-func privateKeyFromDB(db *gorm.DB, aesKey string) func(*ssh.Server) error {
+func PrivateKeyFromDB(db *gorm.DB, aesKey string) func(*ssh.Server) error {
 	return func(srv *ssh.Server) error {
-		var key SSHKey
-		if err := SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
+		var key dbmodels.SSHKey
+		if err := dbmodels.SSHKeysByIdentifiers(db, []string{"host"}).First(&key).Error; err != nil {
 			return err
 		}
-		SSHKeyDecrypt(aesKey, &key)
+		crypto.SSHKeyDecrypt(aesKey, &key)
 
 		signer, err := gossh.ParsePrivateKey([]byte(key.PrivKey))
 		if err != nil {
@@ -279,12 +290,17 @@ func privateKeyFromDB(db *gorm.DB, aesKey string) func(*ssh.Server) error {
 	}
 }
 
-func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
+func PublicKeyAuthHandler(db *gorm.DB, logsLocation, aesKey, dbDriver, dbURL, bindAddr string, demo bool) ssh.PublicKeyHandler {
 	return func(ctx ssh.Context, key ssh.PublicKey) bool {
 		actx := &authContext{
 			db:            db,
 			inputUsername: ctx.User(),
-			config:        cfg,
+			logsLocation:  logsLocation,
+			aesKey:        aesKey,
+			dbDriver:      dbDriver,
+			dbURL:         dbURL,
+			bindAddr:      bindAddr,
+			demo:          demo,
 			authMethod:    "pubkey",
 			authSuccess:   true,
 		}
@@ -294,20 +310,20 @@ func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
 		db.Where("authorized_key = ?", string(gossh.MarshalAuthorizedKey(key))).First(&actx.userKey)
 		if actx.userKey.UserID > 0 {
 			db.Preload("Roles").Where("id = ?", actx.userKey.UserID).First(&actx.user)
-			if actx.userType() == UserTypeInvite {
+			if actx.userType() == userTypeInvite {
 				actx.err = fmt.Errorf("invites are only supported for new SSH keys; your ssh key is already associated with the user %q", actx.user.Email)
 			}
 			return true
 		}
 
 		// handle invite "links"
-		if actx.userType() == UserTypeInvite {
+		if actx.userType() == userTypeInvite {
 			inputToken := strings.Split(actx.inputUsername, ":")[1]
 			if len(inputToken) > 0 {
 				db.Where("invite_token = ?", inputToken).First(&actx.user)
 			}
 			if actx.user.ID > 0 {
-				actx.userKey = UserKey{
+				actx.userKey = dbmodels.UserKey{
 					UserID:        actx.user.ID,
 					Key:           key.Marshal(),
 					Comment:       "created by sshportal",
@@ -321,7 +337,7 @@ func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
 
 				actx.message = fmt.Sprintf("Welcome %s!\n\nYour key is now associated with the user %q.\n", actx.user.Name, actx.user.Email)
 			} else {
-				actx.user = User{Name: "Anonymous"}
+				actx.user = dbmodels.User{Name: "Anonymous"}
 				actx.err = errors.New("your token is invalid or expired")
 			}
 			return true
@@ -329,7 +345,7 @@ func publicKeyAuthHandler(db *gorm.DB, cfg *configServe) ssh.PublicKeyHandler {
 
 		// fallback
 		actx.err = errors.New("unknown ssh key")
-		actx.user = User{Name: "Anonymous"}
+		actx.user = dbmodels.User{Name: "Anonymous"}
 		return true
 	}
 }

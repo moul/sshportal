@@ -1,3 +1,5 @@
+# .git/  # should be kept for git-based versionning
+
 examples/
 .circleci/
 .assets/

@@ -1,4 +1,4 @@
-package bastionsession // import "moul.io/sshportal/pkg/bastionsession"
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"errors"
@@ -11,24 +11,15 @@ import (
 	"github.com/moul/ssh"
 	"github.com/sabban/bastion/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
-
-	"moul.io/sshportal/pkg/logtunnel"
 )
 
-type ForwardData struct {
-	DestinationHost string
-	DestinationPort uint32
-	SourceHost      string
-	SourcePort      uint32
-}
-
-type Config struct {
+type sessionConfig struct {
 	Addr         string
 	Logs         string
 	ClientConfig *gossh.ClientConfig
 }
 
-func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []Config) error {
+func multiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []sessionConfig) error {
 	var lastClient *gossh.Client
 	switch newChan.ChannelType() {
 	case "session":
@@ -100,7 +91,7 @@ func MultiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 			lastClient = client
 		}
 
-		d := logtunnel.ForwardData{}
+		d := logTunnelForwardData{}
 		if err := gossh.Unmarshal(newChan.ExtraData(), &d); err != nil {
 			return err
 		}
@@ -152,12 +143,12 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 		}()
 	}
 	if channeltype == "direct-tcpip" {
-		d := logtunnel.ForwardData{}
+		d := logTunnelForwardData{}
 		if err := gossh.Unmarshal(newChan.ExtraData(), &d); err != nil {
 			return err
 		}
-		wrappedlch := logtunnel.New(lch, f, d.SourceHost)
-		wrappedrch := logtunnel.New(rch, f, d.DestinationHost)
+		wrappedlch := newLogTunnel(lch, f, d.SourceHost)
+		wrappedrch := newLogTunnel(rch, f, d.DestinationHost)
 		go func() {
 			_, _ = io.Copy(wrappedlch, rch)
 			errch <- errors.New("lch closed the connection")

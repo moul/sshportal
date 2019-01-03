@@ -1,10 +1,11 @@
-package main
+package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -16,11 +17,12 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/moul/ssh"
-	gossh "golang.org/x/crypto/ssh"
-
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
+	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
+	"moul.io/sshportal/pkg/crypto"
+	"moul.io/sshportal/pkg/dbmodels"
 )
 
 var banner = `
@@ -38,7 +40,7 @@ const (
 	naMessage = "n/a"
 )
 
-func shell(s ssh.Session) error {
+func shell(s ssh.Session, version, gitSha, gitTag, gitBranch string) error {
 	var (
 		sshCommand = s.Command()
 		actx       = s.Context().Value(authContextKey).(*authContext)
@@ -83,35 +85,35 @@ GLOBAL OPTIONS:
 						cli.StringSliceFlag{Name: "usergroup, ug", Usage: "Assigns `USERGROUP` to the acl"},
 						cli.StringFlag{Name: "pattern", Usage: "Assigns a host pattern to the acl"},
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
-						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: string(ACLActionAllow)},
+						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: string(dbmodels.ACLActionAllow)},
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
 					},
 					Action: func(c *cli.Context) error {
 						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
-						acl := ACL{
+						acl := dbmodels.ACL{
 							Comment:     c.String("comment"),
 							HostPattern: c.String("pattern"),
-							UserGroups:  []*UserGroup{},
-							HostGroups:  []*HostGroup{},
+							UserGroups:  []*dbmodels.UserGroup{},
+							HostGroups:  []*dbmodels.HostGroup{},
 							Weight:      c.Uint("weight"),
 							Action:      c.String("action"),
 						}
-						if acl.Action != string(ACLActionAllow) && acl.Action != string(ACLActionDeny) {
+						if acl.Action != string(dbmodels.ACLActionAllow) && acl.Action != string(dbmodels.ACLActionDeny) {
 							return fmt.Errorf("invalid action %q, allowed values: allow, deny", acl.Action)
 						}
 						if _, err := govalidator.ValidateStruct(acl); err != nil {
 							return err
 						}
 
-						var userGroups []*UserGroup
-						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.StringSlice("usergroup"))).Find(&userGroups).Error; err != nil {
+						var userGroups []*dbmodels.UserGroup
+						if err := dbmodels.UserGroupsPreload(dbmodels.UserGroupsByIdentifiers(db, c.StringSlice("usergroup"))).Find(&userGroups).Error; err != nil {
 							return err
 						}
 						acl.UserGroups = append(acl.UserGroups, userGroups...)
-						var hostGroups []*HostGroup
-						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.StringSlice("hostgroup"))).Find(&hostGroups).Error; err != nil {
+						var hostGroups []*dbmodels.HostGroup
+						if err := dbmodels.HostGroupsPreload(dbmodels.HostGroupsByIdentifiers(db, c.StringSlice("hostgroup"))).Find(&hostGroups).Error; err != nil {
 							return err
 						}
 						acl.HostGroups = append(acl.HostGroups, hostGroups...)
@@ -141,8 +143,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var acls []ACL
-						if err := ACLsPreload(ACLsByIdentifiers(db, c.Args())).Find(&acls).Error; err != nil {
+						var acls []dbmodels.ACL
+						if err := dbmodels.ACLsPreload(dbmodels.ACLsByIdentifiers(db, c.Args())).Find(&acls).Error; err != nil {
 							return err
 						}
 
@@ -162,10 +164,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var acls []*ACL
+						var acls []*dbmodels.ACL
 						query := db.Order("created_at desc").Preload("UserGroups").Preload("HostGroups")
 						if c.Bool("latest") {
-							var acl ACL
+							var acl dbmodels.ACL
 							if err := query.First(&acl).Error; err != nil {
 								return err
 							}
@@ -223,7 +225,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return ACLsByIdentifiers(db, c.Args()).Delete(&ACL{}).Error
+						return dbmodels.ACLsByIdentifiers(db, c.Args()).Delete(&dbmodels.ACL{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -247,15 +249,15 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var acls []ACL
-						if err := ACLsByIdentifiers(db, c.Args()).Find(&acls).Error; err != nil {
+						var acls []dbmodels.ACL
+						if err := dbmodels.ACLsByIdentifiers(db, c.Args()).Find(&acls).Error; err != nil {
 							return err
 						}
 
 						tx := db.Begin()
 						for _, acl := range acls {
 							model := tx.Model(&acl)
-							update := ACL{
+							update := dbmodels.ACL{
 								Action:      c.String("action"),
 								HostPattern: c.String("pattern"),
 								Weight:      c.Uint("weight"),
@@ -267,13 +269,13 @@ GLOBAL OPTIONS:
 							}
 
 							// associations
-							var appendUserGroups []UserGroup
-							var deleteUserGroups []UserGroup
-							if err := UserGroupsByIdentifiers(db, c.StringSlice("assign-usergroup")).Find(&appendUserGroups).Error; err != nil {
+							var appendUserGroups []dbmodels.UserGroup
+							var deleteUserGroups []dbmodels.UserGroup
+							if err := dbmodels.UserGroupsByIdentifiers(db, c.StringSlice("assign-usergroup")).Find(&appendUserGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
-							if err := UserGroupsByIdentifiers(db, c.StringSlice("unassign-usergroup")).Find(&deleteUserGroups).Error; err != nil {
+							if err := dbmodels.UserGroupsByIdentifiers(db, c.StringSlice("unassign-usergroup")).Find(&deleteUserGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -288,13 +290,13 @@ GLOBAL OPTIONS:
 								}
 							}
 
-							var appendHostGroups []HostGroup
-							var deleteHostGroups []HostGroup
-							if err := HostGroupsByIdentifiers(db, c.StringSlice("assign-hostgroup")).Find(&appendHostGroups).Error; err != nil {
+							var appendHostGroups []dbmodels.HostGroup
+							var deleteHostGroups []dbmodels.HostGroup
+							if err := dbmodels.HostGroupsByIdentifiers(db, c.StringSlice("assign-hostgroup")).Find(&appendHostGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
-							if err := HostGroupsByIdentifiers(db, c.StringSlice("unassign-hostgroup")).Find(&deleteHostGroups).Error; err != nil {
+							if err := dbmodels.HostGroupsByIdentifiers(db, c.StringSlice("unassign-hostgroup")).Find(&deleteHostGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -332,62 +334,62 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						config := Config{}
-						if err := HostsPreload(db).Find(&config.Hosts).Error; err != nil {
+						config := dbmodels.Config{}
+						if err := dbmodels.HostsPreload(db).Find(&config.Hosts).Error; err != nil {
 							return err
 						}
 
-						if err := SSHKeysPreload(db).Find(&config.SSHKeys).Error; err != nil {
+						if err := dbmodels.SSHKeysPreload(db).Find(&config.SSHKeys).Error; err != nil {
 							return err
 						}
 						for _, key := range config.SSHKeys {
-							SSHKeyDecrypt(actx.config.aesKey, key)
+							crypto.SSHKeyDecrypt(actx.aesKey, key)
 						}
 						if !c.Bool("decrypt") {
 							for _, key := range config.SSHKeys {
-								if err := SSHKeyEncrypt(actx.config.aesKey, key); err != nil {
+								if err := crypto.SSHKeyEncrypt(actx.aesKey, key); err != nil {
 									return err
 								}
 							}
 						}
 
-						if err := HostsPreload(db).Find(&config.Hosts).Error; err != nil {
+						if err := dbmodels.HostsPreload(db).Find(&config.Hosts).Error; err != nil {
 							return err
 						}
 						for _, host := range config.Hosts {
-							HostDecrypt(actx.config.aesKey, host)
+							crypto.HostDecrypt(actx.aesKey, host)
 						}
 						if !c.Bool("decrypt") {
 							for _, host := range config.Hosts {
-								if err := HostEncrypt(actx.config.aesKey, host); err != nil {
+								if err := crypto.HostEncrypt(actx.aesKey, host); err != nil {
 									return err
 								}
 							}
 						}
 
-						if err := UserKeysPreload(db).Find(&config.UserKeys).Error; err != nil {
+						if err := dbmodels.UserKeysPreload(db).Find(&config.UserKeys).Error; err != nil {
 							return err
 						}
-						if err := UsersPreload(db).Find(&config.Users).Error; err != nil {
+						if err := dbmodels.UsersPreload(db).Find(&config.Users).Error; err != nil {
 							return err
 						}
-						if err := UserGroupsPreload(db).Find(&config.UserGroups).Error; err != nil {
+						if err := dbmodels.UserGroupsPreload(db).Find(&config.UserGroups).Error; err != nil {
 							return err
 						}
-						if err := HostGroupsPreload(db).Find(&config.HostGroups).Error; err != nil {
+						if err := dbmodels.HostGroupsPreload(db).Find(&config.HostGroups).Error; err != nil {
 							return err
 						}
-						if err := ACLsPreload(db).Find(&config.ACLs).Error; err != nil {
+						if err := dbmodels.ACLsPreload(db).Find(&config.ACLs).Error; err != nil {
 							return err
 						}
 						if err := db.Find(&config.Settings).Error; err != nil {
 							return err
 						}
-						if err := SessionsPreload(db).Find(&config.Sessions).Error; err != nil {
+						if err := dbmodels.SessionsPreload(db).Find(&config.Sessions).Error; err != nil {
 							return err
 						}
 						if !c.Bool("ignore-events") {
-							if err := EventsPreload(db).Find(&config.Events).Error; err != nil {
+							if err := dbmodels.EventsPreload(db).Find(&config.Events).Error; err != nil {
 								return err
 							}
 						}
@@ -411,7 +413,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						config := Config{}
+						config := dbmodels.Config{}
 
 						dec := json.NewDecoder(s)
 						if err := dec.Decode(&config); err != nil {
@@ -474,9 +476,9 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, host := range config.Hosts {
-							HostDecrypt(actx.config.aesKey, host)
+							crypto.HostDecrypt(actx.aesKey, host)
 							if !c.Bool("decrypt") {
-								if err := HostEncrypt(actx.config.aesKey, host); err != nil {
+								if err := crypto.HostEncrypt(actx.aesKey, host); err != nil {
 									return err
 								}
 							}
@@ -510,9 +512,9 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, sshKey := range config.SSHKeys {
-							SSHKeyDecrypt(actx.config.aesKey, sshKey)
+							crypto.SSHKeyDecrypt(actx.aesKey, sshKey)
 							if !c.Bool("decrypt") {
-								if err := SSHKeyEncrypt(actx.config.aesKey, sshKey); err != nil {
+								if err := crypto.SSHKeyEncrypt(actx.aesKey, sshKey); err != nil {
 									return err
 								}
 							}
@@ -572,8 +574,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var events []*Event
-						if err := EventsPreload(EventsByIdentifiers(db, c.Args())).Find(&events).Error; err != nil {
+						var events []*dbmodels.Event
+						if err := dbmodels.EventsPreload(dbmodels.EventsByIdentifiers(db, c.Args())).Find(&events).Error; err != nil {
 							return err
 						}
 
@@ -601,10 +603,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var events []Event
+						var events []dbmodels.Event
 						query := db.Order("created_at desc").Preload("Author")
 						if c.Bool("latest") {
-							var event Event
+							var event dbmodels.Event
 							if err := query.First(&event).Error; err != nil {
 								return err
 							}
@@ -672,11 +674,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						u, err := ParseInputURL(c.Args().First())
+						u, err := parseInputURL(c.Args().First())
 						if err != nil {
 							return err
 						}
-						host := &Host{
+						host := &dbmodels.Host{
 							URL:     u.String(),
 							Comment: c.String("comment"),
 						}
@@ -685,7 +687,7 @@ GLOBAL OPTIONS:
 						}
 						host.Name = strings.Split(host.Hostname(), ".")[0]
 						if c.String("hop") != "" {
-							hop, err := HostByName(db, c.String("hop"))
+							hop, err := dbmodels.HostByName(db, c.String("hop"))
 							if err != nil {
 								return err
 							}
@@ -705,8 +707,8 @@ GLOBAL OPTIONS:
 							inputKey = "default"
 						}
 						if inputKey != "" {
-							var key SSHKey
-							if err := SSHKeysByIdentifiers(db, []string{inputKey}).First(&key).Error; err != nil {
+							var key dbmodels.SSHKey
+							if err := dbmodels.SSHKeysByIdentifiers(db, []string{inputKey}).First(&key).Error; err != nil {
 								return err
 							}
 							host.SSHKeyID = key.ID
@@ -717,12 +719,12 @@ GLOBAL OPTIONS:
 						if len(inputGroups) == 0 {
 							inputGroups = []string{"default"}
 						}
-						if err := HostGroupsByIdentifiers(db, inputGroups).Find(&host.Groups).Error; err != nil {
+						if err := dbmodels.HostGroupsByIdentifiers(db, inputGroups).Find(&host.Groups).Error; err != nil {
 							return err
 						}
 
 						// encrypt
-						if err := HostEncrypt(actx.config.aesKey, host); err != nil {
+						if err := crypto.HostEncrypt(actx.aesKey, host); err != nil {
 							return err
 						}
 
@@ -748,18 +750,18 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hosts []*Host
+						var hosts []*dbmodels.Host
 						db = db.Preload("Groups")
 						if myself.HasRole("admin") {
 							db = db.Preload("SSHKey")
 						}
-						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
+						if err := dbmodels.HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
 							return err
 						}
 
 						if c.Bool("decrypt") {
 							for _, host := range hosts {
-								HostDecrypt(actx.config.aesKey, host)
+								crypto.HostDecrypt(actx.aesKey, host)
 							}
 						}
 
@@ -779,10 +781,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hosts []*Host
+						var hosts []*dbmodels.Host
 						query := db.Order("created_at desc").Preload("Groups")
 						if c.Bool("latest") {
-							var host Host
+							var host dbmodels.Host
 							if err := query.First(&host).Error; err != nil {
 								return err
 							}
@@ -807,7 +809,7 @@ GLOBAL OPTIONS:
 						for _, host := range hosts {
 							authKey := ""
 							if host.SSHKeyID > 0 {
-								var key SSHKey
+								var key dbmodels.SSHKey
 								db.Model(&host).Related(&key)
 								authKey = key.Name
 							}
@@ -817,7 +819,7 @@ GLOBAL OPTIONS:
 							}
 							var hop string
 							if host.HopID != 0 {
-								var hopHost Host
+								var hopHost dbmodels.Host
 								db.Model(&host).Related(&hopHost, "HopID")
 								hop = hopHost.Name
 							} else {
@@ -852,7 +854,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return HostsByIdentifiers(db, c.Args()).Delete(&Host{}).Error
+						return dbmodels.HostsByIdentifiers(db, c.Args()).Delete(&dbmodels.Host{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -877,8 +879,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hosts []Host
-						if err := HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
+						var hosts []dbmodels.Host
+						if err := dbmodels.HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
 							return err
 						}
 
@@ -901,7 +903,7 @@ GLOBAL OPTIONS:
 
 							// url
 							if c.String("url") != "" {
-								u, err := ParseInputURL(c.String("url"))
+								u, err := parseInputURL(c.String("url"))
 								if err != nil {
 									tx.Rollback()
 									return err
@@ -914,7 +916,7 @@ GLOBAL OPTIONS:
 
 							// hop
 							if c.String("hop") != "" {
-								hop, err := HostByName(db, c.String("hop"))
+								hop, err := dbmodels.HostByName(db, c.String("hop"))
 								if err != nil {
 									tx.Rollback()
 									return err
@@ -927,7 +929,7 @@ GLOBAL OPTIONS:
 
 							// remove the hop
 							if c.Bool("unset-hop") {
-								var hopHost Host
+								var hopHost dbmodels.Host
 
 								db.Model(&host).Related(&hopHost, "HopID")
 								if err := model.Association("Hop").Clear().Error; err != nil {
@@ -938,8 +940,8 @@ GLOBAL OPTIONS:
 
 							// associations
 							if c.String("key") != "" {
-								var key SSHKey
-								if err := SSHKeysByIdentifiers(db, []string{c.String("key")}).First(&key).Error; err != nil {
+								var key dbmodels.SSHKey
+								if err := dbmodels.SSHKeysByIdentifiers(db, []string{c.String("key")}).First(&key).Error; err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -948,13 +950,13 @@ GLOBAL OPTIONS:
 									return err
 								}
 							}
-							var appendGroups []HostGroup
-							var deleteGroups []HostGroup
-							if err := HostGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
+							var appendGroups []dbmodels.HostGroup
+							var deleteGroups []dbmodels.HostGroup
+							if err := dbmodels.HostGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
-							if err := HostGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
+							if err := dbmodels.HostGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -991,7 +993,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						hostGroup := HostGroup{
+						hostGroup := dbmodels.HostGroup{
 							Name:    c.String("name"),
 							Comment: c.String("comment"),
 						}
@@ -1022,8 +1024,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hostGroups []HostGroup
-						if err := HostGroupsPreload(HostGroupsByIdentifiers(db, c.Args())).Find(&hostGroups).Error; err != nil {
+						var hostGroups []dbmodels.HostGroup
+						if err := dbmodels.HostGroupsPreload(dbmodels.HostGroupsByIdentifiers(db, c.Args())).Find(&hostGroups).Error; err != nil {
 							return err
 						}
 
@@ -1043,10 +1045,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hostGroups []*HostGroup
+						var hostGroups []*dbmodels.HostGroup
 						query := db.Order("created_at desc").Preload("ACLs").Preload("Hosts")
 						if c.Bool("latest") {
-							var hostGroup HostGroup
+							var hostGroup dbmodels.HostGroup
 							if err := query.First(&hostGroup).Error; err != nil {
 								return err
 							}
@@ -1096,7 +1098,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return HostGroupsByIdentifiers(db, c.Args()).Delete(&HostGroup{}).Error
+						return dbmodels.HostGroupsByIdentifiers(db, c.Args()).Delete(&dbmodels.HostGroup{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -1115,8 +1117,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hostgroups []HostGroup
-						if err := HostGroupsByIdentifiers(db, c.Args()).Find(&hostgroups).Error; err != nil {
+						var hostgroups []dbmodels.HostGroup
+						if err := dbmodels.HostGroupsByIdentifiers(db, c.Args()).Find(&hostgroups).Error; err != nil {
 							return err
 						}
 
@@ -1149,14 +1151,14 @@ GLOBAL OPTIONS:
 					return err
 				}
 
-				fmt.Fprintf(s, "debug mode (server): %v\n", actx.config.debug)
+				fmt.Fprintf(s, "debug mode (server): %v\n", actx.debug)
 				hostname, _ := os.Hostname()
 				fmt.Fprintf(s, "Hostname: %s\n", hostname)
 				fmt.Fprintf(s, "CPUs: %d\n", runtime.NumCPU())
-				fmt.Fprintf(s, "Demo mode: %v\n", actx.config.demo)
-				fmt.Fprintf(s, "DB Driver: %s\n", actx.config.dbDriver)
-				fmt.Fprintf(s, "DB Conn: %s\n", actx.config.dbURL)
-				fmt.Fprintf(s, "Bind Address: %s\n", actx.config.bindAddr)
+				fmt.Fprintf(s, "Demo mode: %v\n", actx.demo)
+				fmt.Fprintf(s, "DB Driver: %s\n", actx.dbDriver)
+				fmt.Fprintf(s, "DB Conn: %s\n", actx.dbURL)
+				fmt.Fprintf(s, "Bind Address: %s\n", actx.bindAddr)
 				fmt.Fprintf(s, "System Time: %v\n", time.Now().Format(time.RFC3339Nano))
 				fmt.Fprintf(s, "OS Type: %s\n", runtime.GOOS)
 				fmt.Fprintf(s, "OS Architecture: %s\n", runtime.GOARCH)
@@ -1166,10 +1168,10 @@ GLOBAL OPTIONS:
 
 				fmt.Fprintf(s, "User ID: %v\n", myself.ID)
 				fmt.Fprintf(s, "User email: %s\n", myself.Email)
-				fmt.Fprintf(s, "Version: %s\n", Version)
-				fmt.Fprintf(s, "GIT SHA: %s\n", GitSha)
-				fmt.Fprintf(s, "GIT Branch: %s\n", GitBranch)
-				fmt.Fprintf(s, "GIT Tag: %s\n", GitTag)
+				fmt.Fprintf(s, "Version: %s\n", version)
+				fmt.Fprintf(s, "GIT SHA: %s\n", gitSha)
+				fmt.Fprintf(s, "GIT Branch: %s\n", gitBranch)
+				fmt.Fprintf(s, "GIT Tag: %s\n", gitTag)
 
 				// FIXME: add info about current server (network, cpu, ram, OS)
 				// FIXME: add info about current user
@@ -1201,9 +1203,9 @@ GLOBAL OPTIONS:
 							name = c.String("name")
 						}
 
-						key, err := NewSSHKey(c.String("type"), c.Uint("length"))
-						if actx.config.aesKey != "" {
-							if err2 := SSHKeyEncrypt(actx.config.aesKey, key); err2 != nil {
+						key, err := crypto.NewSSHKey(c.String("type"), c.Uint("length"))
+						if actx.aesKey != "" {
+							if err2 := crypto.SSHKeyEncrypt(actx.aesKey, key); err2 != nil {
 								return err2
 							}
 						}
@@ -1258,7 +1260,7 @@ GLOBAL OPTIONS:
 								break
 							}
 						}
-						key, err := ImportSSHKey(value)
+						key, err := crypto.ImportSSHKey(value)
 						if err != nil {
 							return err
 						}
@@ -1295,14 +1297,14 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var keys []*SSHKey
-						if err := SSHKeysByIdentifiers(SSHKeysPreload(db), c.Args()).Find(&keys).Error; err != nil {
+						var keys []*dbmodels.SSHKey
+						if err := dbmodels.SSHKeysByIdentifiers(dbmodels.SSHKeysPreload(db), c.Args()).Find(&keys).Error; err != nil {
 							return err
 						}
 
 						if c.Bool("decrypt") {
 							for _, key := range keys {
-								SSHKeyDecrypt(actx.config.aesKey, key)
+								crypto.SSHKeyDecrypt(actx.aesKey, key)
 							}
 						}
 
@@ -1322,10 +1324,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var sshKeys []*SSHKey
+						var sshKeys []*dbmodels.SSHKey
 						query := db.Order("created_at desc").Preload("Hosts")
 						if c.Bool("latest") {
-							var sshKey SSHKey
+							var sshKey dbmodels.SSHKey
 							if err := query.First(&sshKey).Error; err != nil {
 								return err
 							}
@@ -1376,7 +1378,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return SSHKeysByIdentifiers(db, c.Args()).Delete(&SSHKey{}).Error
+						return dbmodels.SSHKeysByIdentifiers(db, c.Args()).Delete(&dbmodels.SSHKey{}).Error
 					},
 				}, {
 					Name:      "setup",
@@ -1389,8 +1391,8 @@ GLOBAL OPTIONS:
 
 						// not checking roles, everyone with an account can see how to enroll new hosts
 
-						var key SSHKey
-						if err := SSHKeysByIdentifiers(db, c.Args()).First(&key).Error; err != nil {
+						var key dbmodels.SSHKey
+						if err := dbmodels.SSHKeysByIdentifiers(db, c.Args()).First(&key).Error; err != nil {
 							return err
 						}
 						fmt.Fprintf(s, "umask 077; mkdir -p .ssh; echo %s sshportal >> .ssh/authorized_keys\n", key.PubKey)
@@ -1407,11 +1409,11 @@ GLOBAL OPTIONS:
 
 						// not checking roles, everyone with an account can see how to enroll new hosts
 
-						var key SSHKey
-						if err := SSHKeysByIdentifiers(SSHKeysPreload(db), c.Args()).First(&key).Error; err != nil {
+						var key dbmodels.SSHKey
+						if err := dbmodels.SSHKeysByIdentifiers(dbmodels.SSHKeysPreload(db), c.Args()).First(&key).Error; err != nil {
 							return err
 						}
-						SSHKeyDecrypt(actx.config.aesKey, &key)
+						crypto.SSHKeyDecrypt(actx.aesKey, &key)
 
 						type line struct {
 							key   string
@@ -1489,8 +1491,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var users []User
-						if err := UsersPreload(UsersByIdentifiers(db, c.Args())).Find(&users).Error; err != nil {
+						var users []dbmodels.User
+						if err := dbmodels.UsersPreload(dbmodels.UsersByIdentifiers(db, c.Args())).Find(&users).Error; err != nil {
 							return err
 						}
 
@@ -1525,7 +1527,7 @@ GLOBAL OPTIONS:
 							name = c.String("name")
 						}
 
-						user := User{
+						user := dbmodels.User{
 							Name:        name,
 							Email:       email,
 							Comment:     c.String("comment"),
@@ -1541,7 +1543,7 @@ GLOBAL OPTIONS:
 						if len(inputGroups) == 0 {
 							inputGroups = []string{"default"}
 						}
-						if err := UserGroupsByIdentifiers(db, inputGroups).Find(&user.Groups).Error; err != nil {
+						if err := dbmodels.UserGroupsByIdentifiers(db, inputGroups).Find(&user.Groups).Error; err != nil {
 							return err
 						}
 
@@ -1564,10 +1566,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var users []*User
+						var users []*dbmodels.User
 						query := db.Order("created_at desc").Preload("Groups").Preload("Roles").Preload("Keys")
 						if c.Bool("latest") {
-							var user User
+							var user dbmodels.User
 							if err := query.First(&user).Error; err != nil {
 								return err
 							}
@@ -1625,7 +1627,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return UsersByIdentifiers(db, c.Args()).Delete(&User{}).Error
+						return dbmodels.UsersByIdentifiers(db, c.Args()).Delete(&dbmodels.User{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -1649,8 +1651,8 @@ GLOBAL OPTIONS:
 						}
 
 						// FIXME: check if unset-admin + user == myself
-						var users []User
-						if err := UsersByIdentifiers(db, c.Args()).Find(&users).Error; err != nil {
+						var users []dbmodels.User
+						if err := dbmodels.UsersByIdentifiers(db, c.Args()).Find(&users).Error; err != nil {
 							return err
 						}
 
@@ -1676,13 +1678,13 @@ GLOBAL OPTIONS:
 							}
 
 							// associations
-							var appendGroups []UserGroup
-							if err := UserGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
+							var appendGroups []dbmodels.UserGroup
+							if err := dbmodels.UserGroupsByIdentifiers(db, c.StringSlice("assign-group")).Find(&appendGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
-							var deleteGroups []UserGroup
-							if err := UserGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
+							var deleteGroups []dbmodels.UserGroup
+							if err := dbmodels.UserGroupsByIdentifiers(db, c.StringSlice("unassign-group")).Find(&deleteGroups).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -1696,13 +1698,13 @@ GLOBAL OPTIONS:
 									return err
 								}
 							}
-							var appendRoles []UserRole
-							if err := UserRolesByIdentifiers(db, c.StringSlice("assign-role")).Find(&appendRoles).Error; err != nil {
+							var appendRoles []dbmodels.UserRole
+							if err := dbmodels.UserRolesByIdentifiers(db, c.StringSlice("assign-role")).Find(&appendRoles).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
-							var deleteRoles []UserRole
-							if err := UserRolesByIdentifiers(db, c.StringSlice("unassign-role")).Find(&deleteRoles).Error; err != nil {
+							var deleteRoles []dbmodels.UserRole
+							if err := dbmodels.UserRolesByIdentifiers(db, c.StringSlice("unassign-role")).Find(&deleteRoles).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
@@ -1738,7 +1740,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						userGroup := UserGroup{
+						userGroup := dbmodels.UserGroup{
 							Name:    c.String("name"),
 							Comment: c.String("comment"),
 						}
@@ -1752,7 +1754,7 @@ GLOBAL OPTIONS:
 						// FIXME: check if name already exists
 						// FIXME: add myself to the new group
 
-						userGroup.Users = []*User{myself}
+						userGroup.Users = []*dbmodels.User{myself}
 
 						if err := db.Create(&userGroup).Error; err != nil {
 							return err
@@ -1773,8 +1775,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var userGroups []UserGroup
-						if err := UserGroupsPreload(UserGroupsByIdentifiers(db, c.Args())).Find(&userGroups).Error; err != nil {
+						var userGroups []dbmodels.UserGroup
+						if err := dbmodels.UserGroupsPreload(dbmodels.UserGroupsByIdentifiers(db, c.Args())).Find(&userGroups).Error; err != nil {
 							return err
 						}
 
@@ -1794,10 +1796,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var userGroups []*UserGroup
+						var userGroups []*dbmodels.UserGroup
 						query := db.Order("created_at desc").Preload("ACLs").Preload("Users")
 						if c.Bool("latest") {
-							var userGroup UserGroup
+							var userGroup dbmodels.UserGroup
 							if err := query.First(&userGroup).Error; err != nil {
 								return err
 							}
@@ -1846,7 +1848,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return UserGroupsByIdentifiers(db, c.Args()).Delete(&UserGroup{}).Error
+						return dbmodels.UserGroupsByIdentifiers(db, c.Args()).Delete(&dbmodels.UserGroup{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -1865,8 +1867,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var usergroups []UserGroup
-						if err := UserGroupsByIdentifiers(db, c.Args()).Find(&usergroups).Error; err != nil {
+						var usergroups []dbmodels.UserGroup
+						if err := dbmodels.UserGroupsByIdentifiers(db, c.Args()).Find(&usergroups).Error; err != nil {
 							return err
 						}
 
@@ -1912,8 +1914,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var user User
-						if err := UsersByIdentifiers(db, c.Args()).First(&user).Error; err != nil {
+						var user dbmodels.User
+						if err := dbmodels.UsersByIdentifiers(db, c.Args()).First(&user).Error; err != nil {
 							return err
 						}
 
@@ -1926,7 +1928,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						userkey := UserKey{
+						userkey := dbmodels.UserKey{
 							User:          &user,
 							Key:           key.Marshal(),
 							Comment:       comment,
@@ -1960,8 +1962,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var userKeys []UserKey
-						if err := UserKeysPreload(UserKeysByIdentifiers(db, c.Args())).Find(&userKeys).Error; err != nil {
+						var userKeys []dbmodels.UserKey
+						if err := dbmodels.UserKeysPreload(dbmodels.UserKeysByIdentifiers(db, c.Args())).Find(&userKeys).Error; err != nil {
 							return err
 						}
 
@@ -1981,10 +1983,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var userKeys []*UserKey
+						var userKeys []*dbmodels.UserKey
 						query := db.Order("created_at desc").Preload("User")
 						if c.Bool("latest") {
-							var userKey UserKey
+							var userKey dbmodels.UserKey
 							if err := query.First(&userKey).Error; err != nil {
 								return err
 							}
@@ -2035,7 +2037,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return UserKeysByIdentifiers(db, c.Args()).Delete(&UserKey{}).Error
+						return dbmodels.UserKeysByIdentifiers(db, c.Args()).Delete(&dbmodels.UserKey{}).Error
 					},
 				},
 			},
@@ -2056,8 +2058,8 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var sessions []Session
-						if err := SessionsPreload(SessionsByIdentifiers(db, c.Args())).Find(&sessions).Error; err != nil {
+						var sessions []dbmodels.Session
+						if err := dbmodels.SessionsPreload(dbmodels.SessionsByIdentifiers(db, c.Args())).Find(&sessions).Error; err != nil {
 							return err
 						}
 
@@ -2078,9 +2080,9 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var sessions []*Session
+						var sessions []*dbmodels.Session
 
-						limit, offset, status := 60000, -1, []string{string(SessionStatusActive), string(SessionStatusClosed), string(SessionStatusUnknown)}
+						limit, offset, status := 60000, -1, []string{string(dbmodels.SessionStatusActive), string(dbmodels.SessionStatusClosed), string(dbmodels.SessionStatusUnknown)}
 						if c.Bool("active") {
 							status = status[:1]
 						}
@@ -2088,7 +2090,7 @@ GLOBAL OPTIONS:
 						query := db.Order("created_at desc").Limit(limit).Offset(offset).Where("status in (?)", status).Preload("User").Preload("Host")
 
 						if c.Bool("latest") {
-							var session Session
+							var session dbmodels.Session
 							if err := query.First(&session).Error; err != nil {
 								return err
 							}
@@ -2101,7 +2103,7 @@ GLOBAL OPTIONS:
 							factor := 1
 							for len(sessions) >= limit*factor {
 
-								var additionnalSessions []*Session
+								var additionnalSessions []*dbmodels.Session
 
 								offset = limit * factor
 								query := db.Order("created_at desc").Limit(limit).Offset(offset).Where("status in (?)", status).Preload("User").Preload("Host")
@@ -2159,7 +2161,7 @@ GLOBAL OPTIONS:
 			Name:  "version",
 			Usage: "Shows the SSHPortal version information",
 			Action: func(c *cli.Context) error {
-				fmt.Fprintf(s, "%s\n", Version)
+				fmt.Fprintf(s, "%s\n", version)
 				return nil
 			},
 		}, {
@@ -2190,7 +2192,7 @@ GLOBAL OPTIONS:
 			if len(words) == 0 {
 				continue
 			}
-			NewEvent("shell", words[0]).SetAuthor(myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
+			dbmodels.NewEvent("shell", words[0]).SetAuthor(myself).SetArg("interactive", true).SetArg("args", words[1:]).Log(db)
 			if err := app.Run(append([]string{"config"}, words...)); err != nil {
 				if cliErr, ok := err.(*cli.ExitError); ok {
 					if cliErr.ExitCode() != 0 {
@@ -2203,7 +2205,7 @@ GLOBAL OPTIONS:
 			}
 		}
 	} else { // oneshot mode
-		NewEvent("shell", sshCommand[0]).SetAuthor(myself).SetArg("interactive", false).SetArg("args", sshCommand[1:]).Log(db)
+		dbmodels.NewEvent("shell", sshCommand[0]).SetAuthor(myself).SetArg("interactive", false).SetArg("args", sshCommand[1:]).Log(db)
 		if err := app.Run(append([]string{"config"}, sshCommand...)); err != nil {
 			if errMsg := err.Error(); errMsg != "" {
 				fmt.Fprintf(s, "error: %s\n", errMsg)
@@ -2216,4 +2218,22 @@ GLOBAL OPTIONS:
 	}
 
 	return nil
+}
+
+func wrapText(in string, length int) string {
+	if len(in) <= length {
+		return in
+	}
+	return in[0:length-3] + "..."
+}
+
+func parseInputURL(input string) (*url.URL, error) {
+	if !strings.Contains(input, "://") {
+		input = "ssh://" + input
+	}
+	u, err := url.Parse(input)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }
