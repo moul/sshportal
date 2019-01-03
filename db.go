@@ -70,7 +70,7 @@ type Host struct {
 // UserKey defines a user public key used by sshportal to identify the user
 type UserKey struct {
 	gorm.Model
-	Key           []byte `sql:"size:10000" valid:"required,length(1|10000)"`
+	Key           []byte `sql:"size:10000" valid:"length(1|10000)"`
 	AuthorizedKey string `sql:"size:10000" valid:"required,length(1|10000)"`
 	UserID        uint   ``
 	User          *User  `gorm:"ForeignKey:UserID"`
