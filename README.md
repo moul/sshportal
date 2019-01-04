@@ -6,7 +6,6 @@
 [![GoDoc](https://godoc.org/moul.io/sshportal?status.svg)](https://godoc.org/moul.io/sshportal)
 [![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/moul/sshportal.svg)](https://github.com/moul/sshportal/releases)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmoul%2Fsshportal.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmoul%2Fsshportal?ref=badge_shield)
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
@@ -407,11 +406,3 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
 
 ![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.svg?sanitize=true)
-
-## Note
-
-This is totally experimental for now, so please file issues to let me know what you think about it!
-
-
-## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmoul%2Fsshportal.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmoul%2Fsshportal?ref=badge_large)
