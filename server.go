@@ -10,9 +10,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/moul/ssh"
+	"github.com/moul/sshportal/pkg/bastion"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
-	"moul.io/sshportal/pkg/bastion"
 )
 
 type serverConfig struct {

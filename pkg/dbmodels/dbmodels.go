@@ -1,4 +1,4 @@
-package dbmodels // import "moul.io/sshportal/pkg/dbmodels"
+package dbmodels // import "github.com/moul/sshportal/pkg/dbmodels"
 
 import (
 	"encoding/json"

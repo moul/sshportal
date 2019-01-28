@@ -1,4 +1,4 @@
-package bastion // import "moul.io/sshportal/pkg/bastion"
+package bastion // import "github.com/moul/sshportal/pkg/bastion"
 
 import (
 	"io/ioutil"
@@ -9,8 +9,8 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/moul/sshportal/pkg/dbmodels"
 	. "github.com/smartystreets/goconvey/convey"
-	"moul.io/sshportal/pkg/dbmodels"
 )
 
 func TestCheckACLs(t *testing.T) {
