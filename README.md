@@ -15,7 +15,7 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
 ## Overview
 
-![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.svg?sanitize=true)
+![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.png)
 
 ## Features
 
@@ -140,7 +140,7 @@ config>
 
 ## Flow Diagram
 
-![Flow Diagram](https://raw.github.com/moul/sshportal/master/.assets/flow-diagram.svg?sanitize=true)
+![Flow Diagram](https://raw.github.com/moul/sshportal/master/.assets/flow-diagram.png)
 
 ## built-in shell
 
@@ -384,7 +384,7 @@ By default, `sshportal` uses a local [sqlite](https://www.sqlite.org/) database 
 
 You can run multiple instances of `sshportal` sharing a same [MySQL](https://www.mysql.com) database, using `sshportal --db-conn=user:pass@host/dbname?parseTime=true --db-driver=mysql`.
 
-![sshportal cluster with MySQL backend](https://raw.github.com/moul/sshportal/master/.assets/cluster-mysql.svg?sanitize=true)
+![sshportal cluster with MySQL backend](https://raw.github.com/moul/sshportal/master/.assets/cluster-mysql.png)
 
 See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql).
 
@@ -405,4 +405,4 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/mgutz/ansi: Terminal color helpers
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
 
-![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.svg?sanitize=true)
+![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.png)
