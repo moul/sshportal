@@ -11,25 +11,29 @@ Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
 Features include: independence of users and hosts, convenient user invite system, connecting to servers that don't support SSH keys, various levels of access, and many more. Easy to install, run and configure.
 
-[![Flow Diagram](https://raw.githubusercontent.com/moul/sshportal/master/.assets/flow-diagram.png)
+![Flow Diagram](https://raw.githubusercontent.com/moul/sshportal/master/.assets/flow-diagram.png)
 
 ---
 
 ## Contents
 
-1. Installation and usage.
-2. Use cases.
-3. Features and limitations.
-4. Running with Docker.
-5. Manual Install
-6. Backup/Restore.
-7. Built-in shell.
-8. Demo data.
-9. Shell commands.
-10. Healthcheck.
-11. portal alias (.ssh/config)
-12. Scaling
-13. Under the hood
+<!-- toc -->
+
+- [Installation and usage](#installation-and-usage)
+- [Use cases](#use-cases)
+- [Features and limitations](#features-and-limitations)
+- [Docker](#docker)
+- [Manual Install](#manual-install)
+- [Backup / Restore](#backup--restore)
+- [built-in shell](#built-in-shell)
+- [Demo data](#demo-data)
+- [Shell commands](#shell-commands)
+- [Healthcheck](#healthcheck)
+- [portal alias (.ssh/config)](#portal-alias-sshconfig)
+- [Scaling](#scaling)
+- [Under the hood](#under-the-hood)
+
+<!-- tocstop -->
 
 ---
 
@@ -273,7 +277,7 @@ ssh admin@portal.example.org host inspect toto
 
 You can enter in interactive mode using this syntax: `ssh admin@portal.example.org`
 
-![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.svg?sanitize=true)
+![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.png)
 
 ---
 
