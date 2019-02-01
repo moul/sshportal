@@ -9,56 +9,35 @@
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
-![sshportal demo](https://github.com/moul/sshportal/raw/master/.assets/demo.gif)
+Features include: independence of users and hosts, convenient user invite system, connecting to servers that don't support SSH keys, various levels of access, and many more. Easy to install, run and configure.
+
+![Flow Diagram](https://raw.githubusercontent.com/moul/sshportal/master/.assets/flow-diagram.png)
 
 ---
 
-## Overview
+## Contents
 
-![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.png)
+<!-- toc -->
 
-## Features
+- [Installation and usage](#installation-and-usage)
+- [Use cases](#use-cases)
+- [Features and limitations](#features-and-limitations)
+- [Docker](#docker)
+- [Manual Install](#manual-install)
+- [Backup / Restore](#backup--restore)
+- [built-in shell](#built-in-shell)
+- [Demo data](#demo-data)
+- [Shell commands](#shell-commands)
+- [Healthcheck](#healthcheck)
+- [portal alias (.ssh/config)](#portal-alias-sshconfig)
+- [Scaling](#scaling)
+- [Under the hood](#under-the-hood)
 
-* Single autonomous binary (~10-20Mb) with no runtime dependencies (embeds ssh server and client)
-* Portable / Cross-platform (regularly tested on linux and OSX/darwin)
-* Store data in [Sqlite3](https://www.sqlite.org/) or [MySQL](https://www.mysql.com) (probably easy to add postgres, mssql thanks to gorm)
-* Stateless -> horizontally scalable when using [MySQL](https://www.mysql.com) as the backend
-* Connect to remote host using key or password
-* Admin commands can be run directly or in an interactive shell
-* Host management
-* User management (invite, group, stats)
-* Host Key management (create, remove, update, import)
-* Automatic remote host key learning
-* User Key management (multile keys per user)
-* ACL management (acl+user-groups+host-groups)
-* User roles (admin, trusted, standard, ...)
-* User invitations (no more "give me your public ssh key please")
-* Easy server installation (generate shell command to setup `authorized_keys`)
-* Sensitive data encryption
-* Session management (see active connections, history, stats, stop)
-* Audit log (logging every user action)
-* Record TTY Session
-* Tunnels logging
-* Host Keys verifications shared across users
-* Healthcheck user (replying OK to any user)
-* SSH compatibility
-  * ipv4 and ipv6 support
-  * [`scp`](https://linux.die.net/man/1/scp) support
-  * [`rsync`](https://linux.die.net/man/1/rsync) support
-  * [tunneling](https://www.ssh.com/ssh/tunneling/example) (local forward, remote forward, dynamic forward) support
-  * [`sftp`](https://www.ssh.com/ssh/sftp/) support
-  * [`ssh-agent`](https://www.ssh.com/ssh/agent) support
-  * [`X11 forwarding`](http://en.tldp.org/HOWTO/XDMCP-HOWTO/ssh.html) support
-  * Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
-  * Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH clients
-* SSH to non-SSH proxy
-  * [Telnet](https://www.ssh.com/ssh/telnet) support
+<!-- tocstop -->
 
-## (Known) limitations
+---
 
-* Does not work (yet?) with [`mosh`](https://mosh.org/)
-
-## Usage
+## Installation and usage
 
 Start the server
 
@@ -138,9 +117,151 @@ To associate this account with a key, use the following SSH user: 'invite:NfHK5a
 config>
 ```
 
-## Flow Diagram
+Demo gif:
+![sshportal demo](https://github.com/moul/sshportal/raw/master/.assets/demo.gif)
 
-![Flow Diagram](https://raw.github.com/moul/sshportal/master/.assets/flow-diagram.png)
+---
+
+## Use cases
+
+Used by educators to provide temporary access to students. [Feedback from a teacher](https://github.com/moul/sshportal/issues/64). The author is using it in one of his projects, *pathwar*, to dynamically configure hosts and users, so that he can give temporary accesses for educational purposes.
+
+*vptech*, the vente-privee.com technical team (a group of over 6000 people) is using it internally to manage access to servers/routers, saving hours on configuration management and not having to share the configuration information.
+
+There are companies who use a jump host to monitor connections at a single point.
+
+A hosting company is using SSHportal for its “logging” feature, among the others. As every session is logged and introspectable, they have a detailed history of who performed which action. This company made its own contribution on the project, allowing the support of [more than 65.000 sessions in the database](https://github.com/moul/sshportal/pull/76).
+
+The project has also received [multiple contributions from a security researcher](https://github.com/moul/sshportal/pulls?q=is%3Apr+author%3Asabban+sort%3Aupdated-desc) that made a thesis on quantum cryptography. This person uses SSHportal in their security-hardened hosting company.
+
+If you need to invite multiple people to an event (hackathon, course, etc), the day before the event you can create multiple accounts at once, print the invite, and distribute the paper.
+
+---
+
+## Features and limitations
+
+* Single autonomous binary (~10-20Mb) with no runtime dependencies (embeds ssh server and client)
+* Portable / Cross-platform (regularly tested on linux and OSX/darwin)
+* Store data in [Sqlite3](https://www.sqlite.org/) or [MySQL](https://www.mysql.com) (probably easy to add postgres, mssql thanks to gorm)
+* Stateless -> horizontally scalable when using [MySQL](https://www.mysql.com) as the backend
+* Connect to remote host using key or password
+* Admin commands can be run directly or in an interactive shell
+* Host management
+* User management (invite, group, stats)
+* Host Key management (create, remove, update, import)
+* Automatic remote host key learning
+* User Key management (multile keys per user)
+* ACL management (acl+user-groups+host-groups)
+* User roles (admin, trusted, standard, ...)
+* User invitations (no more "give me your public ssh key please")
+* Easy server installation (generate shell command to setup `authorized_keys`)
+* Sensitive data encryption
+* Session management (see active connections, history, stats, stop)
+* Audit log (logging every user action)
+* Record TTY Session
+* Tunnels logging
+* Host Keys verifications shared across users
+* Healthcheck user (replying OK to any user)
+* SSH compatibility
+  * ipv4 and ipv6 support
+  * [`scp`](https://linux.die.net/man/1/scp) support
+  * [`rsync`](https://linux.die.net/man/1/rsync) support
+  * [tunneling](https://www.ssh.com/ssh/tunneling/example) (local forward, remote forward, dynamic forward) support
+  * [`sftp`](https://www.ssh.com/ssh/sftp/) support
+  * [`ssh-agent`](https://www.ssh.com/ssh/agent) support
+  * [`X11 forwarding`](http://en.tldp.org/HOWTO/XDMCP-HOWTO/ssh.html) support
+  * Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
+  * Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH clients
+* SSH to non-SSH proxy
+  * [Telnet](https://www.ssh.com/ssh/telnet) support
+
+**(Known) limitations**
+
+* Does not work (yet?) with [`mosh`](https://mosh.org/)
+
+---
+
+## Docker
+
+Docker is the recommended way to run sshportal.
+
+An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/sshportal/tags/).
+
+```console
+# Start a server in background
+#   mount `pwd` to persist the sqlite database file
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
+
+# check logs (mandatory on first run to get the administrator invite token)
+docker logs -f sshportal
+```
+
+The easier way to upgrade sshportal is to do the following:
+
+```sh
+# we consider you were using an old version and you want to use the new version v1.9.0
+
+# stop and rename the last working container + backup the database
+docker stop sshportal
+docker rename sshportal sshportal_old
+cp sshportal.db sshportal.db.bkp
+
+# run the new version
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
+# check the logs for migration or cross-version incompabitility errors
+docker logs -f sshportal
+```
+
+Now you can test ssh-ing to sshportal to check if everything looks OK.
+
+In case of problem, you can rollback to the latest working version with the latest working backup, using:
+
+```sh
+docker stop sshportal
+docker rm sshportal
+cp sshportal.db.bkp sshportal.db
+docker rename sshportal_old sshportal
+docker start sshportal
+docker logs -f sshportal
+```
+
+---
+
+## Manual Install
+
+Get the latest version using GO.
+
+```sh
+go get -u moul.io/sshportal
+```
+
+---
+
+## Backup / Restore
+
+sshportal embeds built-in backup/restore methods which basically import/export JSON objects:
+
+```sh
+# Backup
+ssh portal config backup  > sshportal.bkp
+
+# Restore
+ssh portal config restore < sshportal.bkp
+```
+
+This method is particularly useful as it should be resistant against future DB schema changes (expected during development phase).
+
+I suggest you to be careful during this development phase, and use an additional backup method, for example:
+
+```sh
+# sqlite dump
+sqlite3 sshportal.db .dump > sshportal.sql.bkp
+
+# or just the immortal cp
+cp sshportal.db sshportal.db.bkp
+```
+
+---
 
 ## built-in shell
 
@@ -156,7 +277,29 @@ ssh admin@portal.example.org host inspect toto
 
 You can enter in interactive mode using this syntax: `ssh admin@portal.example.org`
 
-### Synopsis
+![sshportal overview](https://raw.github.com/moul/sshportal/master/.assets/overview.png)
+
+---
+
+## Demo data
+
+The following servers are freely available, without external registration,
+it makes it easier to quickly test `sshportal` without configuring your own servers to accept sshportal connections.
+
+```
+ssh portal host create new@sdf.org
+ssh sdf@portal
+
+ssh portal host create test@whoami.filippo.io
+ssh whoami@portal
+
+ssh portal host create test@chat.shazow.net
+ssh chat@portal
+```
+
+---
+
+## Shell commands
 
 ```sh
 # acl management
@@ -229,120 +372,7 @@ info [-h]
 version [-h]
 ```
 
-## Docker
-
-Docker is the recommended way to run sshportal.
-
-An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/sshportal/tags/).
-
-```console
-# Start a server in background
-#   mount `pwd` to persist the sqlite database file
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
-
-# check logs (mandatory on first run to get the administrator invite token)
-docker logs -f sshportal
-```
-
-The easier way to upgrade sshportal is to do the following:
-
-```sh
-# we consider you were using an old version and you want to use the new version v1.9.0
-
-# stop and rename the last working container + backup the database
-docker stop sshportal
-docker rename sshportal sshportal_old
-cp sshportal.db sshportal.db.bkp
-
-# run the new version
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
-# check the logs for migration or cross-version incompabitility errors
-docker logs -f sshportal
-```
-
-Now you can test ssh-ing to sshportal to check if everything looks OK.
-
-In case of problem, you can rollback to the latest working version with the latest working backup, using:
-
-```sh
-docker stop sshportal
-docker rm sshportal
-cp sshportal.db.bkp sshportal.db
-docker rename sshportal_old sshportal
-docker start sshportal
-docker logs -f sshportal
-```
-
-## Manual Install
-
-Get the latest version using GO.
-
-```sh
-go get -u moul.io/sshportal
-```
-
-## portal alias (.ssh/config)
-
-Edit your `~/.ssh/config` file (create it first if needed)
-
-```ini
-Host portal
-  User      admin
-  Port      2222       # portal port
-  HostName  127.0.0.1  # portal hostname
-```
-
-```bash
-# you can now run a shell using this:
-ssh portal
-# instead of this:
-ssh localhost -p 2222 -l admin
-
-# or connect to hosts using this:
-ssh hostname@portal
-# instead of this:
-ssh localhost -p 2222 -l hostname
-```
-
-## Backup / Restore
-
-sshportal embeds built-in backup/restore methods which basically import/export JSON objects:
-
-```sh
-# Backup
-ssh portal config backup  > sshportal.bkp
-
-# Restore
-ssh portal config restore < sshportal.bkp
-```
-
-This method is particularly useful as it should be resistant against future DB schema changes (expected during development phase).
-
-I suggest you to be careful during this development phase, and use an additional backup method, for example:
-
-```sh
-# sqlite dump
-sqlite3 sshportal.db .dump > sshportal.sql.bkp
-
-# or just the immortal cp
-cp sshportal.db sshportal.db.bkp
-```
-
-## Demo data
-
-The following servers are freely available, without external registration,
-it makes it easier to quickly test `sshportal` without configuring your own servers to accept sshportal connections.
-
-```
-ssh portal host create new@sdf.org
-ssh sdf@portal
-
-ssh portal host create test@whoami.filippo.io
-ssh whoami@portal
-
-ssh portal host create test@chat.shazow.net
-ssh chat@portal
-```
+---
 
 ## Healthcheck
 
@@ -376,6 +406,33 @@ $ sshportal healthcheck --wait && ssh sshportal -l admin
 config>
 ```
 
+---
+
+## portal alias (.ssh/config)
+
+Edit your `~/.ssh/config` file (create it first if needed)
+
+```ini
+Host portal
+  User      admin
+  Port      2222       # portal port
+  HostName  127.0.0.1  # portal hostname
+```
+
+```bash
+# you can now run a shell using this:
+ssh portal
+# instead of this:
+ssh localhost -p 2222 -l admin
+
+# or connect to hosts using this:
+ssh hostname@portal
+# instead of this:
+ssh localhost -p 2222 -l hostname
+```
+
+---
+
 ## Scaling
 
 `sshportal` is stateless but relies on a database to store configuration and logs.
@@ -387,6 +444,8 @@ You can run multiple instances of `sshportal` sharing a same [MySQL](https://www
 ![sshportal cluster with MySQL backend](https://raw.github.com/moul/sshportal/master/.assets/cluster-mysql.png)
 
 See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql).
+
+---
 
 ## Under the hood
 
