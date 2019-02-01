@@ -11,178 +11,164 @@
 <polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-308 1022.4219,-308 1022.4219,4 -4,4"/>
 <g id="clust1" class="cluster">
 <title>cluster_sshportal</title>
-<polygon fill="none" stroke="#a020f0" stroke-dasharray="5,2" points="147.7832,-8 147.7832,-296 858.9775,-296 858.9775,-8 147.7832,-8"/>
-<text text-anchor="middle" x="503.3804" y="-276" font-family="Times,serif" font-size="20.00" fill="#a020f0">sshportal</text>
+<polygon fill="none" stroke="#c0c0c0" points="147.7832,-8 147.7832,-296 858.9775,-296 858.9775,-8 147.7832,-8"/>
+<text text-anchor="middle" x="503.3804" y="-276" font-family="Times,serif" font-size="20.00" fill="#000000">sshportal</text>
 </g>
 <g id="clust6" class="cluster">
 <title>cluster_hosts</title>
-<polygon fill="none" stroke="#a020f0" stroke-dasharray="5,2" points="879.9775,-104 879.9775,-296 1010.4219,-296 1010.4219,-104 879.9775,-104"/>
-<text text-anchor="middle" x="945.1997" y="-276" font-family="Times,serif" font-size="20.00" fill="#a020f0">your hosts</text>
+<polygon fill="none" stroke="#c0c0c0" points="879.9775,-104 879.9775,-296 1010.4219,-296 1010.4219,-104 879.9775,-104"/>
+<text text-anchor="middle" x="945.1997" y="-276" font-family="Times,serif" font-size="20.00" fill="#000000">your hosts</text>
 </g>
 <!-- start -->
 <g id="node1" class="node">
 <title>start</title>
-<polygon fill="none" stroke="#0000ff" points="0,-118 0,-154 118.7832,-154 118.7832,-118 0,-118"/>
+<path fill="none" stroke="#0000ff" d="M12,-118C12,-118 106.7832,-118 106.7832,-118 112.7832,-118 118.7832,-124 118.7832,-130 118.7832,-130 118.7832,-142 118.7832,-142 118.7832,-148 112.7832,-154 106.7832,-154 106.7832,-154 12,-154 12,-154 6,-154 0,-148 0,-142 0,-142 0,-130 0,-130 0,-124 6,-118 12,-118"/>
 <text text-anchor="middle" x="59.3916" y="-130" font-family="Times,serif" font-size="20.00" fill="#0000ff">ssh sshportal</text>
 </g>
 <!-- known_user_key -->
 <g id="node2" class="node">
 <title>known_user_key</title>
-<polygon fill="none" stroke="#ff8c00" points="162.7832,-157 162.7832,-193 267.4316,-193 267.4316,-157 162.7832,-157"/>
+<path fill="none" stroke="#ff8c00" d="M174.7832,-157C174.7832,-157 255.4316,-157 255.4316,-157 261.4316,-157 267.4316,-163 267.4316,-169 267.4316,-169 267.4316,-181 267.4316,-181 267.4316,-187 261.4316,-193 255.4316,-193 255.4316,-193 174.7832,-193 174.7832,-193 168.7832,-193 162.7832,-187 162.7832,-181 162.7832,-181 162.7832,-169 162.7832,-169 162.7832,-163 168.7832,-157 174.7832,-157"/>
 <text text-anchor="middle" x="215.1074" y="-170.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">known user key</text>
 </g>
 <!-- start&#45;&gt;known_user_key -->
 <g id="edge1" class="edge">
 <title>start&#45;&gt;known_user_key</title>
-<path fill="none" stroke="#0000ff" d="M119.1501,-150.9669C130.1162,-153.7134 141.5894,-156.587 152.6326,-159.3528"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="152.0758,-162.8214 162.6266,-161.8558 153.7765,-156.0311 152.0758,-162.8214"/>
+<path fill="none" stroke="#0000ff" d="M119.1501,-150.9669C133.4732,-154.5542 148.6614,-158.3582 162.6266,-161.8558"/>
 </g>
 <!-- unknown_user_key -->
 <g id="node3" class="node">
 <title>unknown_user_key</title>
-<polygon fill="none" stroke="#ff8c00" points="155.7832,-72 155.7832,-108 274.4316,-108 274.4316,-72 155.7832,-72"/>
+<path fill="none" stroke="#ff8c00" d="M167.7832,-72C167.7832,-72 262.4316,-72 262.4316,-72 268.4316,-72 274.4316,-78 274.4316,-84 274.4316,-84 274.4316,-96 274.4316,-96 274.4316,-102 268.4316,-108 262.4316,-108 262.4316,-108 167.7832,-108 167.7832,-108 161.7832,-108 155.7832,-102 155.7832,-96 155.7832,-96 155.7832,-84 155.7832,-84 155.7832,-78 161.7832,-72 167.7832,-72"/>
 <text text-anchor="middle" x="215.1074" y="-85.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">unknown user key</text>
 </g>
 <!-- start&#45;&gt;unknown_user_key -->
 <g id="edge2" class="edge">
 <title>start&#45;&gt;unknown_user_key</title>
-<path fill="none" stroke="#0000ff" d="M119.1501,-118.3468C127.968,-115.7419 137.1138,-113.0401 146.1003,-110.3854"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="147.1673,-113.7198 155.766,-107.5301 145.1841,-107.0066 147.1673,-113.7198"/>
+<path fill="none" stroke="#0000ff" d="M119.1501,-118.3468C131.1574,-114.7997 143.7728,-111.0729 155.766,-107.5301"/>
 </g>
 <!-- acl_manager -->
 <g id="node5" class="node">
 <title>acl_manager</title>
-<polygon fill="none" stroke="#ff8c00" points="514.7056,-173 514.7056,-209 609.8862,-209 609.8862,-173 514.7056,-173"/>
+<path fill="none" stroke="#ff8c00" d="M526.7056,-173C526.7056,-173 597.8862,-173 597.8862,-173 603.8862,-173 609.8862,-179 609.8862,-185 609.8862,-185 609.8862,-197 609.8862,-197 609.8862,-203 603.8862,-209 597.8862,-209 597.8862,-209 526.7056,-209 526.7056,-209 520.7056,-209 514.7056,-203 514.7056,-197 514.7056,-197 514.7056,-185 514.7056,-185 514.7056,-179 520.7056,-173 526.7056,-173"/>
 <text text-anchor="middle" x="562.2959" y="-186.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">ACL manager</text>
 </g>
 <!-- known_user_key&#45;&gt;acl_manager -->
 <g id="edge9" class="edge">
 <title>known_user_key&#45;&gt;acl_manager</title>
-<path fill="none" stroke="#ff8c00" d="M267.461,-177.4127C331.1153,-180.3462 438.21,-185.2816 504.3082,-188.3277"/>
-<polygon fill="#ff8c00" stroke="#ff8c00" points="504.401,-191.8356 514.5516,-188.7997 504.7233,-184.843 504.401,-191.8356"/>
+<path fill="none" stroke="#ff8c00" d="M267.461,-177.4127C334.5206,-180.5031 449.793,-185.8154 514.5516,-188.7997"/>
 <text text-anchor="middle" x="393.4697" y="-188.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">user matches an existing host</text>
 </g>
 <!-- builtin_shell -->
 <g id="node6" class="node">
 <title>builtin_shell</title>
-<polygon fill="none" stroke="#006400" points="761.6929,-223 761.6929,-259 848.855,-259 848.855,-223 761.6929,-223"/>
+<path fill="none" stroke="#006400" d="M773.6929,-223C773.6929,-223 836.855,-223 836.855,-223 842.855,-223 848.855,-229 848.855,-235 848.855,-235 848.855,-247 848.855,-247 848.855,-253 842.855,-259 836.855,-259 836.855,-259 773.6929,-259 773.6929,-259 767.6929,-259 761.6929,-253 761.6929,-247 761.6929,-247 761.6929,-235 761.6929,-235 761.6929,-229 767.6929,-223 773.6929,-223"/>
 <text text-anchor="middle" x="805.2739" y="-236.8" font-family="Times,serif" font-size="14.00" fill="#006400">built&#45;in shell</text>
 </g>
 <!-- known_user_key&#45;&gt;builtin_shell -->
 <g id="edge6" class="edge">
 <title>known_user_key&#45;&gt;builtin_shell</title>
-<path fill="none" stroke="#006400" d="M267.592,-193.0548C281.6792,-197.2785 297.0081,-201.3215 311.4316,-204 469.5409,-233.361 660.2348,-239.5693 751.4965,-240.7835"/>
-<polygon fill="#006400" stroke="#006400" points="751.5568,-244.2844 761.5974,-240.9027 751.6394,-237.2848 751.5568,-244.2844"/>
+<path fill="none" stroke="#006400" d="M267.592,-193.0548C281.6792,-197.2785 297.0081,-201.3215 311.4316,-204 475.6343,-234.4925 674.9817,-240.0134 761.5974,-240.9027"/>
 <text text-anchor="middle" x="562.2959" y="-238.8" font-family="Times,serif" font-size="14.00" fill="#006400">user=admin</text>
 </g>
 <!-- err_and_exit -->
 <g id="node9" class="node">
 <title>err_and_exit</title>
-<polygon fill="none" stroke="#ff0000" points="759.5703,-106 759.5703,-142 850.9775,-142 850.9775,-106 759.5703,-106"/>
+<path fill="none" stroke="#ff0000" d="M771.5703,-106C771.5703,-106 838.9775,-106 838.9775,-106 844.9775,-106 850.9775,-112 850.9775,-118 850.9775,-118 850.9775,-130 850.9775,-130 850.9775,-136 844.9775,-142 838.9775,-142 838.9775,-142 771.5703,-142 771.5703,-142 765.5703,-142 759.5703,-136 759.5703,-130 759.5703,-130 759.5703,-118 759.5703,-118 759.5703,-112 765.5703,-106 771.5703,-106"/>
 <text text-anchor="middle" x="805.2739" y="-119.8" font-family="Times,serif" font-size="14.00" fill="#ff0000">error and exit</text>
 </g>
 <!-- known_user_key&#45;&gt;err_and_exit -->
 <g id="edge11" class="edge">
 <title>known_user_key&#45;&gt;err_and_exit</title>
-<path fill="none" stroke="#ff0000" d="M267.4808,-170.4741C378.1362,-160.9117 634.8943,-138.7236 748.9418,-128.868"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="749.5354,-132.3298 759.1969,-127.9818 748.9327,-125.3558 749.5354,-132.3298"/>
+<path fill="none" stroke="#ff0000" d="M267.4808,-170.4741C381.5907,-160.6131 651.0679,-137.3259 759.1969,-127.9818"/>
 <text text-anchor="middle" x="562.2959" y="-151.8" font-family="Times,serif" font-size="14.00" fill="#ff0000">invalid user</text>
 </g>
 <!-- invite_manager -->
 <g id="node4" class="node">
 <title>invite_manager</title>
-<polygon fill="none" stroke="#ff8c00" points="512.5078,-17 512.5078,-53 612.084,-53 612.084,-17 512.5078,-17"/>
+<path fill="none" stroke="#ff8c00" d="M524.5078,-17C524.5078,-17 600.084,-17 600.084,-17 606.084,-17 612.084,-23 612.084,-29 612.084,-29 612.084,-41 612.084,-41 612.084,-47 606.084,-53 600.084,-53 600.084,-53 524.5078,-53 524.5078,-53 518.5078,-53 512.5078,-47 512.5078,-41 512.5078,-41 512.5078,-29 512.5078,-29 512.5078,-23 518.5078,-17 524.5078,-17"/>
 <text text-anchor="middle" x="562.2959" y="-30.8" font-family="Times,serif" font-size="14.00" fill="#ff8c00">invite manager</text>
 </g>
 <!-- unknown_user_key&#45;&gt;invite_manager -->
 <g id="edge10" class="edge">
 <title>unknown_user_key&#45;&gt;invite_manager</title>
-<path fill="none" stroke="#ff8c00" d="M274.7912,-80.5452C338.467,-70.4579 438.7527,-54.5711 502.4793,-44.4759"/>
-<polygon fill="#ff8c00" stroke="#ff8c00" points="503.0528,-47.9288 512.382,-42.9071 501.9575,-41.015 503.0528,-47.9288"/>
+<path fill="none" stroke="#ff8c00" d="M274.7912,-80.5452C341.8736,-69.9183 449.5876,-52.8547 512.382,-42.9071"/>
 <text text-anchor="middle" x="455.4386" y="-31.7071" font-family="Times,serif" font-size="14.00" fill="#ff8c00">user=invite:&lt;token&gt;</text>
 </g>
 <!-- unknown_user_key&#45;&gt;err_and_exit -->
 <g id="edge13" class="edge">
 <title>unknown_user_key&#45;&gt;err_and_exit</title>
-<path fill="none" stroke="#ff0000" d="M274.4978,-89.2935C352.2933,-89.0083 492.8294,-90.6942 612.084,-104 628.7169,-105.8558 632.5001,-108.7473 649.084,-111 682.1267,-115.4884 719.327,-118.6586 749.132,-120.7442"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="749.133,-124.2522 759.347,-121.437 749.6068,-117.2683 749.133,-124.2522"/>
+<path fill="none" stroke="#ff0000" d="M274.4978,-89.2935C352.2933,-89.0083 492.8294,-90.6942 612.084,-104 628.7169,-105.8558 632.5001,-108.7473 649.084,-111 686.0226,-116.0176 728.1569,-119.3879 759.347,-121.437"/>
 <text text-anchor="middle" x="562.2959" y="-106.8" font-family="Times,serif" font-size="14.00" fill="#ff0000">any other user</text>
 </g>
 <!-- learn_key -->
 <g id="node8" class="node">
 <title>learn_key</title>
-<polygon fill="none" stroke="#006400" points="771.4272,-17 771.4272,-53 839.1206,-53 839.1206,-17 771.4272,-17"/>
+<path fill="none" stroke="#006400" d="M783.4272,-17C783.4272,-17 827.1206,-17 827.1206,-17 833.1206,-17 839.1206,-23 839.1206,-29 839.1206,-29 839.1206,-41 839.1206,-41 839.1206,-47 833.1206,-53 827.1206,-53 827.1206,-53 783.4272,-53 783.4272,-53 777.4272,-53 771.4272,-47 771.4272,-41 771.4272,-41 771.4272,-29 771.4272,-29 771.4272,-23 777.4272,-17 783.4272,-17"/>
 <text text-anchor="middle" x="805.2739" y="-30.8" font-family="Times,serif" font-size="14.00" fill="#006400">learn key</text>
 </g>
 <!-- invite_manager&#45;&gt;learn_key -->
 <g id="edge8" class="edge">
 <title>invite_manager&#45;&gt;learn_key</title>
-<path fill="none" stroke="#006400" d="M612.3465,-35C656.1463,-35 719.1598,-35 761.1155,-35"/>
-<polygon fill="#006400" stroke="#006400" points="761.3041,-38.5001 771.3041,-35 761.304,-31.5001 761.3041,-38.5001"/>
+<path fill="none" stroke="#006400" d="M612.3465,-35C659.8582,-35 729.978,-35 771.3041,-35"/>
 <text text-anchor="middle" x="685.8271" y="-37.8" font-family="Times,serif" font-size="14.00" fill="#006400">valid token</text>
 </g>
 <!-- invite_manager&#45;&gt;err_and_exit -->
 <g id="edge14" class="edge">
 <title>invite_manager&#45;&gt;err_and_exit</title>
-<path fill="none" stroke="#ff0000" d="M611.4661,-53.0105C651.6045,-67.7127 708.3017,-88.4802 750.0066,-103.7562"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="748.8708,-107.0676 759.4646,-107.2206 751.2785,-100.4946 748.8708,-107.0676"/>
+<path fill="none" stroke="#ff0000" d="M611.4661,-53.0105C654.7311,-68.8579 717.2351,-91.7524 759.4646,-107.2206"/>
 <text text-anchor="middle" x="685.8271" y="-95.8" font-family="Times,serif" font-size="14.00" fill="#ff0000">invalid token</text>
 </g>
 <!-- ssh_proxy -->
 <g id="node7" class="node">
 <title>ssh_proxy</title>
-<polygon fill="none" stroke="#006400" points="766.3516,-168 766.3516,-204 844.1963,-204 844.1963,-168 766.3516,-168"/>
+<path fill="none" stroke="#006400" d="M778.3516,-168C778.3516,-168 832.1963,-168 832.1963,-168 838.1963,-168 844.1963,-174 844.1963,-180 844.1963,-180 844.1963,-192 844.1963,-192 844.1963,-198 838.1963,-204 832.1963,-204 832.1963,-204 778.3516,-204 778.3516,-204 772.3516,-204 766.3516,-198 766.3516,-192 766.3516,-192 766.3516,-180 766.3516,-180 766.3516,-174 772.3516,-168 778.3516,-168"/>
 <text text-anchor="middle" x="805.2739" y="-181.8" font-family="Times,serif" font-size="14.00" fill="#006400">SSH proxy</text>
 </g>
 <!-- acl_manager&#45;&gt;ssh_proxy -->
 <g id="edge7" class="edge">
 <title>acl_manager&#45;&gt;ssh_proxy</title>
-<path fill="none" stroke="#006400" d="M610.0008,-192.3563C641.8818,-193.0022 684.7518,-193.37 722.5703,-192 733.3636,-191.609 744.9337,-190.9319 755.8983,-190.1699"/>
-<polygon fill="#006400" stroke="#006400" points="756.4612,-193.6382 766.18,-189.4199 755.9519,-186.6568 756.4612,-193.6382"/>
+<path fill="none" stroke="#006400" d="M610.0008,-192.3563C641.8818,-193.0022 684.7518,-193.37 722.5703,-192 736.813,-191.484 752.4083,-190.4698 766.18,-189.4199"/>
 <text text-anchor="middle" x="685.8271" y="-194.8" font-family="Times,serif" font-size="14.00" fill="#006400">authorized</text>
 </g>
 <!-- acl_manager&#45;&gt;err_and_exit -->
 <g id="edge12" class="edge">
 <title>acl_manager&#45;&gt;err_and_exit</title>
-<path fill="none" stroke="#ff0000" d="M610.264,-178.009C646.3866,-168.197 697.1155,-154.3556 741.5703,-142 744.1794,-141.2748 746.8478,-140.5307 749.5426,-139.7772"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="750.6733,-143.0952 759.3567,-137.025 748.7831,-136.3552 750.6733,-143.0952"/>
+<path fill="none" stroke="#ff0000" d="M610.264,-178.009C646.3866,-168.197 697.1155,-154.3556 741.5703,-142 747.3282,-140.3997 753.3754,-138.7068 759.3567,-137.025"/>
 <text text-anchor="middle" x="685.8271" y="-169.8" font-family="Times,serif" font-size="14.00" fill="#ff0000">unauthorized</text>
 </g>
 <!-- host_1 -->
 <g id="node10" class="node">
 <title>host_1</title>
-<polygon fill="none" stroke="#0000ff" points="904.3086,-223 904.3086,-259 986.0908,-259 986.0908,-223 904.3086,-223"/>
+<path fill="none" stroke="#0000ff" d="M916.3086,-223C916.3086,-223 974.0908,-223 974.0908,-223 980.0908,-223 986.0908,-229 986.0908,-235 986.0908,-235 986.0908,-247 986.0908,-247 986.0908,-253 980.0908,-259 974.0908,-259 974.0908,-259 916.3086,-259 916.3086,-259 910.3086,-259 904.3086,-253 904.3086,-247 904.3086,-247 904.3086,-235 904.3086,-235 904.3086,-229 910.3086,-223 916.3086,-223"/>
 <text text-anchor="middle" x="945.1997" y="-236.8" font-family="Times,serif" font-size="14.00" fill="#0000ff">root@host1</text>
 </g>
 <!-- ssh_proxy&#45;&gt;host_1 -->
 <g id="edge3" class="edge">
 <title>ssh_proxy&#45;&gt;host_1</title>
-<path fill="none" stroke="#0000ff" d="M844.2511,-201.3206C859.7986,-207.4318 877.9046,-214.5486 894.4551,-221.054"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="893.4017,-224.4006 903.9889,-224.8015 895.9624,-217.8858 893.4017,-224.4006"/>
+<path fill="none" stroke="#0000ff" d="M844.2511,-201.3206C862.85,-208.6312 885.1102,-217.3809 903.9889,-224.8015"/>
 </g>
 <!-- host_2 -->
 <g id="node11" class="node">
 <title>host_2</title>
-<polygon fill="none" stroke="#0000ff" points="887.9775,-168 887.9775,-204 1002.4219,-204 1002.4219,-168 887.9775,-168"/>
+<path fill="none" stroke="#0000ff" d="M899.9775,-168C899.9775,-168 990.4219,-168 990.4219,-168 996.4219,-168 1002.4219,-174 1002.4219,-180 1002.4219,-180 1002.4219,-192 1002.4219,-192 1002.4219,-198 996.4219,-204 990.4219,-204 990.4219,-204 899.9775,-204 899.9775,-204 893.9775,-204 887.9775,-198 887.9775,-192 887.9775,-192 887.9775,-180 887.9775,-180 887.9775,-174 893.9775,-168 899.9775,-168"/>
 <text text-anchor="middle" x="945.1997" y="-181.8" font-family="Times,serif" font-size="14.00" fill="#0000ff">user@host2:2222</text>
 </g>
 <!-- ssh_proxy&#45;&gt;host_2 -->
 <g id="edge4" class="edge">
 <title>ssh_proxy&#45;&gt;host_2</title>
-<path fill="none" stroke="#0000ff" d="M844.2511,-186C854.6959,-186 866.2954,-186 877.8023,-186"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="877.8592,-189.5001 887.8591,-186 877.8591,-182.5001 877.8592,-189.5001"/>
+<path fill="none" stroke="#0000ff" d="M844.2511,-186C857.7555,-186 873.1902,-186 887.8591,-186"/>
 </g>
 <!-- host_3 -->
 <g id="node12" class="node">
 <title>host_3</title>
-<polygon fill="none" stroke="#0000ff" points="888.3638,-113 888.3638,-149 1002.0356,-149 1002.0356,-113 888.3638,-113"/>
+<path fill="none" stroke="#0000ff" d="M900.3638,-113C900.3638,-113 990.0356,-113 990.0356,-113 996.0356,-113 1002.0356,-119 1002.0356,-125 1002.0356,-125 1002.0356,-137 1002.0356,-137 1002.0356,-143 996.0356,-149 990.0356,-149 990.0356,-149 900.3638,-149 900.3638,-149 894.3638,-149 888.3638,-143 888.3638,-137 888.3638,-137 888.3638,-125 888.3638,-125 888.3638,-119 894.3638,-113 900.3638,-113"/>
 <text text-anchor="middle" x="945.1997" y="-126.8" font-family="Times,serif" font-size="14.00" fill="#0000ff">root@host3:1234</text>
 </g>
 <!-- ssh_proxy&#45;&gt;host_3 -->
 <g id="edge5" class="edge">
 <title>ssh_proxy&#45;&gt;host_3</title>
-<path fill="none" stroke="#0000ff" d="M844.2511,-170.6794C858.381,-165.1255 874.624,-158.7409 889.8921,-152.7395"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="891.2185,-155.9789 899.245,-149.0632 888.6578,-149.4641 891.2185,-155.9789"/>
+<path fill="none" stroke="#0000ff" d="M844.2511,-170.6794C861.3136,-163.9727 881.4574,-156.0549 899.245,-149.0632"/>
 </g>
 </g>
 </svg>

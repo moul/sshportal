@@ -1,12 +1,13 @@
 digraph {
     rankdir=LR;
     layout=dot;
-    node[shape=record];
-    
+    node[shape=record;style=rounded];
+    edge[arrowhead=none];
+
     start[label="ssh sshportal";color=blue;fontcolor=blue;fontsize=20];
-    
+
     subgraph cluster_sshportal {
-        graph[fontsize=20;style=dashed;color=purple;fontcolor=purple];
+        graph[fontsize=20;color=gray;fontcolor=black];
         label="sshportal";
         {
             node[color=darkorange;fontcolor=darkorange];
@@ -25,17 +26,17 @@ digraph {
         { rank=same; ssh_proxy; builtin_shell; learn_key; err_and_exit; }
         { rank=same; known_user_key; unknown_user_key; }
     }
-    
+
     subgraph cluster_hosts {
         label="your hosts";
-        graph[fontsize=20;style=dashed;color=purple;fontcolor=purple];
+        graph[fontsize=20;color=gray;fontcolor=black];
         node[color=blue;fontcolor=blue];
-        
+
         host_1[label="root@host1"];
         host_2[label="user@host2:2222"];
         host_3[label="root@host3:1234"];
     }
-    
+
     {
         edge[color=blue];
         start -> known_user_key;
