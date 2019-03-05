@@ -190,6 +190,9 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientConfig, error) {
 	actx := ctx.Value(authContextKey).(*authContext)
 
+	crypto.HostDecrypt(actx.aesKey, host)
+	crypto.SSHKeyDecrypt(actx.aesKey, host.SSHKey)
+	
 	clientConfig, err := host.ClientConfig(dynamicHostKey(actx.db, host))
 	if err != nil {
 		return nil, err
@@ -207,9 +210,6 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 	if err2 != nil {
 		return nil, err2
 	}
-
-	crypto.HostDecrypt(actx.aesKey, host)
-	crypto.SSHKeyDecrypt(actx.aesKey, host.SSHKey)
 
 	switch action {
 	case string(dbmodels.ACLActionAllow):
