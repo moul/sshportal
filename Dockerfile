@@ -1,5 +1,5 @@
 # build
-FROM            golang:1.11.4 as builder
+FROM golang:1.12.1 as builder
 ENV             GO111MODULE=on
 COPY            . /go/src/moul.io/sshportal
 WORKDIR         /go/src/moul.io/sshportal
