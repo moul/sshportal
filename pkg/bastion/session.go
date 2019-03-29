@@ -47,6 +47,7 @@ func multiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 				client = gossh.NewClient(ncc, chans, reqs)
 			}
 			if err != nil {
+				lch.Close() // fix #56
 				return err
 			}
 			defer func() { _ = client.Close() }()
@@ -85,6 +86,7 @@ func multiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.
 				client = gossh.NewClient(ncc, chans, reqs)
 			}
 			if err != nil {
+				lch.Close()
 				return err
 			}
 			defer func() { _ = client.Close() }()

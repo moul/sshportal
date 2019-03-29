@@ -90,7 +90,7 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 
 	switch actx.userType() {
 	case userTypeBastion:
-		log.Printf("New connection(bastion): sshUser=%q remote=%q local=%q dbUser=id:%q,email:%s", conn.User(), conn.RemoteAddr(), conn.LocalAddr(), actx.user.ID, actx.user.Email)
+		log.Printf("New connection(bastion): sshUser=%q remote=%q local=%q dbUser=id:%d,email:%s", conn.User(), conn.RemoteAddr(), conn.LocalAddr(), actx.user.ID, actx.user.Email)
 		host, err := dbmodels.HostByName(actx.db, actx.inputUsername)
 		if err != nil {
 			ch, _, err2 := newChan.Accept()
