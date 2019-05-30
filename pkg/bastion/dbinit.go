@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-gormigrate/gormigrate"
 	"github.com/jinzhu/gorm"
 	gossh "golang.org/x/crypto/ssh"
+	gormigrate "gopkg.in/gormigrate.v1"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
 )
