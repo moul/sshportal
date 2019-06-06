@@ -192,7 +192,7 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 
 	crypto.HostDecrypt(actx.aesKey, host)
 	crypto.SSHKeyDecrypt(actx.aesKey, host.SSHKey)
-	
+
 	clientConfig, err := host.ClientConfig(dynamicHostKey(actx.db, host))
 	if err != nil {
 		return nil, err
