@@ -53,7 +53,7 @@ type SSHKey struct {
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name     string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+	Name     string       `gorm:"size:32" valid:"required,length(1|32)"`
 	Addr     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	User     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	Password string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL

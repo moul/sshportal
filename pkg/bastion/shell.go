@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -685,7 +686,16 @@ GLOBAL OPTIONS:
 						if c.String("password") != "" {
 							host.Password = c.String("password")
 						}
-						host.Name = strings.Split(host.Hostname(), ".")[0]
+						matched, err := regexp.MatchString(`^([0-9]{1,3}.){3}.([0-9]{1,3})$`, host.Hostname())
+						if err != nil {
+							return err
+						}
+						if matched {
+							host.Name = host.Hostname()
+						} else {
+							host.Name = strings.Split(host.Hostname(), ".")[0]
+						}
+
 						if c.String("hop") != "" {
 							hop, err := dbmodels.HostByName(db, c.String("hop"))
 							if err != nil {
