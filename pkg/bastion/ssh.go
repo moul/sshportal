@@ -148,9 +148,8 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				_ = ch.Close()
 				return
 			}
-
 			go func() {
-				err = multiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
+				err = multiChannelHandler(srv, conn, newChan, ctx, sessionConfigs, sess.ID)
 				if err != nil {
 					log.Printf("Error: %v", err)
 				}
