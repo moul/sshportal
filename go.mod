@@ -4,6 +4,7 @@ require (
 	cloud.google.com/go v0.39.0 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239
 	github.com/asaskevich/govalidator v0.0.0-20190528192650-f61b66f89f4a
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/denisenkom/go-mssqldb v0.0.0-20190528192650-eb9f6a1743f3 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect

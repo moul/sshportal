@@ -13,6 +13,7 @@ import (
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/asaskevich/govalidator"
+	"github.com/chzyer/readline"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/mgutz/ansi"
 	"github.com/moby/moby/pkg/namesgenerator"
@@ -2172,15 +2173,20 @@ GLOBAL OPTIONS:
 			},
 		},
 	}
-
+	
 	if len(sshCommand) == 0 { // interactive mode
-		term := terminal.NewTerminal(s, "config> ")
-		for {
-			line, err := term.ReadLine()
-			if err != nil {
-				return err
-			}
+		cfg := readline.Config{Prompt : "config> ", Stdin : s, Stdout : s, Stderr : s}
 
+		rl, err := readline.NewEx(&cfg)
+		if err != nil {
+			panic(err)
+		}
+		defer rl.Close()
+		for {
+			line, err := rl.Readline()
+			if err != nil { // io.EOF
+				break
+			}
 			words, err := shlex.Split(line, true)
 			if err != nil {
 				fmt.Fprint(s, "syntax error.\n")
