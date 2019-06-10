@@ -2173,9 +2173,9 @@ GLOBAL OPTIONS:
 			},
 		},
 	}
-	
+
 	if len(sshCommand) == 0 { // interactive mode
-		cfg := readline.Config{Prompt : "config> ", Stdin : s, Stdout : s, Stderr : s}
+		cfg := readline.Config{Prompt: "config> ", Stdin: s, StdinWriter: s, Stdout: s, Stderr: s, HistoryFile: "./sshportal.history", HistoryLimit: 10000}
 
 		rl, err := readline.NewEx(&cfg)
 		if err != nil {

@@ -189,7 +189,7 @@ An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/ss
 
 ```console
 # Start a server in background
-#   mount `pwd` to persist the sqlite database file
+#   mount `pwd` to persist the sqlite database file and the admin shell history file
 docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
 
 # check logs (mandatory on first run to get the administrator invite token)
@@ -463,5 +463,6 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/dustin/go-humanize: Human-friendly representation of technical data (time ago, bytes, ...)
     * https://github.com/mgutz/ansi: Terminal color helpers
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
+    * https://github.com/chzyer/readline: Pure go implementation of GNU Readline-like behavior.
 
 ![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.png)
