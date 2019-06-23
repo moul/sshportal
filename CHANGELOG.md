@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-* Bump deps
+* Bump deps, now using github.com/gliderlabs/ssh upstream
 
 ## v1.9.0 (2018-11-18)
 

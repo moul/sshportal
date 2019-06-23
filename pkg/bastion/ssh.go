@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
-	"github.com/moul/ssh"
 	gossh "golang.org/x/crypto/ssh"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
