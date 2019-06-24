@@ -1,5 +1,9 @@
 # Changelog
 
+## master (unreleased)
+
+* No entry
+
 ## v1.10.0 (2019-06-24)
 
 * Bump deps, now using github.com/gliderlabs/ssh upstream
