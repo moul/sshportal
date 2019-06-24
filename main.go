@@ -14,7 +14,7 @@ import (
 
 var (
 	// Version should be updated by hand at each release
-	Version = "1.9.0+dev"
+	Version = "1.10.0"
 	// GitTag will be overwritten automatically by the build system
 	GitTag string
 	// GitSha will be overwritten automatically by the build system

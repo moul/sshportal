@@ -1,6 +1,6 @@
 # Changelog
 
-## master (unreleased)
+## v1.10.0 (2019-06-24)
 
 * Bump deps, now using github.com/gliderlabs/ssh upstream
 * Fix Windows build ([#101](https://github.com/moul/sshportal/pull/101)) by [@Raerten](https://github.com/Raerten)
