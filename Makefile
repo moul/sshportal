@@ -48,3 +48,11 @@ doc:
 	dot -Tpng ./.assets/overview.dot > ./.assets/overview.png
 	dot -Tpng ./.assets/cluster-mysql.dot > ./.assets/cluster-mysql.png
 	dot -Tpng ./.assets/flow-diagram.dot > ./.assets/flow-diagram.png
+
+.PHONY: goreleaser
+goreleaser:
+	GORELEASER_GITHUB_TOKEN=$(GORELEASER_GITHUB_TOKEN) GITHUB_TOKEN=$(GITHUB_TOKEN) goreleaser --rm-dist
+
+.PHONY: goreleaser-dry-run
+goreleaser-dry-run:
+	goreleaser --snapshot --skip-publish --rm-dist
