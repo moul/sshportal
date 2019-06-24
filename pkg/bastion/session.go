@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/moul/ssh"
+	"github.com/gliderlabs/ssh"
 	"github.com/sabban/bastion/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
 )

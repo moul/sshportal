@@ -1,8 +1,10 @@
 # build
 FROM golang:1.12.6 as builder
 ENV             GO111MODULE=on
-COPY            . /go/src/moul.io/sshportal
 WORKDIR         /go/src/moul.io/sshportal
+COPY            go.mod go.sum ./
+RUN             go mod download
+COPY            . ./
 RUN             make _docker_install
 
 # minimal runtime

@@ -5,3 +5,6 @@ run:
 	docker-compose exec sshportal /bin/sshportal healthcheck --wait --quiet
 	docker-compose run client /integration/_client.sh
 	docker-compose down
+
+build:
+	docker-compose build

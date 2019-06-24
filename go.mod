@@ -7,15 +7,15 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20190528192650-eb9f6a1743f3 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
-	github.com/gliderlabs/ssh v0.1.4 // indirect
-	github.com/gopherjs/gopherjs v0.0.0-20190528192650-3e4dfb77656c // indirect
-	github.com/jinzhu/gorm v1.9.9
-	github.com/kr/pty v1.1.5
-	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/gliderlabs/ssh v0.2.2
+	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
+	github.com/jinzhu/gorm v1.9.2
+	github.com/kr/pty v1.1.3
+	github.com/mattn/go-colorable v0.0.9 // indirect
+	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
-	github.com/moby/moby v0.12.0
-	github.com/moul/ssh v0.1.1-0.20181116135657-8b3cdd49b6d2
+	github.com/moby/moby v0.7.3-0.20190103212154-2b7e084dc98b
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/reiver/go-oi v0.0.0-20160325061615-431c83978379
 	github.com/reiver/go-telnet v0.0.0-20180421082511-9ff0b2ab096e

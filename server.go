@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
-	"github.com/moul/ssh"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
 	"moul.io/sshportal/pkg/bastion"
@@ -91,26 +91,24 @@ func server(c *serverConfig) (err error) {
 		Addr:    c.bindAddr,
 		Handler: func(s ssh.Session) { bastion.ShellHandler(s, Version, GitSha, GitTag, GitBranch) }, // ssh.Server.Handler is the handler for the DefaultSessionHandler
 		Version: fmt.Sprintf("sshportal-%s", Version),
+		ChannelHandlers: map[string]ssh.ChannelHandler{
+			"default": bastion.ChannelHandler,
+		},
 	}
 
 	// configure channel handler
-	defaultSessionHandler := srv.GetChannelHandler("session")
-	defaultDirectTcpipHandler := srv.GetChannelHandler("direct-tcpip")
 	bastion.DefaultChannelHandler = func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
 		switch newChan.ChannelType() {
 		case "session":
-			go defaultSessionHandler(srv, conn, newChan, ctx)
+			go ssh.DefaultSessionHandler(srv, conn, newChan, ctx)
 		case "direct-tcpip":
-			go defaultDirectTcpipHandler(srv, conn, newChan, ctx)
+			go ssh.DirectTCPIPHandler(srv, conn, newChan, ctx)
 		default:
 			if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
 				log.Printf("failed to reject chan: %v", err)
 			}
 		}
 	}
-	srv.SetChannelHandler("session", nil)
-	srv.SetChannelHandler("direct-tcpip", nil)
-	srv.SetChannelHandler("default", bastion.ChannelHandler)
 
 	if c.idleTimeout != 0 {
 		srv.IdleTimeout = c.idleTimeout
