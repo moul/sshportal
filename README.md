@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
 [![Go Report Card](https://goreportcard.com/badge/moul.io/sshportal)](https://goreportcard.com/report/moul.io/sshportal)
 [![GoDoc](https://godoc.org/moul.io/sshportal?status.svg)](https://godoc.org/moul.io/sshportal)
-[![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
+[![Financial Contributors on Open Collective](https://opencollective.com/sshportal/all/badge.svg?label=financial+contributors)](https://opencollective.com/sshportal) [![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/moul/sshportal.svg)](https://github.com/moul/sshportal/releases)
 <!-- temporarily broken? [![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)](https://hub.docker.com/r/moul/sshportal/) -->
 
@@ -465,3 +465,33 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
 
 ![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.png)
+
+## Contributors
+
+### Code Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="https://github.com/moul/sshportal/graphs/contributors"><img src="https://opencollective.com/sshportal/contributors.svg?width=890&button=false" /></a>
+
+### Financial Contributors
+
+Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/sshportal/contribute)]
+
+#### Individuals
+
+<a href="https://opencollective.com/sshportal"><img src="https://opencollective.com/sshportal/individuals.svg?width=890"></a>
+
+#### Organizations
+
+Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/sshportal/contribute)]
+
+<a href="https://opencollective.com/sshportal/organization/0/website"><img src="https://opencollective.com/sshportal/organization/0/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/1/website"><img src="https://opencollective.com/sshportal/organization/1/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/2/website"><img src="https://opencollective.com/sshportal/organization/2/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/3/website"><img src="https://opencollective.com/sshportal/organization/3/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/4/website"><img src="https://opencollective.com/sshportal/organization/4/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/5/website"><img src="https://opencollective.com/sshportal/organization/5/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/6/website"><img src="https://opencollective.com/sshportal/organization/6/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/7/website"><img src="https://opencollective.com/sshportal/organization/7/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/8/website"><img src="https://opencollective.com/sshportal/organization/8/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/9/website"><img src="https://opencollective.com/sshportal/organization/9/avatar.svg"></a>
