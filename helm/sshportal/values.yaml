@@ -1,0 +1,119 @@
+# Default values for sshportal.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## Enable SSHPortal debug mode
+##
+debug: false
+
+## SSH Portal Docker image
+##
+image:
+  repository: moul/sshportal
+  pullPolicy: IfNotPresent
+
+## Reference to one or more secrets to be used when pulling images
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+##
+imagePullSecrets: []
+
+## Provide a name in place of sshportal for `app:` labels
+##
+nameOverride: ""
+
+## Provide a name to substitute for the full names of resources
+##
+fullnameOverride: ""
+
+## PodSecurityContext holds pod-level security attributes.
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+podSecurityContext: {}
+  # fsGroup: 2000
+
+## SecurityContext holds container-level security attributes.
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+## Service
+##
+service:
+  ## Configure additional annotations for SSHPortal service
+  ##
+  annotations: {}
+    # service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
+
+  ## Service type, one of
+  ## NodePort, ClusterIP, LoadBalancer
+  ##
+  type: LoadBalancer
+
+  ## Port to expose on the service
+  ##
+  port: 22
+
+## Define resources requests and limits
+## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources: {}
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # limits:
+  #   cpu: 2
+  #   memory: 2Gi
+
+## Mysql/MariaDB configuration for HA
+##
+mysql:
+  enabled: false
+
+  ## Database user
+  ##
+  user: sshportal
+
+  ## Database password
+  ##
+  password: change_me
+
+  ## Database name
+  ##
+  database: sshportal
+
+  ## Database server FQDN or IP
+  ##
+  server: mariadb-mariadb-galera
+
+  ## Database port
+  ##
+  port: 3306
+
+## Define which Nodes the Pods are scheduled on.
+## ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
+nodeSelector: {}
+
+## The pod's tolerations.
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+
+## Assign custom affinity rules
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+##
+affinity: {}
+
+## HPA support, require `mysql.enable: true`
+## This section enables sshportal to autoscale based on metrics.
+##
+autoscaling:
+  maxReplicas: 4
+  minReplicas: 2
+  cpuTarget: 60
