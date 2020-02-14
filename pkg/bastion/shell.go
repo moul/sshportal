@@ -90,17 +90,31 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 						cli.StringFlag{Name: "action", Usage: "Assigns the ACL action (allow,deny)", Value: string(dbmodels.ACLActionAllow)},
 						cli.UintFlag{Name: "weight, w", Usage: "Assigns the ACL weight (priority)"},
+						cli.StringFlag{Name: "inception, i", Usage: "Assigns inception date-time"},
+						cli.StringFlag{Name: "expiration, e", Usage: "Assigns expiration date-time"},
 					},
 					Action: func(c *cli.Context) error {
 						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
+
+						inception, err := parseOptionalTime(c.String("inception"))
+						if err != nil {
+							return err
+						}
+						expiration, err := parseOptionalTime(c.String("expiration"))
+						if err != nil {
+							return err
+						}
+
 						acl := dbmodels.ACL{
 							Comment:     c.String("comment"),
 							HostPattern: c.String("pattern"),
 							UserGroups:  []*dbmodels.UserGroup{},
 							HostGroups:  []*dbmodels.HostGroup{},
 							Weight:      c.Uint("weight"),
+							Inception:   inception,
+							Expiration:  expiration,
 							Action:      c.String("action"),
 						}
 						if acl.Action != string(dbmodels.ACLActionAllow) && acl.Action != string(dbmodels.ACLActionDeny) {
@@ -186,7 +200,7 @@ GLOBAL OPTIONS:
 						}
 
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Weight", "User groups", "Host groups", "Host pattern", "Action", "Updated", "Created", "Comment"})
+						table.SetHeader([]string{"ID", "Weight", "User groups", "Host groups", "Host pattern", "Action", "Inception", "Expiration", "Updated", "Created", "Comment"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d ACLs.", len(acls)))
 						for _, acl := range acls {
@@ -199,6 +213,15 @@ GLOBAL OPTIONS:
 								hostGroups = append(hostGroups, entity.Name)
 							}
 
+							inception := ""
+							if acl.Inception != nil {
+								inception = acl.Inception.String()
+							}
+							expiration := ""
+							if acl.Expiration != nil {
+								expiration = acl.Expiration.String()
+							}
+
 							table.Append([]string{
 								fmt.Sprintf("%d", acl.ID),
 								fmt.Sprintf("%d", acl.Weight),
@@ -206,6 +229,8 @@ GLOBAL OPTIONS:
 								strings.Join(hostGroups, ", "),
 								acl.HostPattern,
 								acl.Action,
+								inception,
+								expiration,
 								humanize.Time(acl.UpdatedAt),
 								humanize.Time(acl.CreatedAt),
 								acl.Comment,
@@ -236,6 +261,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "action, a", Usage: "Update action"},
 						cli.StringFlag{Name: "pattern, p", Usage: "Update host-pattern"},
 						cli.UintFlag{Name: "weight, w", Usage: "Update weight"},
+						cli.StringFlag{Name: "inception, i", Usage: "Update inception date-time"},
+						cli.StringFlag{Name: "expiration, e", Usage: "Update expiration date-time"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update comment"},
 						cli.StringSliceFlag{Name: "assign-usergroup, ug", Usage: "Assign the ACL to new `USERGROUPS`"},
 						cli.StringSliceFlag{Name: "unassign-usergroup", Usage: "Unassign the ACL from `USERGROUPS`"},
@@ -258,10 +285,21 @@ GLOBAL OPTIONS:
 						tx := db.Begin()
 						for _, acl := range acls {
 							model := tx.Model(acl)
+							inception, err := parseOptionalTime(c.String("inception"))
+							if err != nil {
+								return err
+							}
+							expiration, err := parseOptionalTime(c.String("expiration"))
+							if err != nil {
+								return err
+							}
+
 							update := dbmodels.ACL{
 								Action:      c.String("action"),
 								HostPattern: c.String("pattern"),
 								Weight:      c.Uint("weight"),
+								Inception:   inception,
+								Expiration:  expiration,
 								Comment:     c.String("comment"),
 							}
 							if err := model.Updates(update).Error; err != nil {
@@ -2261,4 +2299,15 @@ func parseInputURL(input string) (*url.URL, error) {
 		return nil, err
 	}
 	return u, nil
+}
+
+func parseOptionalTime(input string) (*time.Time, error) {
+	if input != "" {
+		parsed, err := time.ParseInLocation("2006-01-02 15:04", input, time.Local)
+		if err != nil {
+			return nil, err
+		}
+		return &parsed, nil
+	}
+	return nil, nil
 }

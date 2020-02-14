@@ -118,6 +118,8 @@ type ACL struct {
 	Action      string       `valid:"required"`
 	Weight      uint         ``
 	Comment     string       `valid:"optional"`
+	Inception   *time.Time
+	Expiration  *time.Time
 }
 
 type Session struct {
