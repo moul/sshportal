@@ -485,6 +485,25 @@ func DBInit(db *gorm.DB) error {
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
 			},
+		}, {
+			ID: "30",
+			Migrate: func(tx *gorm.DB) error {
+				type ACL struct {
+					gorm.Model
+					HostGroups  []*dbmodels.HostGroup `gorm:"many2many:host_group_acls;"`
+					UserGroups  []*dbmodels.UserGroup `gorm:"many2many:user_group_acls;"`
+					HostPattern string                `valid:"optional"`
+					Action      string                `valid:"required"`
+					Weight      uint                  ``
+					Comment     string                `valid:"optional"`
+					Inception   *time.Time            `gorm:"type:datetime"`
+					Expiration  *time.Time            `gorm:"type:datetime"`
+				}
+				return tx.AutoMigrate(&ACL{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
 		},
 	})
 	if err := m.Migrate(); err != nil {
