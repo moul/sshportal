@@ -215,11 +215,11 @@ GLOBAL OPTIONS:
 
 							inception := ""
 							if acl.Inception != nil {
-								inception = (*acl.Inception).String()
+								inception = (*acl.Inception).Format("2006-01-02 15:04 MST")
 							}
 							expiration := ""
 							if acl.Expiration != nil {
-								expiration = (*acl.Expiration).String()
+								expiration = (*acl.Expiration).Format("2006-01-02 15:04 MST")
 							}
 
 							table.Append([]string{
@@ -262,6 +262,8 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "pattern, p", Usage: "Update host-pattern"},
 						cli.UintFlag{Name: "weight, w", Usage: "Update weight"},
 						cli.StringFlag{Name: "inception, i", Usage: "Update inception date-time"},
+						cli.BoolFlag{Name: "unset-inception", Usage: "Unset inception date-time"},
+						cli.BoolFlag{Name: "unset-expiration", Usage: "Unset expiration date-time"},
 						cli.StringFlag{Name: "expiration, e", Usage: "Update expiration date-time"},
 						cli.StringFlag{Name: "comment, c", Usage: "Update comment"},
 						cli.StringSliceFlag{Name: "assign-usergroup, ug", Usage: "Assign the ACL to new `USERGROUPS`"},
@@ -306,6 +308,19 @@ GLOBAL OPTIONS:
 							if err := model.Updates(update).Error; err != nil {
 								tx.Rollback()
 								return err
+							}
+
+							if c.Bool("unset-inception") {
+								if err := model.Update("inception", nil).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+							if c.Bool("unset-expiration") {
+								if err := model.Update("expiration", nil).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
 							}
 
 							// associations

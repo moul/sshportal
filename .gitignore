@@ -7,3 +7,4 @@ dist/
 /sshportal
 *.db
 /data
+.idea

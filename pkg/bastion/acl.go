@@ -2,6 +2,7 @@ package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
 	"sort"
+	"time"
 
 	"moul.io/sshportal/pkg/dbmodels"
 )
@@ -13,6 +14,9 @@ func (a byWeight) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byWeight) Less(i, j int) bool { return a[i].Weight < a[j].Weight }
 
 func checkACLs(user dbmodels.User, host dbmodels.Host) (string, error) {
+
+	currentTime := time.Now()
+
 	// shared ACLs between user and host
 	aclMap := map[uint]*dbmodels.ACL{}
 	for _, userGroup := range user.Groups {
@@ -20,7 +24,10 @@ func checkACLs(user dbmodels.User, host dbmodels.Host) (string, error) {
 			for _, hostGroup := range host.Groups {
 				for _, hostGroupACL := range hostGroup.ACLs {
 					if userGroupACL.ID == hostGroupACL.ID {
-						aclMap[userGroupACL.ID] = userGroupACL
+						if (userGroupACL.Inception == nil || currentTime.After(*userGroupACL.Inception)) &&
+							(userGroupACL.Expiration == nil || currentTime.Before(*userGroupACL.Expiration)) {
+							aclMap[userGroupACL.ID] = userGroupACL
+						}
 					}
 				}
 			}
