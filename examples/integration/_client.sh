@@ -28,7 +28,7 @@ ssh sshportal -l invite:integration
 ssh sshportal -l admin hostgroup create
 ssh sshportal -l admin hostgroup create --name=hg1
 ssh sshportal -l admin hostgroup create --name=hg2 --comment=test
-ssh sshportal -l admin usergroup inspect hg1 hg2
+ssh sshportal -l admin hostgroup inspect hg1 hg2
 ssh sshportal -l admin hostgroup ls
 
 ssh sshportal -l admin usergroup create
