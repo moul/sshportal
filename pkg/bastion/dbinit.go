@@ -45,8 +45,8 @@ func DBInit(db *gorm.DB) error {
 					Type        string
 					Length      uint
 					Fingerprint string
-					PrivKey     string           `sql:"size:10000"`
-					PubKey      string           `sql:"size:10000"`
+					PrivKey     string           `sql:"size:5000"`
+					PubKey      string           `sql:"size:1000"`
 					Hosts       []*dbmodels.Host `gorm:"ForeignKey:SSHKeyID"`
 					Comment     string
 				}
@@ -80,7 +80,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type UserKey struct {
 					gorm.Model
-					Key     []byte         `sql:"size:10000"`
+					Key     []byte         `sql:"size:1000"`
 					UserID  uint           ``
 					User    *dbmodels.User `gorm:"ForeignKey:UserID"`
 					Comment string
@@ -341,8 +341,8 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type UserKey struct {
 					gorm.Model
-					Key           []byte         `sql:"size:10000" valid:"required,length(1|10000)"`
-					AuthorizedKey string         `sql:"size:10000" valid:"required,length(1|10000)"`
+					Key           []byte         `sql:"size:1000" valid:"required,length(1|1000)"`
+					AuthorizedKey string         `sql:"size:1000" valid:"required,length(1|1000)"`
 					UserID        uint           ``
 					User          *dbmodels.User `gorm:"ForeignKey:UserID"`
 					Comment       string         `valid:"optional"`
@@ -386,7 +386,7 @@ func DBInit(db *gorm.DB) error {
 					Password    string                `valid:"optional"`
 					SSHKey      *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
 					SSHKeyID    uint                  `gorm:"index"`
-					HostKey     []byte                `sql:"size:10000" valid:"optional"`
+					HostKey     []byte                `sql:"size:1000" valid:"optional"`
 					Groups      []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Fingerprint string                `valid:"optional"`
 					Comment     string                `valid:"optional"`
@@ -447,7 +447,7 @@ func DBInit(db *gorm.DB) error {
 					URL      string
 					SSHKey   *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
 					SSHKeyID uint                  `gorm:"index"`
-					HostKey  []byte                `sql:"size:10000"`
+					HostKey  []byte                `sql:"size:1000"`
 					Groups   []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Comment  string
 				}
@@ -468,7 +468,7 @@ func DBInit(db *gorm.DB) error {
 					URL      string
 					SSHKey   *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
 					SSHKeyID uint                  `gorm:"index"`
-					HostKey  []byte                `sql:"size:10000"`
+					HostKey  []byte                `sql:"size:1000"`
 					Groups   []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Comment  string
 					Hop      *dbmodels.Host
@@ -518,8 +518,8 @@ func DBInit(db *gorm.DB) error {
 					Action      string                `valid:"required"`
 					Weight      uint                  ``
 					Comment     string                `valid:"optional"`
-					Inception   *time.Time            `gorm:"type:datetime"`
-					Expiration  *time.Time            `gorm:"type:datetime"`
+					Inception   *time.Time
+					Expiration  *time.Time
 				}
 				return tx.AutoMigrate(&ACL{}).Error
 			},
