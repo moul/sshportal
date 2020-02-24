@@ -18,7 +18,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
-	github.com/moby/moby v0.7.3-0.20190103212154-2b7e084dc98b
+	github.com/moby/moby v0.7.3-0.20190817195342-4760db040282
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/reiver/go-oi v1.0.0
 	github.com/reiver/go-telnet v0.0.0-20180421082511-9ff0b2ab096e
