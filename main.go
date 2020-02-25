@@ -5,11 +5,11 @@ import (
 	"math/rand"
 	"os"
 	"path"
-	"time"
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/urfave/cli"
+	"moul.io/srand"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(srand.Secure())
 
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])

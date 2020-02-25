@@ -125,3 +125,5 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/gormigrate.v1 v1.6.0 h1:XpYM6RHQPmzwY7Uyu+t+xxMXc86JYFJn4nEc9HzQjsI=
 gopkg.in/gormigrate.v1 v1.6.0/go.mod h1:Lf00lQrHqfSYWiTtPcyQabsDdM6ejZaMgV0OU6JMSlw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+moul.io/srand v1.4.0 h1:r5ZMiWDN0ni0lTV7KzJR/jx0K7GivJYW5WaXmufgeik=
+moul.io/srand v1.4.0/go.mod h1:P2uaZB+GFstFNo8sEj6/U8FRV1n25kD0LLckFpJ+qvc=

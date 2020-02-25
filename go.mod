@@ -29,6 +29,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200214034016-1d94cc7ab1c6
 	golang.org/x/sys v0.0.0-20200217220822-9197077df867 // indirect
 	gopkg.in/gormigrate.v1 v1.6.0
+	moul.io/srand v1.4.0
 )
 
 go 1.12.6
