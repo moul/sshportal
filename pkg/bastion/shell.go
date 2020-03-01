@@ -14,10 +14,10 @@ import (
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/asaskevich/govalidator"
+	"github.com/docker/docker/pkg/namesgenerator"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/gliderlabs/ssh"
 	"github.com/mgutz/ansi"
-	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
