@@ -158,7 +158,7 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 * Sensitive data encryption
 * Session management (see active connections, history, stats, stop)
 * Audit log (logging every user action)
-* Record TTY Session
+* Record TTY Session (with [ttyrec](https://en.wikipedia.org/wiki/Ttyrec) format)
 * Tunnels logging
 * Host Keys verifications shared across users
 * Healthcheck user (replying OK to any user)
