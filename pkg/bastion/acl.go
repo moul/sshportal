@@ -12,7 +12,7 @@ func (a byWeight) Len() int           { return len(a) }
 func (a byWeight) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byWeight) Less(i, j int) bool { return a[i].Weight < a[j].Weight }
 
-func checkACLs(user dbmodels.User, host dbmodels.Host) (string, error) {
+func checkACLs(user dbmodels.User, host dbmodels.Host) string {
 	// shared ACLs between user and host
 	aclMap := map[uint]*dbmodels.ACL{}
 	for _, userGroup := range user.Groups {
@@ -30,7 +30,7 @@ func checkACLs(user dbmodels.User, host dbmodels.Host) (string, error) {
 
 	// deny by default if no shared ACL
 	if len(aclMap) == 0 {
-		return string(dbmodels.ACLActionDeny), nil // default action
+		return string(dbmodels.ACLActionDeny) // default action
 	}
 
 	// transform map to slice and sort it
@@ -40,5 +40,5 @@ func checkACLs(user dbmodels.User, host dbmodels.Host) (string, error) {
 	}
 	sort.Sort(byWeight(acls))
 
-	return acls[0].Action, nil
+	return acls[0].Action
 }

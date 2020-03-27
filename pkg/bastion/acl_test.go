@@ -43,8 +43,7 @@ func TestCheckACLs(t *testing.T) {
 		db.Preload("Groups").Preload("Groups.ACLs").Find(&users)
 
 		// test
-		action, err := checkACLs(users[0], hosts[0])
-		c.So(err, ShouldBeNil)
+		action := checkACLs(users[0], hosts[0])
 		c.So(action, ShouldEqual, dbmodels.ACLActionAllow)
 	})
 }

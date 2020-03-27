@@ -149,7 +149,7 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				return
 			}
 			go func() {
-				err = multiChannelHandler(srv, conn, newChan, ctx, sessionConfigs, sess.ID)
+				err = multiChannelHandler(conn, newChan, ctx, sessionConfigs, sess.ID)
 				if err != nil {
 					log.Printf("Error: %v", err)
 				}
@@ -204,11 +204,8 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 	if err = actx.db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err != nil {
 		return nil, err
 	}
-	action, err2 := checkACLs(tmpUser, tmpHost)
-	if err2 != nil {
-		return nil, err2
-	}
 
+	action := checkACLs(tmpUser, tmpHost)
 	switch action {
 	case string(dbmodels.ACLActionAllow):
 		// do nothing

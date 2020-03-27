@@ -67,6 +67,8 @@ GLOBAL OPTIONS:
 	app.Writer = s
 	app.HideVersion = true
 
+	dbmodels.InitValidator()
+
 	var (
 		myself = &actx.user
 		db     = actx.db
@@ -173,10 +175,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							acls = append(acls, &acl)
-						} else {
-							if err := query.Find(&acls).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&acls).Error; err != nil {
+							return err
 						}
 						if c.Bool("quiet") {
 							for _, acl := range acls {
@@ -250,14 +250,14 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var acls []dbmodels.ACL
+						var acls []*dbmodels.ACL
 						if err := dbmodels.ACLsByIdentifiers(db, c.Args()).Find(&acls).Error; err != nil {
 							return err
 						}
 
 						tx := db.Begin()
 						for _, acl := range acls {
-							model := tx.Model(&acl)
+							model := tx.Model(acl)
 							update := dbmodels.ACL{
 								Action:      c.String("action"),
 								HostPattern: c.String("pattern"),
@@ -477,6 +477,7 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, host := range config.Hosts {
+							host := host
 							crypto.HostDecrypt(actx.aesKey, host)
 							if !c.Bool("decrypt") {
 								if err := crypto.HostEncrypt(actx.aesKey, host); err != nil {
@@ -489,30 +490,35 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, user := range config.Users {
+							user := user
 							if err := tx.FirstOrCreate(&user).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, acl := range config.ACLs {
+							acl := acl
 							if err := tx.FirstOrCreate(&acl).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, hostGroup := range config.HostGroups {
+							hostGroup := hostGroup
 							if err := tx.FirstOrCreate(&hostGroup).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, userGroup := range config.UserGroups {
+							userGroup := userGroup
 							if err := tx.FirstOrCreate(&userGroup).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, sshKey := range config.SSHKeys {
+							sshKey := sshKey
 							crypto.SSHKeyDecrypt(actx.aesKey, sshKey)
 							if !c.Bool("decrypt") {
 								if err := crypto.SSHKeyEncrypt(actx.aesKey, sshKey); err != nil {
@@ -525,24 +531,28 @@ GLOBAL OPTIONS:
 							}
 						}
 						for _, userKey := range config.UserKeys {
+							userKey := userKey
 							if err := tx.FirstOrCreate(&userKey).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, setting := range config.Settings {
+							setting := setting
 							if err := tx.FirstOrCreate(&setting).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, session := range config.Sessions {
+							session := session
 							if err := tx.FirstOrCreate(&session).Error; err != nil {
 								tx.Rollback()
 								return err
 							}
 						}
 						for _, event := range config.Events {
+							event := event
 							if err := tx.FirstOrCreate(&event).Error; err != nil {
 								tx.Rollback()
 								return err
@@ -612,10 +622,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							events = append(events, event)
-						} else {
-							if err := query.Find(&events).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&events).Error; err != nil {
+							return err
 						}
 
 						if c.Bool("quiet") {
@@ -799,10 +807,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							hosts = append(hosts, &host)
-						} else {
-							if err := query.Find(&hosts).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&hosts).Error; err != nil {
+							return err
 						}
 
 						if c.Bool("quiet") {
@@ -820,7 +826,7 @@ GLOBAL OPTIONS:
 							authKey := ""
 							if host.SSHKeyID > 0 {
 								var key dbmodels.SSHKey
-								db.Model(&host).Related(&key)
+								db.Model(host).Related(&key)
 								authKey = key.Name
 							}
 							groupNames := []string{}
@@ -830,7 +836,7 @@ GLOBAL OPTIONS:
 							var hop string
 							if host.HopID != 0 {
 								var hopHost dbmodels.Host
-								db.Model(&host).Related(&hopHost, "HopID")
+								db.Model(host).Related(&hopHost, "HopID")
 								hop = hopHost.Name
 							} else {
 								hop = ""
@@ -900,6 +906,7 @@ GLOBAL OPTIONS:
 
 						tx := db.Begin()
 						for _, host := range hosts {
+							host := host
 							model := tx.Model(&host)
 							// simple fields
 							for _, fieldname := range []string{"name", "comment"} {
@@ -1063,10 +1070,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							hostGroups = append(hostGroups, &hostGroup)
-						} else {
-							if err := query.Find(&hostGroups).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&hostGroups).Error; err != nil {
+							return err
 						}
 
 						if c.Bool("quiet") {
@@ -1127,7 +1132,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var hostgroups []dbmodels.HostGroup
+						var hostgroups []*dbmodels.HostGroup
 						if err := dbmodels.HostGroupsByIdentifiers(db, c.Args()).Find(&hostgroups).Error; err != nil {
 							return err
 						}
@@ -1138,7 +1143,7 @@ GLOBAL OPTIONS:
 
 						tx := db.Begin()
 						for _, hostgroup := range hostgroups {
-							model := tx.Model(&hostgroup)
+							model := tx.Model(hostgroup)
 							// simple fields
 							for _, fieldname := range []string{"name", "comment"} {
 								if c.String(fieldname) != "" {
@@ -1342,10 +1347,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							sshKeys = append(sshKeys, &sshKey)
-						} else {
-							if err := query.Find(&sshKeys).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&sshKeys).Error; err != nil {
+							return err
 						}
 						if c.Bool("quiet") {
 							for _, sshKey := range sshKeys {
@@ -1584,10 +1587,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							users = append(users, &user)
-						} else {
-							if err := query.Find(&users).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&users).Error; err != nil {
+							return err
 						}
 						if c.Bool("quiet") {
 							for _, user := range users {
@@ -1661,7 +1662,7 @@ GLOBAL OPTIONS:
 						}
 
 						// FIXME: check if unset-admin + user == myself
-						var users []dbmodels.User
+						var users []*dbmodels.User
 						if err := dbmodels.UsersByIdentifiers(db, c.Args()).Find(&users).Error; err != nil {
 							return err
 						}
@@ -1676,7 +1677,7 @@ GLOBAL OPTIONS:
 
 						tx := db.Begin()
 						for _, user := range users {
-							model := tx.Model(&user)
+							model := tx.Model(user)
 							// simple fields
 							for _, fieldname := range []string{"name", "email", "comment"} {
 								if c.String(fieldname) != "" {
@@ -1814,10 +1815,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							userGroups = append(userGroups, &userGroup)
-						} else {
-							if err := query.Find(&userGroups).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&userGroups).Error; err != nil {
+							return err
 						}
 						if c.Bool("quiet") {
 							for _, userGroup := range userGroups {
@@ -1877,7 +1876,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						var usergroups []dbmodels.UserGroup
+						var usergroups []*dbmodels.UserGroup
 						if err := dbmodels.UserGroupsByIdentifiers(db, c.Args()).Find(&usergroups).Error; err != nil {
 							return err
 						}
@@ -1888,7 +1887,7 @@ GLOBAL OPTIONS:
 
 						tx := db.Begin()
 						for _, usergroup := range usergroups {
-							model := tx.Model(&usergroup)
+							model := tx.Model(usergroup)
 							// simple fields
 							for _, fieldname := range []string{"name", "comment"} {
 								if c.String(fieldname) != "" {
@@ -2001,10 +2000,8 @@ GLOBAL OPTIONS:
 								return err
 							}
 							userKeys = append(userKeys, &userKey)
-						} else {
-							if err := query.Find(&userKeys).Error; err != nil {
-								return err
-							}
+						} else if err := query.Find(&userKeys).Error; err != nil {
+							return err
 						}
 						if c.Bool("quiet") {
 							for _, userKey := range userKeys {
@@ -2112,7 +2109,6 @@ GLOBAL OPTIONS:
 
 							factor := 1
 							for len(sessions) >= limit*factor {
-
 								var additionnalSessions []*dbmodels.Session
 
 								offset = limit * factor

@@ -261,14 +261,14 @@ func DBInit(db *gorm.DB) error {
 					return err
 				}
 
-				var users []dbmodels.User
+				var users []*dbmodels.User
 				if err := db.Preload("Roles").Where("is_admin = ?", true).Find(&users).Error; err != nil {
 					return err
 				}
 
 				for _, user := range users {
 					user.Roles = append(user.Roles, &adminRole)
-					if err := tx.Save(&user).Error; err != nil {
+					if err := tx.Save(user).Error; err != nil {
 						return err
 					}
 				}
@@ -358,7 +358,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "24",
 			Migrate: func(tx *gorm.DB) error {
-				var userKeys []dbmodels.UserKey
+				var userKeys []*dbmodels.UserKey
 				if err := db.Find(&userKeys).Error; err != nil {
 					return err
 				}
@@ -369,7 +369,7 @@ func DBInit(db *gorm.DB) error {
 						return err
 					}
 					userKey.AuthorizedKey = string(gossh.MarshalAuthorizedKey(key))
-					if err := db.Model(&userKey).Updates(&userKey).Error; err != nil {
+					if err := db.Model(userKey).Updates(userKey).Error; err != nil {
 						return err
 					}
 				}
@@ -422,14 +422,14 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "27",
 			Migrate: func(tx *gorm.DB) error {
-				var sessions []dbmodels.Session
+				var sessions []*dbmodels.Session
 				if err := db.Find(&sessions).Error; err != nil {
 					return err
 				}
 
 				for _, session := range sessions {
 					if session.StoppedAt != nil && session.StoppedAt.IsZero() {
-						if err := db.Model(&session).Updates(map[string]interface{}{"stopped_at": nil}).Error; err != nil {
+						if err := db.Model(session).Updates(map[string]interface{}{"stopped_at": nil}).Error; err != nil {
 							return err
 						}
 					}
