@@ -26,7 +26,7 @@ require (
 	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/urfave/cli v1.22.4
-	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/sys v0.0.0-20200217220822-9197077df867 // indirect
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.4.0
