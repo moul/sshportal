@@ -1,15 +1,15 @@
 module moul.io/sshportal
 
 require (
-	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239
-	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
+	github.com/anmitsu/go-shlex v0.0.0-20200502080107-070676123096
+	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/docker v1.13.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
-	github.com/gliderlabs/ssh v0.2.2
+	github.com/gliderlabs/ssh v0.3.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/jinzhu/gorm v1.9.12
@@ -24,9 +24,9 @@ require (
 	github.com/reiver/go-telnet v0.0.0-20180421082511-9ff0b2ab096e
 	github.com/sabban/bastion v0.0.0-20180110125408-b9d3c9b1f4d3
 	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
-	github.com/smartystreets/goconvey v1.6.4-0.20190330032615-68dc04aab96a
-	github.com/urfave/cli v1.22.2
-	golang.org/x/crypto v0.0.0-20200214034016-1d94cc7ab1c6
+	github.com/smartystreets/goconvey v1.6.4
+	github.com/urfave/cli v1.22.4
+	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
 	golang.org/x/sys v0.0.0-20200217220822-9197077df867 // indirect
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.4.0
