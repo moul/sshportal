@@ -232,7 +232,7 @@ docker logs -f sshportal
 Get the latest version using GO.
 
 ```sh
-go get -u moul.io/sshportal
+GO111MODULE=on go get -u moul.io/sshportal
 ```
 
 ---
