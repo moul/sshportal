@@ -178,6 +178,8 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 **(Known) limitations**
 
 * Does not work (yet?) with [`mosh`](https://mosh.org/)
+* It is not possible for a user to access a host with the same name as the user. This is easily circumvented by changing the user name, especially since the most common use cases does not expose it.
+* It is not possible access a host named `healthcheck` as this is a built in command.
 
 ---
 
@@ -267,7 +269,7 @@ cp sshportal.db sshportal.db.bkp
 
 `sshportal` embeds a configuration CLI.
 
-By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server.
+By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server. The shell is also accessible through `ssh [username]@portal.example.org`.
 
 Each commands can be run directly by using this syntax: `ssh admin@portal.example.org <command> [args]`:
 
