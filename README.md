@@ -58,6 +58,8 @@ Shared connection to localhost closed.
 $
 ```
 
+If the association fails and you are promted for a password, verify that the host you're connecting from has a SSH key set up or generate one with ```ssh-keygen -t rsa```
+
 Drop an interactive administrator shell
 
 ```console
