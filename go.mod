@@ -1,7 +1,7 @@
 module moul.io/sshportal
 
 require (
-	github.com/anmitsu/go-shlex v0.0.0-20200502080107-070676123096
+	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/creack/pty v1.1.10 // indirect
@@ -24,7 +24,7 @@ require (
 	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/urfave/cli v1.22.4
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/sys v0.0.0-20200511232937-7e40ca221e25 // indirect
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.4.0
