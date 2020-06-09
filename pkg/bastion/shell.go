@@ -41,7 +41,7 @@ const (
 	naMessage = "n/a"
 )
 
-func shell(s ssh.Session, version, gitSha, gitTag, gitBranch string) error {
+func shell(s ssh.Session, version, gitSha, gitTag string) error {
 	var (
 		sshCommand = s.Command()
 		actx       = s.Context().Value(authContextKey).(*authContext)
@@ -1180,9 +1180,9 @@ GLOBAL OPTIONS:
 				fmt.Fprintf(s, "User email: %s\n", myself.Email)
 				fmt.Fprintf(s, "Version: %s\n", version)
 				fmt.Fprintf(s, "GIT SHA: %s\n", gitSha)
-				fmt.Fprintf(s, "GIT Branch: %s\n", gitBranch)
 				fmt.Fprintf(s, "GIT Tag: %s\n", gitTag)
 
+				// FIXME: gormigrate version
 				// FIXME: add info about current server (network, cpu, ram, OS)
 				// FIXME: add info about current user
 				// FIXME: add active connections

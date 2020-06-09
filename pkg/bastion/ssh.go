@@ -212,6 +212,7 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 
 	switch action {
 	case string(dbmodels.ACLActionAllow):
+		// do nothing
 	case string(dbmodels.ACLActionDeny):
 		return nil, fmt.Errorf("you don't have permission to that host")
 	default:
@@ -220,7 +221,7 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 	return clientConfig, nil
 }
 
-func ShellHandler(s ssh.Session, version, gitSha, gitTag, gitBranch string) {
+func ShellHandler(s ssh.Session, version, gitSha, gitTag string) {
 	actx := s.Context().Value(authContextKey).(*authContext)
 	if actx.userType() != userTypeHealthcheck {
 		log.Printf("New connection(shell): sshUser=%q remote=%q local=%q command=%q dbUser=id:%d,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), actx.user.ID, actx.user.Email)
@@ -241,7 +242,7 @@ func ShellHandler(s ssh.Session, version, gitSha, gitTag, gitBranch string) {
 		fmt.Fprintln(s, "OK")
 		return
 	case userTypeShell:
-		if err := shell(s, version, gitSha, gitTag, gitBranch); err != nil {
+		if err := shell(s, version, gitSha, gitTag); err != nil {
 			fmt.Fprintf(s, "error: %v\n", err)
 			_ = s.Exit(1)
 		}
