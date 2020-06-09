@@ -16,18 +16,6 @@ install_retry: &install_retry
 
 version: 2
 jobs:
-  go.build:
-    <<: *defaults
-    steps:
-      - checkout
-      - *install_retry
-      - run: /tmp/retry -m 3 go mod download
-      - run: /tmp/retry -m 3 go mod vendor
-      - run: /tmp/retry -m 3 make install
-      - run: GO111MODULE=off /tmp/retry -m 3 go test -v ./...
-      - run: /tmp/retry -m 3 curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.12.2
-      - run: PATH=$PATH:$(pwd)/bin /tmp/retry -m 3 make lint
-
   docker.integration:
     <<: *defaults
     steps:
@@ -48,6 +36,4 @@ workflows:
   version: 2
   build_and_integration:
     jobs:
-      - go.build
       - docker.integration
-      # requires: docker.build?
