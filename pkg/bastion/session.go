@@ -201,7 +201,7 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 		quit <- "rreqs"
 	}(quit)
 
-	lchEof, rchEof, lchClosed, rchClosed := false, false, false, false
+	lchEOF, rchEOF, lchClosed, rchClosed := false, false, false, false
 	for {
 		select {
 		case err := <-errch:
@@ -209,10 +209,10 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 		case q := <-quit:
 			switch q {
 			case "lch":
-				lchEof = true
+				lchEOF = true
 				_ = rch.CloseWrite()
 			case "rch":
-				rchEof = true
+				rchEOF = true
 				_ = lch.CloseWrite()
 			case "lreqs":
 				lchClosed = true
@@ -220,15 +220,15 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 				rchClosed = true
 			}
 
-			if lchEof && lchClosed && !rchClosed {
+			if lchEOF && lchClosed && !rchClosed {
 				rch.Close()
 			}
 
-			if rchEof && rchClosed && !lchClosed {
+			if rchEOF && rchClosed && !lchClosed {
 				lch.Close()
 			}
 
-			if lchEof && rchEof && lchClosed && rchClosed {
+			if lchEOF && rchEOF && lchClosed && rchClosed {
 				return nil
 			}
 		}
