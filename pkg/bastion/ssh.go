@@ -160,8 +160,7 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 					ErrMsg:    fmt.Sprintf("%v", err),
 					StoppedAt: &now,
 				}
-				switch sessUpdate.ErrMsg {
-				case "lch closed the connection", "rch closed the connection":
+				if err == nil {
 					sessUpdate.ErrMsg = ""
 				}
 				actx.db.Model(&sess).Updates(&sessUpdate)

@@ -1,7 +1,6 @@
 package bastion // import "moul.io/sshportal/pkg/bastion"
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -124,6 +123,7 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 	}()
 
 	errch := make(chan error, 1)
+	quit := make(chan string, 1)
 	channeltype := newChan.ChannelType()
 
 	filename := strings.Join([]string{logsLocation, "/", user, "-", username, "-", channeltype, "-", fmt.Sprint(sessionID), "-", time.Now().Format(time.RFC3339)}, "") // get user
@@ -139,15 +139,15 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 	log.Printf("Session %v is recorded in %v", channeltype, filename)
 	if channeltype == "session" {
 		wrappedlch := logchannel.New(lch, f)
-		go func() {
+		go func(quit chan string) {
 			_, _ = io.Copy(wrappedlch, rch)
-			errch <- errors.New("lch closed the connection")
-		}()
+			quit <- "rch"
+		}(quit)
 
-		go func() {
+		go func(quit chan string) {
 			_, _ = io.Copy(rch, lch)
-			errch <- errors.New("rch closed the connection")
-		}()
+			quit <- "lch"
+		}(quit)
 	}
 	if channeltype == "direct-tcpip" {
 		d := logTunnelForwardData{}
@@ -156,23 +156,19 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 		}
 		wrappedlch := newLogTunnel(lch, f, d.SourceHost)
 		wrappedrch := newLogTunnel(rch, f, d.DestinationHost)
-		go func() {
+		go func(quit chan string) {
 			_, _ = io.Copy(wrappedlch, rch)
-			errch <- errors.New("lch closed the connection")
-		}()
+			quit <- "rch"
+		}(quit)
 
-		go func() {
+		go func(quit chan string) {
 			_, _ = io.Copy(wrappedrch, lch)
-			errch <- errors.New("rch closed the connection")
-		}()
+			quit <- "lch"
+		}(quit)
 	}
 
-	for {
-		select {
-		case req := <-lreqs: // forward ssh requests from local to remote
-			if req == nil {
-				return nil
-			}
+	go func(quit chan string) {
+		for req := range lreqs {
 			b, err := rch.SendRequest(req.Type, req.WantReply, req.Payload)
 			if req.Type == "exec" {
 				wrappedlch := logchannel.New(lch, f)
@@ -183,24 +179,58 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, logsLocati
 			}
 
 			if err != nil {
-				return err
+				errch <- err
 			}
 			if err2 := req.Reply(b, nil); err2 != nil {
-				return err2
+				errch <- err2
 			}
-		case req := <-rreqs: // forward ssh requests from remote to local
-			if req == nil {
-				return nil
-			}
+		}
+		quit <- "lreqs"
+	}(quit)
+
+	go func(quit chan string) {
+		for req := range rreqs {
 			b, err := lch.SendRequest(req.Type, req.WantReply, req.Payload)
 			if err != nil {
-				return err
+				errch <- err
 			}
 			if err2 := req.Reply(b, nil); err2 != nil {
-				return err2
+				errch <- err2
 			}
+		}
+		quit <- "rreqs"
+	}(quit)
+
+	lchEof, rchEof, lchClosed, rchClosed := false, false, false, false
+	for {
+		select {
 		case err := <-errch:
 			return err
+		case q := <-quit:
+			switch q {
+			case "lch":
+				lchEof = true
+				_ = rch.CloseWrite()
+			case "rch":
+				rchEof = true
+				_ = lch.CloseWrite()
+			case "lreqs":
+				lchClosed = true
+			case "rreqs":
+				rchClosed = true
+			}
+
+			if lchEof && lchClosed && !rchClosed {
+				rch.Close()
+			}
+
+			if rchEof && rchClosed && !lchClosed {
+				lch.Close()
+			}
+
+			if lchEof && rchEof && lchClosed && rchClosed {
+				return nil
+			}
 		}
 	}
 }
