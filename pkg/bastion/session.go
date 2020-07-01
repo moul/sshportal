@@ -19,7 +19,7 @@ type sessionConfig struct {
 	ClientConfig *gossh.ClientConfig
 }
 
-func multiChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []sessionConfig, sessionID uint) error {
+func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context, configs []sessionConfig, sessionID uint) error {
 	var lastClient *gossh.Client
 	switch newChan.ChannelType() {
 	case "session":
