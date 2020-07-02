@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/gliderlabs/ssh"
 	"github.com/kr/pty"
-	"github.com/moul/ssh"
 	"github.com/urfave/cli"
 )
 

@@ -14,24 +14,24 @@ import (
 )
 
 func TestCheckACLs(t *testing.T) {
-	Convey("Testing CheckACLs", t, func() {
+	Convey("Testing CheckACLs", t, func(c C) {
 		// create tmp dir
 		tempDir, err := ioutil.TempDir("", "sshportal")
-		So(err, ShouldBeNil)
+		c.So(err, ShouldBeNil)
 		defer func() {
-			So(os.RemoveAll(tempDir), ShouldBeNil)
+			c.So(os.RemoveAll(tempDir), ShouldBeNil)
 		}()
 
 		// create sqlite db
 		db, err := gorm.Open("sqlite3", filepath.Join(tempDir, "sshportal.db"))
-		So(err, ShouldBeNil)
+		c.So(err, ShouldBeNil)
 		db.LogMode(false)
-		So(DBInit(db), ShouldBeNil)
+		c.So(DBInit(db), ShouldBeNil)
 
 		// create dummy objects
 		var hostGroup dbmodels.HostGroup
 		err = dbmodels.HostGroupsByIdentifiers(db, []string{"default"}).First(&hostGroup).Error
-		So(err, ShouldBeNil)
+		c.So(err, ShouldBeNil)
 		db.Create(&dbmodels.Host{Groups: []*dbmodels.HostGroup{&hostGroup}})
 
 		//. load db
@@ -43,8 +43,7 @@ func TestCheckACLs(t *testing.T) {
 		db.Preload("Groups").Preload("Groups.ACLs").Find(&users)
 
 		// test
-		action, err := checkACLs(users[0], hosts[0])
-		So(err, ShouldBeNil)
-		So(action, ShouldEqual, dbmodels.ACLActionAllow)
+		action := checkACLs(users[0], hosts[0])
+		c.So(action, ShouldEqual, dbmodels.ACLActionAllow)
 	})
 }

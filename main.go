@@ -5,31 +5,27 @@ import (
 	"math/rand"
 	"os"
 	"path"
-	"time"
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/urfave/cli"
+	"moul.io/srand"
 )
 
 var (
-	// Version should be updated by hand at each release
-	Version = "1.9.0+dev"
 	// GitTag will be overwritten automatically by the build system
-	GitTag string
+	GitTag = "n/a"
 	// GitSha will be overwritten automatically by the build system
-	GitSha string
-	// GitBranch will be overwritten automatically by the build system
-	GitBranch string
+	GitSha = "n/a"
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(srand.Secure())
 
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
 	app.Author = "Manfred Touron"
-	app.Version = Version + " (" + GitSha + ")"
+	app.Version = GitTag + " (" + GitSha + ")"
 	app.Email = "https://moul.io/sshportal"
 	app.Commands = []cli.Command{
 		{

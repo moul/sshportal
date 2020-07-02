@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gliderlabs/ssh"
 	"github.com/jinzhu/gorm"
-	"github.com/moul/ssh"
 	gossh "golang.org/x/crypto/ssh"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
@@ -148,9 +148,8 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				_ = ch.Close()
 				return
 			}
-
 			go func() {
-				err = multiChannelHandler(srv, conn, newChan, ctx, sessionConfigs)
+				err = multiChannelHandler(conn, newChan, ctx, sessionConfigs, sess.ID)
 				if err != nil {
 					log.Printf("Error: %v", err)
 				}
@@ -161,8 +160,7 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 					ErrMsg:    fmt.Sprintf("%v", err),
 					StoppedAt: &now,
 				}
-				switch sessUpdate.ErrMsg {
-				case "lch closed the connection", "rch closed the connection":
+				if err == nil {
 					sessUpdate.ErrMsg = ""
 				}
 				actx.db.Model(&sess).Updates(&sessUpdate)
@@ -206,13 +204,11 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 	if err = actx.db.Preload("Groups").Preload("Groups.ACLs").Where("id = ?", host.ID).First(&tmpHost).Error; err != nil {
 		return nil, err
 	}
-	action, err2 := checkACLs(tmpUser, tmpHost)
-	if err2 != nil {
-		return nil, err2
-	}
 
+	action := checkACLs(tmpUser, tmpHost)
 	switch action {
 	case string(dbmodels.ACLActionAllow):
+		// do nothing
 	case string(dbmodels.ACLActionDeny):
 		return nil, fmt.Errorf("you don't have permission to that host")
 	default:
@@ -221,10 +217,10 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 	return clientConfig, nil
 }
 
-func ShellHandler(s ssh.Session, version, gitSha, gitTag, gitBranch string) {
+func ShellHandler(s ssh.Session, version, gitSha, gitTag string) {
 	actx := s.Context().Value(authContextKey).(*authContext)
 	if actx.userType() != userTypeHealthcheck {
-		log.Printf("New connection(shell): sshUser=%q remote=%q local=%q command=%q dbUser=id:%q,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), actx.user.ID, actx.user.Email)
+		log.Printf("New connection(shell): sshUser=%q remote=%q local=%q command=%q dbUser=id:%d,email:%s", s.User(), s.RemoteAddr(), s.LocalAddr(), s.Command(), actx.user.ID, actx.user.Email)
 	}
 
 	if actx.err != nil {
@@ -242,7 +238,7 @@ func ShellHandler(s ssh.Session, version, gitSha, gitTag, gitBranch string) {
 		fmt.Fprintln(s, "OK")
 		return
 	case userTypeShell:
-		if err := shell(s, version, gitSha, gitTag, gitBranch); err != nil {
+		if err := shell(s, version, gitSha, gitTag); err != nil {
 			fmt.Fprintf(s, "error: %v\n", err)
 			_ = s.Exit(1)
 		}

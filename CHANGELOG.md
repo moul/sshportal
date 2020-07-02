@@ -2,7 +2,21 @@
 
 ## master (unreleased)
 
-* Bump deps
+* No entry
+
+## v1.10.0 (2019-06-24)
+
+* Bump deps, now using github.com/gliderlabs/ssh upstream
+* Fix Windows build ([#101](https://github.com/moul/sshportal/pull/101)) by [@Raerten](https://github.com/Raerten)
+* Use environment variables for settings ([#98](https://github.com/moul/sshportal/pull/98)) by [@Raerten](https://github.com/Raerten)
+* Fix 'userkey create' ([#111](https://github.com/moul/sshportal/pull/111)) by [@shawn111](https://github.com/shawn111)
+* Set log files mode to 440 instead of 640 ([#134](https://github.com/moul/sshportal/pull/134)) by [@jle64](https://github.com/jle64)
+* Allow to create a host using an IP as name ([#135](https://github.com/moul/sshportal/pull/135)) by [@jle64](https://github.com/jle64)
+* Add username and session ID to session log filename ([#133](https://github.com/moul/sshportal/pull/133)) by [@jle64](https://github.com/jle64)
+* Unable to use encrypted SSH private keys ([#124](https://github.com/moul/sshportal/pull/124)) by [@welderpb](https://github.com/welderpb)
+* Fix format of ID in new session + closing channel if host is unreachable ([#123](https://github.com/moul/sshportal/pull/123)) by [@vdaviot](https://github.com/vdaviot)
+* Refactor the main package with a focus on splitting up into packages ([#113](https://github.com/moul/sshportal/pull/113)) by [@ahamidullah](https://github.com/ahamidullah)
+
 
 ## v1.9.0 (2018-11-18)
 

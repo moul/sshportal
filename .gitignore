@@ -1,3 +1,8 @@
+coverage.txt
+dist/
+*~
+*#
+.*#
 .DS_Store
 /log/
 /sshportal

@@ -1,11 +1,11 @@
 # sshportal
 
 [![CircleCI](https://circleci.com/gh/moul/sshportal.svg?style=svg)](https://circleci.com/gh/moul/sshportal)
-[![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)](https://hub.docker.com/r/moul/sshportal/)
-[![Go Report Card](https://goreportcard.com/moul.io/sshportal)](https://goreportcard.com/report/moul.io/sshportal)
+[![Go Report Card](https://goreportcard.com/badge/moul.io/sshportal)](https://goreportcard.com/report/moul.io/sshportal)
 [![GoDoc](https://godoc.org/moul.io/sshportal?status.svg)](https://godoc.org/moul.io/sshportal)
-[![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
+[![Financial Contributors on Open Collective](https://opencollective.com/sshportal/all/badge.svg?label=financial+contributors)](https://opencollective.com/sshportal) [![License](https://img.shields.io/github/license/moul/sshportal.svg)](https://github.com/moul/sshportal/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/moul/sshportal.svg)](https://github.com/moul/sshportal/releases)
+<!-- temporarily broken? [![Docker Build Status](https://img.shields.io/docker/build/moul/sshportal.svg)](https://hub.docker.com/r/moul/sshportal/) -->
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
@@ -57,6 +57,8 @@ Your key is now associated with the user "admin@sshportal".
 Shared connection to localhost closed.
 $
 ```
+
+If the association fails and you are promted for a password, verify that the host you're connecting from has a SSH key set up or generate one with ```ssh-keygen -t rsa```
 
 Drop an interactive administrator shell
 
@@ -158,7 +160,7 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 * Sensitive data encryption
 * Session management (see active connections, history, stats, stop)
 * Audit log (logging every user action)
-* Record TTY Session
+* Record TTY Session (with [ttyrec](https://en.wikipedia.org/wiki/Ttyrec) format, use `ttyplay` for replay)
 * Tunnels logging
 * Host Keys verifications shared across users
 * Healthcheck user (replying OK to any user)
@@ -178,6 +180,8 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 **(Known) limitations**
 
 * Does not work (yet?) with [`mosh`](https://mosh.org/)
+* It is not possible for a user to access a host with the same name as the user. This is easily circumvented by changing the user name, especially since the most common use cases does not expose it.
+* It is not possible access a host named `healthcheck` as this is a built in command.
 
 ---
 
@@ -190,7 +194,7 @@ An [automated build is setup on the Docker Hub](https://hub.docker.com/r/moul/ss
 ```console
 # Start a server in background
 #   mount `pwd` to persist the sqlite database file and the admin shell history file
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.10.0
 
 # check logs (mandatory on first run to get the administrator invite token)
 docker logs -f sshportal
@@ -199,7 +203,7 @@ docker logs -f sshportal
 The easier way to upgrade sshportal is to do the following:
 
 ```sh
-# we consider you were using an old version and you want to use the new version v1.9.0
+# we consider you were using an old version and you want to use the new version v1.10.0
 
 # stop and rename the last working container + backup the database
 docker stop sshportal
@@ -207,7 +211,7 @@ docker rename sshportal sshportal_old
 cp sshportal.db sshportal.db.bkp
 
 # run the new version
-docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.9.0
+docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.10.0
 # check the logs for migration or cross-version incompabitility errors
 docker logs -f sshportal
 ```
@@ -232,7 +236,7 @@ docker logs -f sshportal
 Get the latest version using GO.
 
 ```sh
-go get -u moul.io/sshportal
+GO111MODULE=on go get -u moul.io/sshportal
 ```
 
 ---
@@ -267,7 +271,7 @@ cp sshportal.db sshportal.db.bkp
 
 `sshportal` embeds a configuration CLI.
 
-By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server.
+By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server. The shell is also accessible through `ssh [username]@portal.example.org`.
 
 Each commands can be run directly by using this syntax: `ssh admin@portal.example.org <command> [args]`:
 
@@ -466,3 +470,37 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/chzyer/readline: Pure go implementation of GNU Readline-like behavior.
 
 ![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.png)
+
+## Contributors
+
+### Code Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="https://github.com/moul/sshportal/graphs/contributors"><img src="https://opencollective.com/sshportal/contributors.svg?width=890&button=false" /></a>
+
+### Financial Contributors
+
+Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/sshportal/contribute)]
+
+#### Individuals
+
+<a href="https://opencollective.com/sshportal"><img src="https://opencollective.com/sshportal/individuals.svg?width=890"></a>
+
+#### Organizations
+
+Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/sshportal/contribute)]
+
+<a href="https://opencollective.com/sshportal/organization/0/website"><img src="https://opencollective.com/sshportal/organization/0/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/1/website"><img src="https://opencollective.com/sshportal/organization/1/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/2/website"><img src="https://opencollective.com/sshportal/organization/2/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/3/website"><img src="https://opencollective.com/sshportal/organization/3/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/4/website"><img src="https://opencollective.com/sshportal/organization/4/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/5/website"><img src="https://opencollective.com/sshportal/organization/5/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/6/website"><img src="https://opencollective.com/sshportal/organization/6/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/7/website"><img src="https://opencollective.com/sshportal/organization/7/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/8/website"><img src="https://opencollective.com/sshportal/organization/8/avatar.svg"></a>
+<a href="https://opencollective.com/sshportal/organization/9/website"><img src="https://opencollective.com/sshportal/organization/9/avatar.svg"></a>
+
+### Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/moul/sshportal.svg)](https://starchart.cc/moul/sshportal)

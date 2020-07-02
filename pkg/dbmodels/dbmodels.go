@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/jinzhu/gorm"
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -53,7 +51,7 @@ type SSHKey struct {
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name     string       `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+	Name     string       `gorm:"size:32" valid:"required,length(1|32)"`
 	Addr     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	User     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	Password string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
@@ -165,18 +163,6 @@ const (
 	BastionSchemeSSH    BastionScheme = "ssh"
 	BastionSchemeTelnet BastionScheme = "telnet"
 )
-
-func init() {
-	unixUserRegexp := regexp.MustCompile("[a-z_][a-z0-9_-]*")
-
-	govalidator.CustomTypeTagMap.Set("unix_user", govalidator.CustomTypeValidator(func(i interface{}, context interface{}) bool {
-		name, ok := i.(string)
-		if !ok {
-			return false
-		}
-		return unixUserRegexp.MatchString(name)
-	}))
-}
 
 // Host helpers
 
