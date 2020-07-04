@@ -61,6 +61,7 @@ type Host struct {
 	HostKey  []byte       `sql:"size:10000" valid:"optional"`
 	Groups   []*HostGroup `gorm:"many2many:host_host_groups;"`
 	Comment  string       `valid:"optional"`
+	Logging  string       `valid:"optional,host_logging_mode"`
 	Hop      *Host
 	HopID    uint
 }

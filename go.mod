@@ -9,7 +9,7 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gliderlabs/ssh v0.3.0
-	github.com/go-sql-driver/mysql v1.5.0 // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/jinzhu/gorm v1.9.14
 	github.com/kr/pty v1.1.8
@@ -18,6 +18,7 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/olekukonko/tablewriter v0.0.4
+	github.com/pkg/errors v0.9.1
 	github.com/reiver/go-oi v1.0.0
 	github.com/reiver/go-telnet v0.0.0-20180421082511-9ff0b2ab096e
 	github.com/sabban/bastion v0.0.0-20180110125408-b9d3c9b1f4d3
