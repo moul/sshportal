@@ -5,6 +5,7 @@ DOCKER_IMAGE ?= moul/sshportal
 VERSION ?= `git describe --tags --always`
 VCS_REF ?= `git rev-parse --short HEAD`
 GO_INSTALL_OPTS = -ldflags="-X main.GitSha=$(VCS_REF) -X main.GitTag=$(VERSION)"
+PORT ?= 2222
 
 include rules.mk
 

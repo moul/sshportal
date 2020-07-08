@@ -40,7 +40,6 @@ func DBInit(db *gorm.DB) error {
 			ID: "2",
 			Migrate: func(tx *gorm.DB) error {
 				type SSHKey struct {
-					// FIXME: use uuid for ID
 					gorm.Model
 					Name        string
 					Type        string
@@ -60,7 +59,6 @@ func DBInit(db *gorm.DB) error {
 			ID: "3",
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
-					// FIXME: use uuid for ID
 					gorm.Model
 					Name        string `gorm:"size:32"`
 					Addr        string
@@ -96,7 +94,6 @@ func DBInit(db *gorm.DB) error {
 			ID: "5",
 			Migrate: func(tx *gorm.DB) error {
 				type User struct {
-					// FIXME: use uuid for ID
 					gorm.Model
 					IsAdmin     bool
 					Email       string
@@ -382,17 +379,16 @@ func DBInit(db *gorm.DB) error {
 			ID: "25",
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
-					// FIXME: use uuid for ID
 					gorm.Model
 					Name        string                `gorm:"size:32" valid:"required,length(1|32),unix_user"`
 					Addr        string                `valid:"required"`
 					User        string                `valid:"optional"`
 					Password    string                `valid:"optional"`
-					SSHKey      *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"` // SSHKey used to connect by the client
+					SSHKey      *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
 					SSHKeyID    uint                  `gorm:"index"`
 					HostKey     []byte                `sql:"size:10000" valid:"optional"`
 					Groups      []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
-					Fingerprint string                `valid:"optional"` // FIXME: replace with hostKey ?
+					Fingerprint string                `valid:"optional"`
 					Comment     string                `valid:"optional"`
 				}
 				return tx.AutoMigrate(&Host{}).Error
@@ -443,7 +439,6 @@ func DBInit(db *gorm.DB) error {
 			ID: "28",
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
-					// FIXME: use uuid for ID
 					gorm.Model
 					Name     string `gorm:"size:32"`
 					Addr     string
@@ -465,7 +460,6 @@ func DBInit(db *gorm.DB) error {
 			ID: "29",
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
-					// FIXME: use uuid for ID
 					gorm.Model
 					Name     string `gorm:"size:32"`
 					Addr     string
@@ -481,6 +475,38 @@ func DBInit(db *gorm.DB) error {
 					HopID    uint
 				}
 				return tx.AutoMigrate(&Host{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "30",
+			Migrate: func(tx *gorm.DB) error {
+				type Host struct {
+					gorm.Model
+					Name     string `gorm:"size:32"`
+					Addr     string
+					User     string
+					Password string
+					URL      string
+					SSHKey   *dbmodels.SSHKey      `gorm:"ForeignKey:SSHKeyID"`
+					SSHKeyID uint                  `gorm:"index"`
+					HostKey  []byte                `sql:"size:10000"`
+					Groups   []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
+					Comment  string
+					Hop      *dbmodels.Host
+					Logging  string
+					HopID    uint
+				}
+				return tx.AutoMigrate(&Host{}).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return fmt.Errorf("not implemented")
+			},
+		}, {
+			ID: "31",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.Model(&dbmodels.Host{}).Updates(&dbmodels.Host{Logging: "everything"}).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")

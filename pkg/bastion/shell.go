@@ -672,6 +672,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment, c"},
 						cli.StringFlag{Name: "key, k", Usage: "`KEY` to use for authentication"},
 						cli.StringFlag{Name: "hop, o", Usage: "Hop to use for connecting to the server"},
+						cli.StringFlag{Name: "logging, l", Usage: "Logging mode (disabled, input, everything)"},
 						cli.StringSliceFlag{Name: "group, g", Usage: "Assigns the host to `HOSTGROUPS` (default: \"default\")"},
 					},
 					Action: func(c *cli.Context) error {
@@ -713,6 +714,11 @@ GLOBAL OPTIONS:
 						}
 						if c.String("name") != "" {
 							host.Name = c.String("name")
+						}
+
+						host.Logging = "everything" // default is everything
+						if c.String("logging") != "" {
+							host.Logging = c.String("logging")
 						}
 						// FIXME: check if name already exists
 
@@ -819,7 +825,7 @@ GLOBAL OPTIONS:
 						}
 
 						table := tablewriter.NewWriter(s)
-						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment", "Hop"})
+						table.SetHeader([]string{"ID", "Name", "URL", "Key", "Groups", "Updated", "Created", "Comment", "Hop", "Logging"})
 						table.SetBorder(false)
 						table.SetCaption(true, fmt.Sprintf("Total: %d hosts.", len(hosts)))
 						for _, host := range hosts {
@@ -851,6 +857,7 @@ GLOBAL OPTIONS:
 								humanize.Time(host.CreatedAt),
 								host.Comment,
 								hop,
+								host.Logging,
 								//FIXME: add some stats about last access time etc
 							})
 						}
@@ -882,6 +889,7 @@ GLOBAL OPTIONS:
 						cli.StringFlag{Name: "comment, c", Usage: "Update/set a host comment"},
 						cli.StringFlag{Name: "key, k", Usage: "Link a `KEY` to use for authentication"},
 						cli.StringFlag{Name: "hop, o", Usage: "Change the hop to use for connecting to the server"},
+						cli.StringFlag{Name: "logging, l", Usage: "Logging mode (disabled, input, everything)"},
 						cli.BoolFlag{Name: "unset-hop", Usage: "Remove the hop set for this host"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the host to a new `HOSTGROUPS`"},
 						cli.StringSliceFlag{Name: "unassign-group", Usage: "Unassign the host from a `HOSTGROUPS`"},
@@ -939,6 +947,17 @@ GLOBAL OPTIONS:
 									return err
 								}
 								if err := model.Association("Hop").Replace(hop).Error; err != nil {
+									tx.Rollback()
+									return err
+								}
+							}
+
+							// logging
+							if logging := c.String("logging"); logging != "" {
+								if !dbmodels.IsValidHostLoggingMode(logging) {
+									return fmt.Errorf("invalid host logging mode: %q", logging)
+								}
+								if err := model.Update("logging", logging).Error; err != nil {
 									tx.Rollback()
 									return err
 								}

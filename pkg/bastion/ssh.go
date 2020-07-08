@@ -122,7 +122,8 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				sessionConfigs = append([]sessionConfig{{
 					Addr:         currentHost.DialAddr(),
 					ClientConfig: clientConfig,
-					Logs:         actx.logsLocation,
+					LogsLocation: actx.logsLocation,
+					LoggingMode:  currentHost.Logging,
 				}}, sessionConfigs...)
 				if currentHost.HopID != 0 {
 					var newHost dbmodels.Host
