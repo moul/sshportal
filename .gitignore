@@ -9,3 +9,4 @@ dist/
 *.db
 /data
 sshportal.history
+.idea
