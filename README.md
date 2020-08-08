@@ -9,6 +9,8 @@
 
 Jump host/Jump server without the jump, a.k.a Transparent SSH bastion
 
+<img src="https://raw.githubusercontent.com/moul/sshportal/master/.assets/bastion.jpg" width="50%">
+
 Features include: independence of users and hosts, convenient user invite system, connecting to servers that don't support SSH keys, various levels of access, and many more. Easy to install, run and configure.
 
 ![Flow Diagram](https://raw.githubusercontent.com/moul/sshportal/master/.assets/flow-diagram.png)
