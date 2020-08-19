@@ -38,7 +38,7 @@ type Setting struct {
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string  `valid:"required,length(1|32),unix_user"`
+	Name        string  `valid:"required,length(1|255),unix_user"`
 	Type        string  `valid:"required"`
 	Length      uint    `valid:"required"`
 	Fingerprint string  `valid:"optional"`
@@ -51,7 +51,7 @@ type SSHKey struct {
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name     string       `gorm:"size:32" valid:"required,length(1|32)"`
+	Name     string       `gorm:"size:255" valid:"required,length(1|255)"`
 	Addr     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	User     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	Password string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
@@ -78,7 +78,7 @@ type UserKey struct {
 
 type UserRole struct {
 	gorm.Model
-	Name  string  `valid:"required,length(1|32),unix_user"`
+	Name  string  `valid:"required,length(1|255),unix_user"`
 	Users []*User `gorm:"many2many:user_user_roles"`
 }
 
@@ -87,7 +87,7 @@ type User struct {
 	gorm.Model
 	Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
 	Email       string       `valid:"required,email"`
-	Name        string       `valid:"required,length(1|32),unix_user"`
+	Name        string       `valid:"required,length(1|255),unix_user"`
 	Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
 	Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
 	Comment     string       `valid:"optional"`
@@ -96,7 +96,7 @@ type User struct {
 
 type UserGroup struct {
 	gorm.Model
-	Name    string  `valid:"required,length(1|32),unix_user"`
+	Name    string  `valid:"required,length(1|255),unix_user"`
 	Users   []*User `gorm:"many2many:user_user_groups;"`
 	ACLs    []*ACL  `gorm:"many2many:user_group_acls;"`
 	Comment string  `valid:"optional"`
@@ -104,7 +104,7 @@ type UserGroup struct {
 
 type HostGroup struct {
 	gorm.Model
-	Name    string  `valid:"required,length(1|32),unix_user"`
+	Name    string  `valid:"required,length(1|255),unix_user"`
 	Hosts   []*Host `gorm:"many2many:host_host_groups;"`
 	ACLs    []*ACL  `gorm:"many2many:host_group_acls;"`
 	Comment string  `valid:"optional"`
