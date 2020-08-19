@@ -30,8 +30,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          #- 1.13
-          - 1.14
+          - 1.15.0
     steps:
       - uses: actions/checkout@v2
       - name: Install Go
@@ -47,7 +46,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          - 1.14
+          - 1.15.0
     steps:
       - uses: actions/checkout@v2
       - name: Install Go
@@ -72,6 +71,7 @@ jobs:
           - 1.12
           - 1.13
           - 1.14
+          - 1.15.0
     steps:
       - uses: actions/checkout@v2
       - name: Install Go
