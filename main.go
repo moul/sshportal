@@ -83,6 +83,11 @@ func main() {
 					Value: 0,
 					Usage: "Duration before an inactive connection is timed out (0 to disable)",
 				},
+				cli.StringFlag{
+					Name:   "acl-check-cmd",
+					EnvVar: "SSHPORTAL_ACL_CHECK_CMD",
+					Usage:  "Execute external command to check ACL",
+				},
 			},
 		}, {
 			Name:   "healthcheck",
