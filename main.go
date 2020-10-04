@@ -22,7 +22,7 @@ var (
 )
 
 func main() {
-	rand.Seed(srand.Secure())
+	rand.Seed(srand.MustSecure())
 
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
