@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: /go/src/moul.io/sshportal
   docker:
-    - image: circleci/golang:1.15.2
+    - image: circleci/golang:1.15.4
   environment:
     GO111MODULE: "on"
 
