@@ -126,5 +126,5 @@ gopkg.in/gormigrate.v1 v1.6.0 h1:XpYM6RHQPmzwY7Uyu+t+xxMXc86JYFJn4nEc9HzQjsI=
 gopkg.in/gormigrate.v1 v1.6.0/go.mod h1:Lf00lQrHqfSYWiTtPcyQabsDdM6ejZaMgV0OU6JMSlw=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
-moul.io/srand v1.6.0 h1:BnGM96WdZDjKIUJwv4q1rzz+dQvsSxeATTZsfueV1nQ=
-moul.io/srand v1.6.0/go.mod h1:P2uaZB+GFstFNo8sEj6/U8FRV1n25kD0LLckFpJ+qvc=
+moul.io/srand v1.6.1 h1:SJ335F+54ivLdlH7wH52Rtyv0Ffos6DpsF5wu3ZVMXU=
+moul.io/srand v1.6.1/go.mod h1:P2uaZB+GFstFNo8sEj6/U8FRV1n25kD0LLckFpJ+qvc=
