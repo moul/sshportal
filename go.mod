@@ -8,7 +8,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/docker v1.13.1
 	github.com/dustin/go-humanize v1.0.0
-	github.com/gliderlabs/ssh v0.3.1
+	github.com/gliderlabs/ssh v0.3.2
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/jinzhu/gorm v1.9.16
