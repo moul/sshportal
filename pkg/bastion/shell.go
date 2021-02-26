@@ -2132,7 +2132,16 @@ GLOBAL OPTIONS:
 						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
-
+						if err := dbmodels.UserKeysByIdentifiers(db, c.Args()).Find(&dbmodels.UserKey{}).Error; err != nil {
+							var user dbmodels.User
+							if err := dbmodels.UsersByIdentifiers(db, c.Args()).First(&user).Error; err != nil {
+								return err
+							}
+							if err := dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Find(&dbmodels.UserKey{}).Error; err != nil {
+								return err
+							}
+							return dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Delete(&dbmodels.UserKey{}).Error
+						}
 						return dbmodels.UserKeysByIdentifiers(db, c.Args()).Delete(&dbmodels.UserKey{}).Error
 					},
 				},

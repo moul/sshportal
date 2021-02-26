@@ -371,6 +371,9 @@ func UserKeysPreload(db *gorm.DB) *gorm.DB {
 func UserKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return db.Where("id IN (?)", identifiers)
 }
+func UserKeysByUserID(db *gorm.DB, identifiers []string) *gorm.DB {
+	return db.Where("user_id IN (?)", identifiers)
+}
 
 // UserRole helpers
 
