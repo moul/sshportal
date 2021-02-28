@@ -1276,8 +1276,8 @@ GLOBAL OPTIONS:
 					Description: "$> key create\n   $> key create --name=mykey",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
-						cli.StringFlag{Name: "type", Value: "rsa"},
-						cli.UintFlag{Name: "length", Value: 2048},
+						cli.StringFlag{Name: "type", Value: "ed25519"},
+						cli.UintFlag{Name: "length", Value: 0},
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
@@ -1290,7 +1290,24 @@ GLOBAL OPTIONS:
 							name = c.String("name")
 						}
 
-						key, err := crypto.NewSSHKey(c.String("type"), c.Uint("length"))
+						length := c.Uint("length")
+						if length == 0 {
+							switch c.String("type") {
+							case "rsa":
+								// same default as ssh-keygen
+								length = 3072
+							case "ecdsa":
+								// same default as ssh-keygen
+								length = 256
+							case "ed25519":
+								// irrelevant for ed25519
+								// set it to 1 to enforce consistency
+								// and because 0 is invalid
+								length = 1
+							}
+						}
+
+						key, err := crypto.NewSSHKey(c.String("type"), length)
 						if actx.aesKey != "" {
 							if err2 := crypto.SSHKeyEncrypt(actx.aesKey, key); err2 != nil {
 								return err2
