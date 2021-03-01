@@ -828,12 +828,14 @@ GLOBAL OPTIONS:
 						}
 
 						var hosts []*dbmodels.Host
-						db = db.Preload("Groups")
 						if myself.HasRole("admin") {
-							db = db.Preload("SSHKey")
-						}
-						if err := dbmodels.HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
-							return err
+							if err := dbmodels.HostsByIdentifiers(db.Preload("Groups").Preload("SSHKey"), c.Args()).Find(&hosts).Error; err != nil {
+								return err
+							}
+						} else {
+							if err := dbmodels.HostsByIdentifiers(db.Preload("Groups"), c.Args()).Find(&hosts).Error; err != nil {
+								return err
+							}
 						}
 
 						if c.Bool("decrypt") {
