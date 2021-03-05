@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"regexp"
@@ -2017,34 +2018,58 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						fmt.Fprintf(s, "Enter key:\n")
-						reader := bufio.NewReader(s)
-						text, _ := reader.ReadString('\n')
-
-						key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(text))
-						if err != nil {
-							return err
+						var reader *bufio.Reader
+						var term *terminal.Terminal
+						if len(sshCommand) == 0 { // interactive mode
+							term = terminal.NewTerminal(s, "Paste your key(s) and end with a blank line> ")
+						} else {
+							fmt.Fprintf(s, "Enter key(s):\n")
+							reader = bufio.NewReader(s)
 						}
 
-						userkey := dbmodels.UserKey{
-							User:          &user,
-							Key:           key.Marshal(),
-							Comment:       comment,
-							AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
-						}
-						if c.String("comment") != "" {
-							userkey.Comment = c.String("comment")
-						}
+						for {
+							var text string
+							var errReadline error
+							if len(sshCommand) == 0 { // interactive mode
+								text, errReadline = term.ReadLine()
+							} else {
+								text, errReadline = reader.ReadString('\n')
+							}
+							if errReadline != nil && errReadline != io.EOF {
+								return errReadline
+							}
+							if text != "" && text != "\n" {
+								key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(text))
+								if err != nil {
+									return err
+								}
 
-						if _, err := govalidator.ValidateStruct(userkey); err != nil {
-							return err
-						}
+								userkey := dbmodels.UserKey{
+									User:          &user,
+									Key:           key.Marshal(),
+									Comment:       comment,
+									AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
+								}
+								if c.String("comment") != "" {
+									userkey.Comment = c.String("comment")
+								}
 
-						// save the userkey in database
-						if err := db.Create(&userkey).Error; err != nil {
-							return err
+								if _, err := govalidator.ValidateStruct(userkey); err != nil {
+									return err
+								}
+
+								// save the userkey in database
+								if err := db.Create(&userkey).Error; err != nil {
+									return err
+								}
+								fmt.Fprintf(s, "%d\n", userkey.ID)
+								if errReadline == io.EOF {
+									return nil
+								}
+							} else {
+								break
+							}
 						}
-						fmt.Fprintf(s, "%d\n", userkey.ID)
 						return nil
 					},
 				}, {
