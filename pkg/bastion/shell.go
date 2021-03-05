@@ -1736,6 +1736,8 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Renames the user"},
 						cli.StringFlag{Name: "email, e", Usage: "Updates the email"},
+						cli.StringFlag{Name: "invite_token, i", Usage: "Updates the invite token"},
+						cli.BoolFlag{Name: "remove_invite, R", Usage: "Remove invite token"},
 						cli.StringSliceFlag{Name: "assign-role, r", Usage: "Assign the user to new `USERROLES`"},
 						cli.StringSliceFlag{Name: "unassign-role", Usage: "Unassign the user from `USERROLES`"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to new `USERGROUPS`"},
@@ -1768,12 +1770,19 @@ GLOBAL OPTIONS:
 						for _, user := range users {
 							model := tx.Model(user)
 							// simple fields
-							for _, fieldname := range []string{"name", "email", "comment"} {
+							for _, fieldname := range []string{"name", "email", "comment", "invite_token"} {
 								if c.String(fieldname) != "" {
 									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
 										tx.Rollback()
 										return err
 									}
+								}
+							}
+							// invite remove
+							if c.Bool("remove_invite") {
+								if err := model.Update("invite_token", "").Error; err != nil {
+									tx.Rollback()
+									return err
 								}
 							}
 
