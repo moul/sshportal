@@ -1716,7 +1716,7 @@ GLOBAL OPTIONS:
 					},
 				}, {
 					Name:      "rm",
-					Usage:     "Removes one or more users",
+					Usage:     "Removes one or more users and the user ssh keys",
 					ArgsUsage: "USER...",
 					Action: func(c *cli.Context) error {
 						if c.NArg() < 1 {
@@ -1727,6 +1727,12 @@ GLOBAL OPTIONS:
 							return err
 						}
 
+						var users []dbmodels.User
+						if err := dbmodels.UsersPreload(dbmodels.UsersByIdentifiers(db, c.Args())).Find(&users).Error; err == nil {
+							for _, user := range users {
+								dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Delete(&dbmodels.UserKey{})
+							}
+						}
 						return dbmodels.UsersByIdentifiers(db, c.Args()).Delete(&dbmodels.User{}).Error
 					},
 				}, {
