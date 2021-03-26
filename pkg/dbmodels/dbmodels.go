@@ -167,6 +167,25 @@ const (
 	BastionSchemeTelnet BastionScheme = "telnet"
 )
 
+// Generic Helper
+func GenericNameOrID(db *gorm.DB, identifiers []string) *gorm.DB {
+	var ids []string
+	var names []string
+	for _, s := range identifiers {
+		if _, err := strconv.Atoi(s); err == nil {
+			ids = append(ids, s)
+		} else {
+			names = append(names, s)
+		}
+	}
+	if len(ids) > 0 && len(names) > 0 {
+		return db.Where("id IN (?)", ids).Or("name IN (?)", names)
+	} else if len(ids) > 0 {
+		return db.Where("id IN (?)", ids)
+	}
+	return db.Where("name IN (?)", names)
+}
+
 // Host helpers
 
 func (host *Host) DialAddr() string {
@@ -268,7 +287,7 @@ func HostsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Groups").Preload("SSHKey")
 }
 func HostsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
+	return GenericNameOrID(db, identifiers)
 }
 func HostByName(db *gorm.DB, name string) (*Host, error) {
 	var host Host
@@ -308,7 +327,7 @@ func SSHKeysPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Hosts")
 }
 func SSHKeysByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
+	return GenericNameOrID(db, identifiers)
 }
 
 // HostGroup helpers
@@ -317,7 +336,7 @@ func HostGroupsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("ACLs").Preload("Hosts")
 }
 func HostGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
+	return GenericNameOrID(db, identifiers)
 }
 
 // UserGroup helpers
@@ -326,7 +345,7 @@ func UserGroupsPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("ACLs").Preload("Users")
 }
 func UserGroupsByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
+	return GenericNameOrID(db, identifiers)
 }
 
 // User helpers
@@ -335,7 +354,21 @@ func UsersPreload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Groups").Preload("Keys").Preload("Roles")
 }
 func UsersByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("email IN (?)", identifiers).Or("name IN (?)", identifiers)
+	var ids []string
+	var names []string
+	for _, s := range identifiers {
+		if _, err := strconv.Atoi(s); err == nil {
+			ids = append(ids, s)
+		} else {
+			names = append(names, s)
+		}
+	}
+	if len(ids) > 0 && len(names) > 0 {
+		db.Where("id IN (?)", identifiers).Or("email IN (?)", identifiers).Or("name IN (?)", identifiers)
+	} else if len(ids) > 0 {
+		return db.Where("id IN (?)", ids)
+	}
+	return db.Where("email IN (?)", identifiers).Or("name IN (?)", identifiers)
 }
 func (u *User) HasRole(name string) bool {
 	for _, role := range u.Roles {
@@ -381,7 +414,7 @@ func UserKeysByUserID(db *gorm.DB, identifiers []string) *gorm.DB {
 //	return db.Preload("Users")
 //}
 func UserRolesByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
-	return db.Where("id IN (?)", identifiers).Or("name IN (?)", identifiers)
+	return GenericNameOrID(db, identifiers)
 }
 
 // Session helpers
