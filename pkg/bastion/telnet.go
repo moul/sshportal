@@ -79,7 +79,7 @@ func scannerSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err e
 func telnetHandler(host *dbmodels.Host) ssh.Handler {
 	return func(s ssh.Session) {
 		// FIXME: log session in db
-		//actx := s.Context().Value(authContextKey).(*authContext)
+		// actx := s.Context().Value(authContextKey).(*authContext)
 		caller := bastionTelnetCaller{ssh: s}
 		if err := telnet.DialToAndCall(host.DialAddr(), caller); err != nil {
 			fmt.Fprintf(s, "error: %v", err)
