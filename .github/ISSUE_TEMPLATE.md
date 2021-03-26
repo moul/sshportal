@@ -1,25 +1,15 @@
-<!-- Thanks for filling an issue!
+### Actual Result / Problem
 
-If this is a BUG REPORT, please:
-  - Fill in as much of the template below as you can
+When I do Foo, Bar happens...
 
-If this is a FEATURE REQUEST, please:
-  - Describe *in detail* the feature/behavior/change you would like to see
--->
+### Expected Result / Suggestion
 
-**What happened**:
+I expect that Foobar happens...
 
-**What you expected to happen**:
+### Some context
 
-**How to reproduce it (as minimally and precisely as possible)**:
-
-**Anything else we need to know?**:
-
-<!--
-**Environment**:
-- sshportal --version
-- ssh sshportal info
-- OS (e.g. from /etc/os-release): 
-- install method (e.g. go/docker/brew/...):
-- others:
--->
+Any screenshot to share?
+`sshportal --version`?
+`ssh sshportal info`?
+OS/Go version?
+...

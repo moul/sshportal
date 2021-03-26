@@ -410,9 +410,6 @@ func UserKeysByUserID(db *gorm.DB, identifiers []string) *gorm.DB {
 
 // UserRole helpers
 
-//func UserRolesPreload(db *gorm.DB) *gorm.DB {
-//	return db.Preload("Users")
-//}
 func UserRolesByIdentifiers(db *gorm.DB, identifiers []string) *gorm.DB {
 	return GenericNameOrID(db, identifiers)
 }
@@ -461,7 +458,6 @@ func (e *Event) Log(db *gorm.DB) {
 }
 
 func (e *Event) SetAuthor(user *User) *Event {
-	//e.Author = user
 	e.AuthorID = user.ID
 	return e
 }

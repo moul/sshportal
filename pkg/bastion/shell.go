@@ -511,7 +511,6 @@ GLOBAL OPTIONS:
 							"host_groups",
 							"host_host_groups",
 							"hosts",
-							//"migrations",
 							"sessions",
 							"settings",
 							"ssh_keys",
@@ -522,6 +521,7 @@ GLOBAL OPTIONS:
 							"user_user_groups",
 							"user_user_roles",
 							"users",
+							// "migrations",
 						}
 						for _, tableName := range tableNames {
 							/* #nosec */
@@ -1459,7 +1459,6 @@ GLOBAL OPTIONS:
 								key.Name,
 								key.Type,
 								fmt.Sprintf("%d", key.Length),
-								//key.Fingerprint,
 								fmt.Sprintf("%d", len(key.Hosts)),
 								humanize.Time(key.UpdatedAt),
 								humanize.Time(key.CreatedAt),
@@ -2338,7 +2337,7 @@ GLOBAL OPTIONS:
 					if cliErr.ExitCode() != 0 {
 						fmt.Fprintf(s, "error: %v\n", err)
 					}
-					//s.Exit(cliErr.ExitCode())
+					// s.Exit(cliErr.ExitCode())
 				} else {
 					fmt.Fprintf(s, "error: %v\n", err)
 				}
