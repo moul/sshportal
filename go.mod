@@ -24,10 +24,10 @@ require (
 	github.com/sabban/bastion v0.0.0-20180110125408-b9d3c9b1f4d3
 	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/stretchr/testify v1.4.0 // indirect
+	github.com/tailscale/depaware v0.0.0-20201214215404-77d1e9757027
 	github.com/urfave/cli v1.22.5
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
-	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
+	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.6.1
 )
