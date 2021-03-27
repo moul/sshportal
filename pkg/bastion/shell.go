@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"moul.io/sshportal/pkg/utils"
 	"net/url"
 	"os"
 	"regexp"
@@ -1626,6 +1627,10 @@ GLOBAL OPTIONS:
 						// FIXME: validate email
 
 						email := c.Args().First()
+						valid := utils.ValidateEmail(email)
+						if !valid {
+							return fmt.Errorf("email is not valid :%w", errors.New("invalid email"))
+						}
 						name := strings.Split(email, "@")[0]
 						if c.String("name") != "" {
 							name = c.String("name")
