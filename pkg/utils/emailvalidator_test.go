@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"moul.io/sshportal/pkg/utils"
+
 	"testing"
 )
 
