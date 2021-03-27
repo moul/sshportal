@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"moul.io/sshportal/pkg/utils"
 	"net/url"
 	"os"
 	"regexp"
 	"runtime"
 	"strings"
 	"time"
+
+	"moul.io/sshportal/pkg/utils"
 
 	shlex "github.com/anmitsu/go-shlex"
 	"github.com/asaskevich/govalidator"
@@ -24,6 +25,7 @@ import (
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
+
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
 )
