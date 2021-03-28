@@ -25,6 +25,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
+	"moul.io/sshportal/pkg/utils"
 )
 
 var banner = `
@@ -1623,9 +1624,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						// FIXME: validate email
-
 						email := c.Args().First()
+						valid := utils.ValidateEmail(email)
+						if !valid {
+							return errors.New("invalid email")
+						}
 						name := strings.Split(email, "@")[0]
 						if c.String("name") != "" {
 							name = c.String("name")
