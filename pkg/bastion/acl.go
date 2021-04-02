@@ -13,8 +13,8 @@ import (
 	"moul.io/sshportal/pkg/dbmodels"
 )
 
-// AclHookTimeout is timeout for external ACL hook execution
-const AclHookTimeout = 2 * time.Second
+// ACLHookTimeout is timeout for external ACL hook execution
+const ACLHookTimeout = 2 * time.Second
 
 type byWeight []*dbmodels.ACL
 
@@ -78,7 +78,7 @@ func checkACLsHook(aclCheckCmd string, action string, user dbmodels.User, host d
 		return action, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), AclHookTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), ACLHookTimeout)
 	defer cancel()
 
 	jsonUser, err := json.Marshal(user)
