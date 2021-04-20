@@ -366,7 +366,7 @@ user update [-h] [--name=<value>] [--email=<value>] [--set-admin] [--unset-admin
 
 # usergroup management
 usergroup help
-hostgroup create [-h] [--name=<value>] [--comment=<value>]
+usergroup create [-h] [--name=<value>] [--comment=<value>]
 usergroup inspect [-h] USERGROUP...
 usergroup ls [-h] [--latest] [--quiet]
 usergroup rm [-h] USERGROUP...

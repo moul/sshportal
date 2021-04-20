@@ -60,7 +60,7 @@ func testServer(c *cli.Context) error {
 			_, _ = io.Copy(s, f) // #nosec
 			cmdErr = cmd.Wait()
 		} else {
-			//cmd.Stdin = s
+			// cmd.Stdin = s
 			cmd.Stdout = s
 			cmd.Stderr = s
 			cmdErr = cmd.Run()
