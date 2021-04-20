@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -25,33 +28,106 @@ func NewSSHKey(keyType string, length uint) (*dbmodels.SSHKey, error) {
 	}
 
 	// generate the private key
-	if keyType != "rsa" {
-		return nil, fmt.Errorf("key type not supported: %q", key.Type)
+	var err error
+	var pemKey *pem.Block
+	var publicKey gossh.PublicKey
+	switch keyType {
+	case "rsa":
+		pemKey, publicKey, err = NewRSAKey(length)
+	case "ecdsa":
+		pemKey, publicKey, err = NewECDSAKey(length)
+	case "ed25519":
+		pemKey, publicKey, err = NewEd25519Key()
+	default:
+		return nil, fmt.Errorf("key type not supported: %q, supported types are: rsa, ecdsa, ed25519", key.Type)
 	}
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, err
 	}
 
-	// convert priv key to x509 format
-	var pemKey = &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
-	}
 	buf := bytes.NewBufferString("")
 	if err = pem.Encode(buf, pemKey); err != nil {
 		return nil, err
 	}
 	key.PrivKey = buf.String()
 
-	// generte authorized-key formatted pubkey output
-	pub, err := gossh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-	key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(pub)))
+	// generate authorized-key formatted pubkey output
+	key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(publicKey)))
 
 	return &key, nil
+}
+
+func NewRSAKey(length uint) (*pem.Block, gossh.PublicKey, error) {
+	if length < 1024 || length > 16384 {
+		return nil, nil, fmt.Errorf("key length not supported: %d, supported values are between 1024 and 16384", length)
+	}
+	privateKey, err := rsa.GenerateKey(rand.Reader, int(length))
+	if err != nil {
+		return nil, nil, err
+	}
+	// convert priv key to x509 format
+	pemKey := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	}
+	publicKey, err := gossh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return pemKey, publicKey, err
+}
+
+func NewECDSAKey(length uint) (*pem.Block, gossh.PublicKey, error) {
+	var curve elliptic.Curve
+	switch length {
+	case 256:
+		curve = elliptic.P256()
+	case 384:
+		curve = elliptic.P384()
+	case 521:
+		curve = elliptic.P521()
+	default:
+		return nil, nil, fmt.Errorf("key length not supported: %d, supported values are 256, 384, 521", length)
+	}
+	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	// convert priv key to x509 format
+	marshaledKey, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	pemKey := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: marshaledKey,
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	publicKey, err := gossh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return pemKey, publicKey, err
+}
+
+func NewEd25519Key() (*pem.Block, gossh.PublicKey, error) {
+	publicKeyEd25519, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	// convert priv key to x509 format
+	marshaledKey, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	pemKey := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: marshaledKey,
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	publicKey, err := gossh.NewPublicKey(publicKeyEd25519)
+	if err != nil {
+		return nil, nil, err
+	}
+	return pemKey, publicKey, err
 }
 
 func ImportSSHKey(keyValue string) (*dbmodels.SSHKey, error) {

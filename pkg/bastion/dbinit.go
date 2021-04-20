@@ -537,7 +537,7 @@ func DBInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		key, err := crypto.NewSSHKey("rsa", 2048)
+		key, err := crypto.NewSSHKey("ed25519", 1)
 		if err != nil {
 			return err
 		}
@@ -644,7 +644,7 @@ func DBInit(db *gorm.DB) error {
 		return err
 	}
 	if count == 0 {
-		key, err := crypto.NewSSHKey("rsa", 2048)
+		key, err := crypto.NewSSHKey("ed25519", 1)
 		if err != nil {
 			return err
 		}

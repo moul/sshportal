@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"regexp"
@@ -24,6 +25,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
+	"moul.io/sshportal/pkg/utils"
 )
 
 var banner = `
@@ -510,7 +512,6 @@ GLOBAL OPTIONS:
 							"host_groups",
 							"host_host_groups",
 							"hosts",
-							//"migrations",
 							"sessions",
 							"settings",
 							"ssh_keys",
@@ -521,6 +522,7 @@ GLOBAL OPTIONS:
 							"user_user_groups",
 							"user_user_roles",
 							"users",
+							// "migrations",
 						}
 						for _, tableName := range tableNames {
 							/* #nosec */
@@ -828,12 +830,14 @@ GLOBAL OPTIONS:
 						}
 
 						var hosts []*dbmodels.Host
-						db = db.Preload("Groups")
 						if myself.HasRole("admin") {
-							db = db.Preload("SSHKey")
-						}
-						if err := dbmodels.HostsByIdentifiers(db, c.Args()).Find(&hosts).Error; err != nil {
-							return err
+							if err := dbmodels.HostsByIdentifiers(db.Preload("Groups").Preload("SSHKey"), c.Args()).Find(&hosts).Error; err != nil {
+								return err
+							}
+						} else {
+							if err := dbmodels.HostsByIdentifiers(db.Preload("Groups"), c.Args()).Find(&hosts).Error; err != nil {
+								return err
+							}
 						}
 
 						if c.Bool("decrypt") {
@@ -1276,8 +1280,8 @@ GLOBAL OPTIONS:
 					Description: "$> key create\n   $> key create --name=mykey",
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name", Usage: "Assigns a name to the key"},
-						cli.StringFlag{Name: "type", Value: "rsa"},
-						cli.UintFlag{Name: "length", Value: 2048},
+						cli.StringFlag{Name: "type", Value: "ed25519"},
+						cli.UintFlag{Name: "length", Value: 0},
 						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
 					},
 					Action: func(c *cli.Context) error {
@@ -1290,7 +1294,24 @@ GLOBAL OPTIONS:
 							name = c.String("name")
 						}
 
-						key, err := crypto.NewSSHKey(c.String("type"), c.Uint("length"))
+						length := c.Uint("length")
+						if length == 0 {
+							switch c.String("type") {
+							case "rsa":
+								// same default as ssh-keygen
+								length = 3072
+							case "ecdsa":
+								// same default as ssh-keygen
+								length = 256
+							case "ed25519":
+								// irrelevant for ed25519
+								// set it to 1 to enforce consistency
+								// and because 0 is invalid
+								length = 1
+							}
+						}
+
+						key, err := crypto.NewSSHKey(c.String("type"), length)
 						if actx.aesKey != "" {
 							if err2 := crypto.SSHKeyEncrypt(actx.aesKey, key); err2 != nil {
 								return err2
@@ -1439,7 +1460,6 @@ GLOBAL OPTIONS:
 								key.Name,
 								key.Type,
 								fmt.Sprintf("%d", key.Length),
-								//key.Fingerprint,
 								fmt.Sprintf("%d", len(key.Hosts)),
 								humanize.Time(key.UpdatedAt),
 								humanize.Time(key.CreatedAt),
@@ -1604,9 +1624,11 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						// FIXME: validate email
-
 						email := c.Args().First()
+						valid := utils.ValidateEmail(email)
+						if !valid {
+							return errors.New("invalid email")
+						}
 						name := strings.Split(email, "@")[0]
 						if c.String("name") != "" {
 							name = c.String("name")
@@ -1719,6 +1741,8 @@ GLOBAL OPTIONS:
 					Flags: []cli.Flag{
 						cli.StringFlag{Name: "name, n", Usage: "Renames the user"},
 						cli.StringFlag{Name: "email, e", Usage: "Updates the email"},
+						cli.StringFlag{Name: "invite_token, i", Usage: "Updates the invite token"},
+						cli.BoolFlag{Name: "remove_invite, R", Usage: "Remove invite token"},
 						cli.StringSliceFlag{Name: "assign-role, r", Usage: "Assign the user to new `USERROLES`"},
 						cli.StringSliceFlag{Name: "unassign-role", Usage: "Unassign the user from `USERROLES`"},
 						cli.StringSliceFlag{Name: "assign-group, g", Usage: "Assign the user to new `USERGROUPS`"},
@@ -1751,12 +1775,19 @@ GLOBAL OPTIONS:
 						for _, user := range users {
 							model := tx.Model(user)
 							// simple fields
-							for _, fieldname := range []string{"name", "email", "comment"} {
+							for _, fieldname := range []string{"name", "email", "comment", "invite_token"} {
 								if c.String(fieldname) != "" {
 									if err := model.Update(fieldname, c.String(fieldname)).Error; err != nil {
 										tx.Rollback()
 										return err
 									}
+								}
+							}
+							// invite remove
+							if c.Bool("remove_invite") {
+								if err := model.Update("invite_token", "").Error; err != nil {
+									tx.Rollback()
+									return err
 								}
 							}
 
@@ -2000,34 +2031,58 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						fmt.Fprintf(s, "Enter key:\n")
-						reader := bufio.NewReader(s)
-						text, _ := reader.ReadString('\n')
-
-						key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(text))
-						if err != nil {
-							return err
+						var reader *bufio.Reader
+						var term *terminal.Terminal
+						if len(sshCommand) == 0 { // interactive mode
+							term = terminal.NewTerminal(s, "Paste your key(s) and end with a blank line> ")
+						} else {
+							fmt.Fprintf(s, "Enter key(s):\n")
+							reader = bufio.NewReader(s)
 						}
 
-						userkey := dbmodels.UserKey{
-							User:          &user,
-							Key:           key.Marshal(),
-							Comment:       comment,
-							AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
-						}
-						if c.String("comment") != "" {
-							userkey.Comment = c.String("comment")
-						}
+						for {
+							var text string
+							var errReadline error
+							if len(sshCommand) == 0 { // interactive mode
+								text, errReadline = term.ReadLine()
+							} else {
+								text, errReadline = reader.ReadString('\n')
+							}
+							if errReadline != nil && errReadline != io.EOF {
+								return errReadline
+							}
+							if text != "" && text != "\n" {
+								key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(text))
+								if err != nil {
+									return err
+								}
 
-						if _, err := govalidator.ValidateStruct(userkey); err != nil {
-							return err
-						}
+								userkey := dbmodels.UserKey{
+									User:          &user,
+									Key:           key.Marshal(),
+									Comment:       comment,
+									AuthorizedKey: string(gossh.MarshalAuthorizedKey(key)),
+								}
+								if c.String("comment") != "" {
+									userkey.Comment = c.String("comment")
+								}
 
-						// save the userkey in database
-						if err := db.Create(&userkey).Error; err != nil {
-							return err
+								if _, err := govalidator.ValidateStruct(userkey); err != nil {
+									return err
+								}
+
+								// save the userkey in database
+								if err := db.Create(&userkey).Error; err != nil {
+									return err
+								}
+								fmt.Fprintf(s, "%d\n", userkey.ID)
+								if errReadline == io.EOF {
+									return nil
+								}
+							} else {
+								break
+							}
 						}
-						fmt.Fprintf(s, "%d\n", userkey.ID)
 						return nil
 					},
 				}, {
@@ -2115,7 +2170,16 @@ GLOBAL OPTIONS:
 						if err := myself.CheckRoles([]string{"admin"}); err != nil {
 							return err
 						}
-
+						if err := dbmodels.UserKeysByIdentifiers(db, c.Args()).Find(&dbmodels.UserKey{}).Error; err != nil {
+							var user dbmodels.User
+							if err := dbmodels.UsersByIdentifiers(db, c.Args()).First(&user).Error; err != nil {
+								return err
+							}
+							if err := dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Find(&dbmodels.UserKey{}).Error; err != nil {
+								return err
+							}
+							return dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Delete(&dbmodels.UserKey{}).Error
+						}
 						return dbmodels.UserKeysByIdentifiers(db, c.Args()).Delete(&dbmodels.UserKey{}).Error
 					},
 				},
@@ -2276,7 +2340,7 @@ GLOBAL OPTIONS:
 					if cliErr.ExitCode() != 0 {
 						fmt.Fprintf(s, "error: %v\n", err)
 					}
-					//s.Exit(cliErr.ExitCode())
+					// s.Exit(cliErr.ExitCode())
 				} else {
 					fmt.Fprintf(s, "error: %v\n", err)
 				}

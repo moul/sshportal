@@ -61,7 +61,7 @@ func ensureLogDirectory(location string) error {
 }
 
 func server(c *serverConfig) (err error) {
-	var db = (*gorm.DB)(nil)
+	var db *gorm.DB
 
 	// try to setup the local DB
 	if db, err = gorm.Open(c.dbDriver, c.dbURL); err != nil {
