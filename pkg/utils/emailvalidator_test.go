@@ -1,22 +1,30 @@
-package utils
+package utils_test
 
 import (
 	"testing"
+
+	"moul.io/sshportal/pkg/utils"
 )
 
 func TestValidateEmail(t *testing.T) {
-
-	goodEmail := "goodemail@email.com"
-	badEmail := "b@2323.22"
-
-	got := ValidateEmail(goodEmail)
-	if got == false {
-		t.Errorf("got1= %v; want true", got)
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"goodemail@email.com", true},
+		{"b@2323.22", true},
+		{"b@2322.", false},
+		{"", false},
+		{"blah", false},
+		{"blah.com", false},
 	}
 
-	got2 := ValidateEmail(badEmail)
-	if got2 == false {
-		t.Errorf("got2= %v; want false", got2)
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			got := utils.ValidateEmail(test.input)
+			if got != test.expected {
+				t.Errorf("expected %v, got %v", test.expected, got)
+			}
+		})
 	}
-
 }
