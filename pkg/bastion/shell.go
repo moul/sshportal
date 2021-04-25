@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/crypto/ssh/terminal" // nolint:staticcheck
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
 	"moul.io/sshportal/pkg/utils"

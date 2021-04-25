@@ -193,7 +193,7 @@ go.bumpdeps:
 	  $(GO)	get -u ./...; \
 	); done
 
-.PHONY: go.bump-deps
+.PHONY: go.fmt
 go.fmt:
 	@set -e; for dir in $(GOMOD_DIRS); do ( set -xe; \
 	  cd $$dir; \
