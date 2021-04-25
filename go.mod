@@ -6,7 +6,7 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gliderlabs/ssh v0.3.2
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/kr/pty v1.1.8
 	github.com/mattn/go-colorable v0.1.8 // indirect
