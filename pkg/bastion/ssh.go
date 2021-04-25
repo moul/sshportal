@@ -28,6 +28,7 @@ type authContext struct {
 	db              *gorm.DB
 	userKey         dbmodels.UserKey
 	logsLocation    string
+	aclCheckCmd     string
 	aesKey          string
 	dbDriver, dbURL string
 	bindAddr        string
@@ -206,7 +207,7 @@ func bastionClientConfig(ctx ssh.Context, host *dbmodels.Host) (*gossh.ClientCon
 		return nil, err
 	}
 
-	action := checkACLs(tmpUser, tmpHost)
+	action := checkACLs(tmpUser, tmpHost, actx.aclCheckCmd)
 	switch action {
 	case string(dbmodels.ACLActionAllow):
 		// do nothing
@@ -251,12 +252,13 @@ func ShellHandler(s ssh.Session, version, gitSha, gitTag string) {
 	panic("should not happen")
 }
 
-func PasswordAuthHandler(db *gorm.DB, logsLocation, aesKey, dbDriver, dbURL, bindAddr string, demo bool) ssh.PasswordHandler {
+func PasswordAuthHandler(db *gorm.DB, logsLocation, aclCheckCmd, aesKey, dbDriver, dbURL, bindAddr string, demo bool) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pass string) bool {
 		actx := &authContext{
 			db:            db,
 			inputUsername: ctx.User(),
 			logsLocation:  logsLocation,
+			aclCheckCmd:   aclCheckCmd,
 			aesKey:        aesKey,
 			dbDriver:      dbDriver,
 			dbURL:         dbURL,
@@ -287,12 +289,13 @@ func PrivateKeyFromDB(db *gorm.DB, aesKey string) func(*ssh.Server) error {
 	}
 }
 
-func PublicKeyAuthHandler(db *gorm.DB, logsLocation, aesKey, dbDriver, dbURL, bindAddr string, demo bool) ssh.PublicKeyHandler {
+func PublicKeyAuthHandler(db *gorm.DB, logsLocation, aclCheckCmd, aesKey, dbDriver, dbURL, bindAddr string, demo bool) ssh.PublicKeyHandler {
 	return func(ctx ssh.Context, key ssh.PublicKey) bool {
 		actx := &authContext{
 			db:            db,
 			inputUsername: ctx.User(),
 			logsLocation:  logsLocation,
+			aclCheckCmd:   aclCheckCmd,
 			aesKey:        aesKey,
 			dbDriver:      dbDriver,
 			dbURL:         dbURL,

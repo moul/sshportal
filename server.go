@@ -22,6 +22,7 @@ type serverConfig struct {
 	bindAddr        string
 	debug, demo     bool
 	idleTimeout     time.Duration
+	aclCheckCmd     string
 }
 
 func parseServerConfig(c *cli.Context) (*serverConfig, error) {
@@ -34,6 +35,7 @@ func parseServerConfig(c *cli.Context) (*serverConfig, error) {
 		demo:         c.Bool("demo"),
 		logsLocation: c.String("logs-location"),
 		idleTimeout:  c.Duration("idle-timeout"),
+		aclCheckCmd:  c.String("acl-check-cmd"),
 	}
 	switch len(ret.aesKey) {
 	case 0, 16, 24, 32:
@@ -119,8 +121,8 @@ func server(c *serverConfig) (err error) {
 
 	for _, opt := range []ssh.Option{
 		// custom PublicKeyAuth handler
-		ssh.PublicKeyAuth(bastion.PublicKeyAuthHandler(db, c.logsLocation, c.aesKey, c.dbDriver, c.dbURL, c.bindAddr, c.demo)),
-		ssh.PasswordAuth(bastion.PasswordAuthHandler(db, c.logsLocation, c.aesKey, c.dbDriver, c.dbURL, c.bindAddr, c.demo)),
+		ssh.PublicKeyAuth(bastion.PublicKeyAuthHandler(db, c.logsLocation, c.aclCheckCmd, c.aesKey, c.dbDriver, c.dbURL, c.bindAddr, c.demo)),
+		ssh.PasswordAuth(bastion.PasswordAuthHandler(db, c.logsLocation, c.aclCheckCmd, c.aesKey, c.dbDriver, c.dbURL, c.bindAddr, c.demo)),
 		// retrieve sshportal SSH private key from database
 		bastion.PrivateKeyFromDB(db, c.aesKey),
 	} {
