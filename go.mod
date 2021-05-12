@@ -27,9 +27,8 @@ require (
 	github.com/tailscale/depaware v0.0.0-20201214215404-77d1e9757027
 	github.com/urfave/cli v1.22.5
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
-	golang.org/x/sys v0.0.0-20210423185535-09eb48e85fd7 // indirect
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
-	golang.org/x/tools v0.1.0
+	golang.org/x/tools v0.1.1
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.6.1
 )
