@@ -5,7 +5,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/creack/pty v1.1.11 // indirect
-	github.com/docker/docker v20.10.6+incompatible
+	github.com/docker/docker v20.10.7+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gliderlabs/ssh v0.3.2
 	github.com/go-sql-driver/mysql v1.6.0
