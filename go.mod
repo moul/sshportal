@@ -28,7 +28,7 @@ require (
 	github.com/urfave/cli v1.22.5
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
-	golang.org/x/tools v0.1.2
+	golang.org/x/tools v0.1.3
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.6.1
 )
