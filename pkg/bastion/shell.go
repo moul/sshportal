@@ -1584,6 +1584,59 @@ GLOBAL OPTIONS:
 			Usage: "Manages users",
 			Subcommands: []cli.Command{
 				{
+					Name:        "create",
+					ArgsUsage:   "<email>",
+					Usage:       "Creates a new user",
+					Description: "$> user create bob@example.com\n   $> user create --name=Robert bob@example.com",
+					Flags: []cli.Flag{
+						cli.StringFlag{Name: "name", Usage: "Assigns a name to the user"},
+						cli.StringFlag{Name: "comment", Usage: "Adds a comment"},
+						cli.StringSliceFlag{Name: "group, g", Usage: "Names or IDs of `USERGROUPS` (default: \"default\")"},
+					},
+					Action: func(c *cli.Context) error {
+						if c.NArg() != 1 {
+							return cli.ShowSubcommandHelp(c)
+						}
+
+						if err := myself.CheckRoles([]string{"admin"}); err != nil {
+							return err
+						}
+
+						// FIXME: validate email
+
+						email := c.Args().First()
+						name := strings.Split(email, "@")[0]
+						if c.String("name") != "" {
+							name = c.String("name")
+						}
+
+						user := dbmodels.User{
+							Name:        name,
+							Email:       email,
+							Comment:     c.String("comment"),
+							InviteToken: "",
+						}
+
+						if _, err := govalidator.ValidateStruct(user); err != nil {
+							return err
+						}
+
+						// user group
+						inputGroups := c.StringSlice("group")
+						if len(inputGroups) == 0 {
+							inputGroups = []string{"default"}
+						}
+						if err := dbmodels.UserGroupsByIdentifiers(db, inputGroups).Find(&user.Groups).Error; err != nil {
+							return err
+						}
+
+						// save the user in database
+						if err := db.Create(&user).Error; err != nil {
+							return err
+						}
+						return nil
+					},
+				}, {
 					Name:      "inspect",
 					Usage:     "Shows detailed information on one or more users",
 					ArgsUsage: "USER...",
