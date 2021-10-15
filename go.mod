@@ -5,7 +5,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/creack/pty v1.1.11 // indirect
-	github.com/docker/docker v20.10.7+incompatible
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gliderlabs/ssh v0.3.3
 	github.com/go-sql-driver/mysql v1.6.0
@@ -23,12 +23,12 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sabban/bastion v0.0.0-20180110125408-b9d3c9b1f4d3
-	github.com/smartystreets/goconvey v1.6.4
-	github.com/tailscale/depaware v0.0.0-20201214215404-77d1e9757027
+	github.com/smartystreets/goconvey v1.6.6
+	github.com/tailscale/depaware v0.0.0-20210622194025-720c4b409502
 	github.com/urfave/cli v1.22.5
-	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
-	golang.org/x/tools v0.1.4
+	golang.org/x/tools v0.1.7
 	gopkg.in/gormigrate.v1 v1.6.0
 	moul.io/srand v1.6.1
 )
