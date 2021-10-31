@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	. "github.com/smartystreets/goconvey/convey"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"moul.io/sshportal/pkg/dbmodels"
 )
 
@@ -23,9 +22,8 @@ func TestCheckACLs(t *testing.T) {
 		}()
 
 		// create sqlite db
-		db, err := gorm.Open("sqlite3", filepath.Join(tempDir, "sshportal.db"))
+		db, err := gorm.Open(sqlite.Open(filepath.Join(tempDir, "sshportal.db")), &gorm.Config{})
 		c.So(err, ShouldBeNil)
-		db.LogMode(false)
 		c.So(DBInit(db), ShouldBeNil)
 
 		// create dummy objects

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gliderlabs/ssh"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 	gossh "golang.org/x/crypto/ssh"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
@@ -128,7 +128,7 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				}}, sessionConfigs...)
 				if currentHost.HopID != 0 {
 					var newHost dbmodels.Host
-					actx.db.Model(currentHost).Related(&newHost, "HopID")
+					actx.db.Model(currentHost).Association("HopID").Find(&newHost)
 					hostname := newHost.Name
 					currentHost, _ = dbmodels.HostByName(actx.db, hostname)
 				} else {
