@@ -27,7 +27,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Setting struct {
 					gorm.Model
-					Name  string
+					Name  string `gorm:"index:uix_settings_name,unique"`
 					Value string
 				}
 				return tx.AutoMigrate(&Setting{})

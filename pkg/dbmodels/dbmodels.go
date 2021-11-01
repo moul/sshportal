@@ -30,7 +30,7 @@ type Config struct {
 
 type Setting struct {
 	gorm.Model
-	Name  string `gorm:"index:uix_settings_name,unique"`
+	Name  string `valid:"required" gorm:"index:uix_settings_name,unique"`
 	Value string `valid:"required"`
 }
 
