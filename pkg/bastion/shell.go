@@ -889,7 +889,7 @@ GLOBAL OPTIONS:
 							authKey := ""
 							if host.SSHKeyID > 0 {
 								var key dbmodels.SSHKey
-								if err := db.Model(host).Association("").Find(&key); err != nil {
+								if err := db.Model(host).Association("SSHKey").Find(&key); err != nil {
 									return err
 								}
 								authKey = key.Name
