@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
 	gossh "golang.org/x/crypto/ssh"
+	"gorm.io/gorm"
 )
 
 type Config struct {

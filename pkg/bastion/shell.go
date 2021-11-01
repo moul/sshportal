@@ -889,7 +889,9 @@ GLOBAL OPTIONS:
 							authKey := ""
 							if host.SSHKeyID > 0 {
 								var key dbmodels.SSHKey
-								db.Model(host).Association("").Find(&key)
+								if err := db.Model(host).Association("").Find(&key); err != nil {
+									return err
+								}
 								authKey = key.Name
 							}
 							groupNames := []string{}
@@ -899,7 +901,9 @@ GLOBAL OPTIONS:
 							var hop string
 							if host.HopID != 0 {
 								var hopHost dbmodels.Host
-								db.Model(host).Association("HopID").Find(&hopHost)
+								if err := db.Model(host).Association("HopID").Find(&hopHost); err != nil {
+									return err
+								}
 								hop = hopHost.Name
 							} else {
 								hop = ""
@@ -1024,7 +1028,9 @@ GLOBAL OPTIONS:
 							if c.Bool("unset-hop") {
 								var hopHost dbmodels.Host
 
-								db.Model(&host).Association("HopID").Find(&hopHost)
+								if err := db.Model(&host).Association("HopID").Find(&hopHost); err != nil {
+									return err
+								}
 								if err := model.Association("Hop").Clear(); err != nil {
 									tx.Rollback()
 									return err

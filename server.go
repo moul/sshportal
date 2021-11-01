@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"time"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -64,7 +65,7 @@ func ensureLogDirectory(location string) error {
 	return nil
 }
 
-func dbConnect(c *serverConfig, config *gorm.Config) (*gorm.DB, error) {
+func dbConnect(c *serverConfig, config gorm.Option) (*gorm.DB, error) {
 	var dbOpen func(string) gorm.Dialector
 	if c.dbDriver == "sqlite3" {
 		dbOpen = sqlite.Open

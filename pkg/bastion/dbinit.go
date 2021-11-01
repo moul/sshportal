@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	gossh "golang.org/x/crypto/ssh"
 	gormigrate "github.com/go-gormigrate/gormigrate/v2"
+	gossh "golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
@@ -158,7 +158,9 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "9",
 			Migrate: func(tx *gorm.DB) error {
-				tx.Migrator().DropIndex(&dbmodels.Setting{}, "uix_settings_name")
+				if err := tx.Migrator().DropIndex(&dbmodels.Setting{}, "uix_settings_name"); err != nil {
+					return err
+				}
 				return tx.Migrator().CreateIndex(&dbmodels.Setting{}, "uix_settings_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
@@ -167,7 +169,9 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "10",
 			Migrate: func(tx *gorm.DB) error {
-				tx.Migrator().DropIndex(&dbmodels.SSHKey{}, "uix_keys_name")
+				if err := tx.Migrator().DropIndex(&dbmodels.SSHKey{}, "uix_keys_name"); err != nil {
+					return err
+				}
 				return tx.Migrator().CreateIndex(&dbmodels.SSHKey{}, "uix_keys_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
@@ -176,7 +180,9 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "11",
 			Migrate: func(tx *gorm.DB) error {
-				tx.Migrator().DropIndex(&dbmodels.Host{}, "uix_hosts_name")
+				if err := tx.Migrator().DropIndex(&dbmodels.Host{}, "uix_hosts_name"); err != nil {
+					return err
+				}
 				return tx.Migrator().CreateIndex(&dbmodels.Host{}, "uix_hosts_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
@@ -185,7 +191,9 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "12",
 			Migrate: func(tx *gorm.DB) error {
-				tx.Migrator().DropIndex(&dbmodels.User{}, "uix_users_name")
+				if err := tx.Migrator().DropIndex(&dbmodels.User{}, "uix_users_name"); err != nil {
+					return err
+				}
 				return tx.Migrator().CreateIndex(&dbmodels.User{}, "uix_users_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
@@ -194,7 +202,9 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "13",
 			Migrate: func(tx *gorm.DB) error {
-				tx.Migrator().DropIndex(&dbmodels.UserGroup{}, "uix_usergroups_name")
+				if err := tx.Migrator().DropIndex(&dbmodels.UserGroup{}, "uix_usergroups_name"); err != nil {
+					return err
+				}
 				return tx.Migrator().CreateIndex(&dbmodels.UserGroup{}, "uix_usergroups_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
@@ -203,7 +213,9 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "14",
 			Migrate: func(tx *gorm.DB) error {
-				tx.Migrator().DropIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name")
+				if err := tx.Migrator().DropIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name"); err != nil {
+					return err
+				}
 				return tx.Migrator().CreateIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
@@ -659,30 +671,6 @@ func DBInit(db *gorm.DB) error {
 		Status: string(dbmodels.SessionStatusClosed),
 		ErrMsg: "sshportal was halted while the connection was still active",
 	}).Error
-}
-/* Implemented hard delete via Unscoped() method in Gorm library
-func hardDeleteCallback(scope *gorm.Scope) {
-	if !scope.HasError() {
-		var extraOption string
-		if str, ok := scope.Get("gorm:delete_option"); ok {
-			extraOption = fmt.Sprint(str)
-		}
-
-		#nosec 
-		scope.Raw(fmt.Sprintf(
-			"DELETE FROM %v%v%v",
-			scope.QuotedTableName(),
-			addExtraSpaceIfExist(scope.CombinedConditionSql()),
-			addExtraSpaceIfExist(extraOption),
-		)).Exec()
-	}
-}
-*/
-func addExtraSpaceIfExist(str string) string {
-	if str != "" {
-		return " " + str
-	}
-	return ""
 }
 
 func randStringBytes(n int) string {
