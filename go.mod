@@ -8,8 +8,7 @@ require (
 	github.com/docker/docker v20.10.9+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gliderlabs/ssh v0.3.3
-	github.com/go-gormigrate/gormigrate/v2 v2.0.0 // indirect
-	github.com/jinzhu/gorm v1.9.16
+	github.com/go-gormigrate/gormigrate/v2 v2.0.0
 	github.com/kr/pty v1.1.8
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.12 // indirect
@@ -27,7 +26,6 @@ require (
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.1.7
-	gopkg.in/gormigrate.v1 v1.6.0
 	gorm.io/driver/mysql v1.1.3
 	gorm.io/driver/postgres v1.2.1
 	gorm.io/driver/sqlite v1.2.3
