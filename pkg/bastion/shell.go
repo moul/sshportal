@@ -253,7 +253,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return dbmodels.ACLsByIdentifiers(db, c.Args()).Delete(&dbmodels.ACL{}).Error
+						return dbmodels.ACLsByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.ACL{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -335,12 +335,12 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("UserGroups").Append(&appendUserGroups).Error; err != nil {
+							if err := model.Association("UserGroups").Append(&appendUserGroups); err != nil {
 								tx.Rollback()
 								return err
 							}
 							if len(deleteUserGroups) > 0 {
-								if err := model.Association("UserGroups").Delete(deleteUserGroups).Error; err != nil {
+								if err := model.Association("UserGroups").Delete(deleteUserGroups); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -356,12 +356,12 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("HostGroups").Append(&appendHostGroups).Error; err != nil {
+							if err := model.Association("HostGroups").Append(&appendHostGroups); err != nil {
 								tx.Rollback()
 								return err
 							}
 							if len(deleteHostGroups) > 0 {
-								if err := model.Association("HostGroups").Delete(deleteHostGroups).Error; err != nil {
+								if err := model.Association("HostGroups").Delete(deleteHostGroups); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -889,7 +889,9 @@ GLOBAL OPTIONS:
 							authKey := ""
 							if host.SSHKeyID > 0 {
 								var key dbmodels.SSHKey
-								db.Model(host).Related(&key)
+								if err := db.Model(host).Association("SSHKey").Find(&key); err != nil {
+									return err
+								}
 								authKey = key.Name
 							}
 							groupNames := []string{}
@@ -899,7 +901,9 @@ GLOBAL OPTIONS:
 							var hop string
 							if host.HopID != 0 {
 								var hopHost dbmodels.Host
-								db.Model(host).Related(&hopHost, "HopID")
+								if err := db.Model(host).Association("HopID").Find(&hopHost); err != nil {
+									return err
+								}
 								hop = hopHost.Name
 							} else {
 								hop = ""
@@ -934,7 +938,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return dbmodels.HostsByIdentifiers(db, c.Args()).Delete(&dbmodels.Host{}).Error
+						return dbmodels.HostsByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.Host{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -1003,7 +1007,7 @@ GLOBAL OPTIONS:
 									tx.Rollback()
 									return err
 								}
-								if err := model.Association("Hop").Replace(hop).Error; err != nil {
+								if err := model.Association("Hop").Replace(hop); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -1024,8 +1028,10 @@ GLOBAL OPTIONS:
 							if c.Bool("unset-hop") {
 								var hopHost dbmodels.Host
 
-								db.Model(&host).Related(&hopHost, "HopID")
-								if err := model.Association("Hop").Clear().Error; err != nil {
+								if err := db.Model(&host).Association("HopID").Find(&hopHost); err != nil {
+									return err
+								}
+								if err := model.Association("Hop").Clear(); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -1038,7 +1044,7 @@ GLOBAL OPTIONS:
 									tx.Rollback()
 									return err
 								}
-								if err := model.Association("SSHKey").Replace(&key).Error; err != nil {
+								if err := model.Association("SSHKey").Replace(&key); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -1053,12 +1059,12 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("Groups").Append(&appendGroups).Error; err != nil {
+							if err := model.Association("Groups").Append(&appendGroups); err != nil {
 								tx.Rollback()
 								return err
 							}
 							if len(deleteGroups) > 0 {
-								if err := model.Association("Groups").Delete(deleteGroups).Error; err != nil {
+								if err := model.Association("Groups").Delete(deleteGroups); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -1189,7 +1195,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return dbmodels.HostGroupsByIdentifiers(db, c.Args()).Delete(&dbmodels.HostGroup{}).Error
+						return dbmodels.HostGroupsByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.HostGroup{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -1483,7 +1489,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return dbmodels.SSHKeysByIdentifiers(db, c.Args()).Delete(&dbmodels.SSHKey{}).Error
+						return dbmodels.SSHKeysByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.SSHKey{}).Error
 					},
 				}, {
 					Name:      "setup",
@@ -1732,7 +1738,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return dbmodels.UsersByIdentifiers(db, c.Args()).Delete(&dbmodels.User{}).Error
+						return dbmodels.UsersByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.User{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -1802,12 +1808,12 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("Groups").Append(&appendGroups).Error; err != nil {
+							if err := model.Association("Groups").Append(&appendGroups); err != nil {
 								tx.Rollback()
 								return err
 							}
 							if len(deleteGroups) > 0 {
-								if err := model.Association("Groups").Delete(deleteGroups).Error; err != nil {
+								if err := model.Association("Groups").Delete(deleteGroups); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -1822,12 +1828,12 @@ GLOBAL OPTIONS:
 								tx.Rollback()
 								return err
 							}
-							if err := model.Association("Roles").Append(&appendRoles).Error; err != nil {
+							if err := model.Association("Roles").Append(&appendRoles); err != nil {
 								tx.Rollback()
 								return err
 							}
 							if len(deleteRoles) > 0 {
-								if err := model.Association("Roles").Delete(deleteRoles).Error; err != nil {
+								if err := model.Association("Roles").Delete(deleteRoles); err != nil {
 									tx.Rollback()
 									return err
 								}
@@ -1960,7 +1966,7 @@ GLOBAL OPTIONS:
 							return err
 						}
 
-						return dbmodels.UserGroupsByIdentifiers(db, c.Args()).Delete(&dbmodels.UserGroup{}).Error
+						return dbmodels.UserGroupsByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.UserGroup{}).Error
 					},
 				}, {
 					Name:      "update",
@@ -2178,9 +2184,9 @@ GLOBAL OPTIONS:
 							if err := dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Find(&dbmodels.UserKey{}).Error; err != nil {
 								return err
 							}
-							return dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Delete(&dbmodels.UserKey{}).Error
+							return dbmodels.UserKeysByUserID(db, []string{fmt.Sprint(user.ID)}).Unscoped().Delete(&dbmodels.UserKey{}).Error
 						}
-						return dbmodels.UserKeysByIdentifiers(db, c.Args()).Delete(&dbmodels.UserKey{}).Error
+						return dbmodels.UserKeysByIdentifiers(db, c.Args()).Unscoped().Delete(&dbmodels.UserKey{}).Error
 					},
 				},
 			},

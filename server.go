@@ -8,8 +8,13 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"github.com/gliderlabs/ssh"
-	"github.com/jinzhu/gorm"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
 	"moul.io/sshportal/pkg/bastion"
@@ -60,24 +65,41 @@ func ensureLogDirectory(location string) error {
 	return nil
 }
 
-func server(c *serverConfig) (err error) {
-	var db *gorm.DB
-
-	// try to setup the local DB
-	if db, err = gorm.Open(c.dbDriver, c.dbURL); err != nil {
-		return
+func dbConnect(c *serverConfig, config gorm.Option) (*gorm.DB, error) {
+	var dbOpen func(string) gorm.Dialector
+	if c.dbDriver == "sqlite3" {
+		dbOpen = sqlite.Open
 	}
+	if c.dbDriver == "postgres" {
+		dbOpen = postgres.Open
+	}
+
+	if c.dbDriver == "mysql" {
+		dbOpen = mysql.Open
+	}
+	return gorm.Open(dbOpen(c.dbURL), config)
+}
+
+func server(c *serverConfig) (err error) {
+	// configure db logging
+
+	db, err := dbConnect(c, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	sqlDB, err := db.DB()
+
 	defer func() {
 		origErr := err
-		err = db.Close()
+		err = sqlDB.Close()
 		if origErr != nil {
 			err = origErr
 		}
 	}()
-	if err = db.DB().Ping(); err != nil {
+
+	if err = sqlDB.Ping(); err != nil {
 		return
 	}
-	db.LogMode(c.debug)
+
 	if err = bastion.DBInit(db); err != nil {
 		return
 	}

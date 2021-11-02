@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	gossh "golang.org/x/crypto/ssh"
+	"gorm.io/gorm"
 )
 
 type Config struct {
@@ -30,7 +30,7 @@ type Config struct {
 
 type Setting struct {
 	gorm.Model
-	Name  string `valid:"required"`
+	Name  string `valid:"required" gorm:"index:uix_settings_name,unique"`
 	Value string `valid:"required"`
 }
 
@@ -38,7 +38,7 @@ type Setting struct {
 type SSHKey struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name        string  `valid:"required,length(1|255),unix_user"`
+	Name        string  `valid:"required,length(1|255),unix_user" gorm:"index:uix_keys_name,unique"`
 	Type        string  `valid:"required"`
 	Length      uint    `valid:"required"`
 	Fingerprint string  `valid:"optional"`
@@ -51,7 +51,7 @@ type SSHKey struct {
 type Host struct {
 	// FIXME: use uuid for ID
 	gorm.Model
-	Name     string       `gorm:"size:255" valid:"required,length(1|255)"`
+	Name     string       `gorm:"index:uix_hosts_name,unique;type:varchar(255)" valid:"required,length(1|255)"`
 	Addr     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	User     string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
 	Password string       `valid:"optional"` // FIXME: to be removed in a future version in favor of URL
@@ -87,7 +87,7 @@ type User struct {
 	gorm.Model
 	Roles       []*UserRole  `gorm:"many2many:user_user_roles"`
 	Email       string       `valid:"required,email"`
-	Name        string       `valid:"required,length(1|255),unix_user"`
+	Name        string       `valid:"required,length(1|255),unix_user" gorm:"index:uix_users_name,unique"`
 	Keys        []*UserKey   `gorm:"ForeignKey:UserID"`
 	Groups      []*UserGroup `gorm:"many2many:user_user_groups;"`
 	Comment     string       `valid:"optional"`
@@ -96,7 +96,7 @@ type User struct {
 
 type UserGroup struct {
 	gorm.Model
-	Name    string  `valid:"required,length(1|255),unix_user"`
+	Name    string  `valid:"required,length(1|255),unix_user" gorm:"index:uix_usergroups_name,unique"`
 	Users   []*User `gorm:"many2many:user_user_groups;"`
 	ACLs    []*ACL  `gorm:"many2many:user_group_acls;"`
 	Comment string  `valid:"optional"`
@@ -104,7 +104,7 @@ type UserGroup struct {
 
 type HostGroup struct {
 	gorm.Model
-	Name    string  `valid:"required,length(1|255),unix_user"`
+	Name    string  `valid:"required,length(1|255),unix_user" gorm:"index:uix_hostgroups_name,unique"`
 	Hosts   []*Host `gorm:"many2many:host_host_groups;"`
 	ACLs    []*ACL  `gorm:"many2many:host_group_acls;"`
 	Comment string  `valid:"optional"`

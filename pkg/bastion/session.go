@@ -190,8 +190,8 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig
 			b, err := rch.SendRequest(req.Type, req.WantReply, req.Payload)
 			if req.Type == "exec" {
 				wrappedlch := logchannel.New(lch, logWriter)
-				command := append(req.Payload, []byte("\n")...)
-				if _, err := wrappedlch.LogWrite(command); err != nil {
+				req.Payload = append(req.Payload, []byte("\n")...)
+				if _, err := wrappedlch.LogWrite(req.Payload); err != nil {
 					log.Printf("failed to write log: %v", err)
 				}
 			}

@@ -10,16 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	gormigrate "github.com/go-gormigrate/gormigrate/v2"
 	gossh "golang.org/x/crypto/ssh"
-	gormigrate "gopkg.in/gormigrate.v1"
+	"gorm.io/gorm"
 	"moul.io/sshportal/pkg/crypto"
 	"moul.io/sshportal/pkg/dbmodels"
 )
 
 func DBInit(db *gorm.DB) error {
 	log.SetOutput(ioutil.Discard)
-	db.Callback().Delete().Replace("gorm:delete", hardDeleteCallback)
 	log.SetOutput(os.Stderr)
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
@@ -28,13 +27,13 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Setting struct {
 					gorm.Model
-					Name  string
+					Name  string `gorm:"index:uix_settings_name,unique"`
 					Value string
 				}
-				return tx.AutoMigrate(&Setting{}).Error
+				return tx.AutoMigrate(&Setting{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("settings").Error
+				return tx.Migrator().DropTable("settings")
 			},
 		}, {
 			ID: "2",
@@ -50,10 +49,10 @@ func DBInit(db *gorm.DB) error {
 					Hosts       []*dbmodels.Host `gorm:"ForeignKey:SSHKeyID"`
 					Comment     string
 				}
-				return tx.AutoMigrate(&SSHKey{}).Error
+				return tx.AutoMigrate(&SSHKey{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("ssh_keys").Error
+				return tx.Migrator().DropTable("ssh_keys")
 			},
 		}, {
 			ID: "3",
@@ -70,10 +69,10 @@ func DBInit(db *gorm.DB) error {
 					Fingerprint string
 					Comment     string
 				}
-				return tx.AutoMigrate(&Host{}).Error
+				return tx.AutoMigrate(&Host{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("hosts").Error
+				return tx.Migrator().DropTable("hosts")
 			},
 		}, {
 			ID: "4",
@@ -85,10 +84,10 @@ func DBInit(db *gorm.DB) error {
 					User    *dbmodels.User `gorm:"ForeignKey:UserID"`
 					Comment string
 				}
-				return tx.AutoMigrate(&UserKey{}).Error
+				return tx.AutoMigrate(&UserKey{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("user_keys").Error
+				return tx.Migrator().DropTable("user_keys")
 			},
 		}, {
 			ID: "5",
@@ -103,10 +102,10 @@ func DBInit(db *gorm.DB) error {
 					Comment     string
 					InviteToken string
 				}
-				return tx.AutoMigrate(&User{}).Error
+				return tx.AutoMigrate(&User{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("users").Error
+				return tx.Migrator().DropTable("users")
 			},
 		}, {
 			ID: "6",
@@ -118,10 +117,10 @@ func DBInit(db *gorm.DB) error {
 					ACLs    []*dbmodels.ACL  `gorm:"many2many:user_group_acls;"`
 					Comment string
 				}
-				return tx.AutoMigrate(&UserGroup{}).Error
+				return tx.AutoMigrate(&UserGroup{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("user_groups").Error
+				return tx.Migrator().DropTable("user_groups")
 			},
 		}, {
 			ID: "7",
@@ -133,10 +132,10 @@ func DBInit(db *gorm.DB) error {
 					ACLs    []*dbmodels.ACL  `gorm:"many2many:host_group_acls;"`
 					Comment string
 				}
-				return tx.AutoMigrate(&HostGroup{}).Error
+				return tx.AutoMigrate(&HostGroup{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("host_groups").Error
+				return tx.Migrator().DropTable("host_groups")
 			},
 		}, {
 			ID: "8",
@@ -151,64 +150,76 @@ func DBInit(db *gorm.DB) error {
 					Comment     string
 				}
 
-				return tx.AutoMigrate(&ACL{}).Error
+				return tx.AutoMigrate(&ACL{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("acls").Error
+				return tx.Migrator().DropTable("acls")
 			},
 		}, {
 			ID: "9",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&dbmodels.Setting{}).RemoveIndex("uix_settings_name")
-				return db.Model(&dbmodels.Setting{}).AddUniqueIndex("uix_settings_name", "name").Error
+				if err := tx.Migrator().DropIndex(&dbmodels.Setting{}, "uix_settings_name"); err != nil {
+					return err
+				}
+				return tx.Migrator().CreateIndex(&dbmodels.Setting{}, "uix_settings_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&dbmodels.Setting{}).RemoveIndex("uix_settings_name").Error
+				return tx.Migrator().DropIndex(&dbmodels.Setting{}, "uix_settings_name")
 			},
 		}, {
 			ID: "10",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&dbmodels.SSHKey{}).RemoveIndex("uix_keys_name")
-				return db.Model(&dbmodels.SSHKey{}).AddUniqueIndex("uix_keys_name", "name").Error
+				if err := tx.Migrator().DropIndex(&dbmodels.SSHKey{}, "uix_keys_name"); err != nil {
+					return err
+				}
+				return tx.Migrator().CreateIndex(&dbmodels.SSHKey{}, "uix_keys_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&dbmodels.SSHKey{}).RemoveIndex("uix_keys_name").Error
+				return tx.Migrator().DropIndex(&dbmodels.SSHKey{}, "uix_keys_name")
 			},
 		}, {
 			ID: "11",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&dbmodels.Host{}).RemoveIndex("uix_hosts_name")
-				return db.Model(&dbmodels.Host{}).AddUniqueIndex("uix_hosts_name", "name").Error
+				if err := tx.Migrator().DropIndex(&dbmodels.Host{}, "uix_hosts_name"); err != nil {
+					return err
+				}
+				return tx.Migrator().CreateIndex(&dbmodels.Host{}, "uix_hosts_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&dbmodels.Host{}).RemoveIndex("uix_hosts_name").Error
+				return tx.Migrator().DropIndex(&dbmodels.Host{}, "uix_hosts_name")
 			},
 		}, {
 			ID: "12",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&dbmodels.User{}).RemoveIndex("uix_users_name")
-				return db.Model(&dbmodels.User{}).AddUniqueIndex("uix_users_name", "name").Error
+				if err := tx.Migrator().DropIndex(&dbmodels.User{}, "uix_users_name"); err != nil {
+					return err
+				}
+				return tx.Migrator().CreateIndex(&dbmodels.User{}, "uix_users_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&dbmodels.User{}).RemoveIndex("uix_users_name").Error
+				return tx.Migrator().DropIndex(&dbmodels.User{}, "uix_users_name")
 			},
 		}, {
 			ID: "13",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&dbmodels.UserGroup{}).RemoveIndex("uix_usergroups_name")
-				return db.Model(&dbmodels.UserGroup{}).AddUniqueIndex("uix_usergroups_name", "name").Error
+				if err := tx.Migrator().DropIndex(&dbmodels.UserGroup{}, "uix_usergroups_name"); err != nil {
+					return err
+				}
+				return tx.Migrator().CreateIndex(&dbmodels.UserGroup{}, "uix_usergroups_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&dbmodels.UserGroup{}).RemoveIndex("uix_usergroups_name").Error
+				return tx.Migrator().DropIndex(&dbmodels.UserGroup{}, "uix_usergroups_name")
 			},
 		}, {
 			ID: "14",
 			Migrate: func(tx *gorm.DB) error {
-				db.Model(&dbmodels.HostGroup{}).RemoveIndex("uix_hostgroups_name")
-				return db.Model(&dbmodels.HostGroup{}).AddUniqueIndex("uix_hostgroups_name", "name").Error
+				if err := tx.Migrator().DropIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name"); err != nil {
+					return err
+				}
+				return tx.Migrator().CreateIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return db.Model(&dbmodels.HostGroup{}).RemoveIndex("uix_hostgroups_name").Error
+				return tx.Migrator().DropIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name")
 			},
 		}, {
 			ID: "15",
@@ -218,10 +229,10 @@ func DBInit(db *gorm.DB) error {
 					Name  string           `valid:"required,length(1|32),unix_user"`
 					Users []*dbmodels.User `gorm:"many2many:user_user_roles"`
 				}
-				return tx.AutoMigrate(&UserRole{}).Error
+				return tx.AutoMigrate(&UserRole{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("user_roles").Error
+				return tx.Migrator().DropTable("user_roles")
 			},
 		}, {
 			ID: "16",
@@ -237,7 +248,7 @@ func DBInit(db *gorm.DB) error {
 					Comment     string                `valid:"optional"`
 					InviteToken string                `valid:"optional,length(10|60)"`
 				}
-				return tx.AutoMigrate(&User{}).Error
+				return tx.AutoMigrate(&User{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -248,7 +259,7 @@ func DBInit(db *gorm.DB) error {
 				return tx.Create(&dbmodels.UserRole{Name: "admin"}).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Where("name = ?", "admin").Delete(&dbmodels.UserRole{}).Error
+				return tx.Where("name = ?", "admin").Unscoped().Delete(&dbmodels.UserRole{}).Error
 			},
 		}, {
 			ID: "18",
@@ -287,7 +298,7 @@ func DBInit(db *gorm.DB) error {
 					Comment     string                `valid:"optional"`
 					InviteToken string                `valid:"optional,length(10|60)"`
 				}
-				return tx.AutoMigrate(&User{}).Error
+				return tx.AutoMigrate(&User{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -298,7 +309,7 @@ func DBInit(db *gorm.DB) error {
 				return tx.Create(&dbmodels.UserRole{Name: "listhosts"}).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Where("name = ?", "listhosts").Delete(&dbmodels.UserRole{}).Error
+				return tx.Where("name = ?", "listhosts").Unscoped().Delete(&dbmodels.UserRole{}).Error
 			},
 		}, {
 			ID: "21",
@@ -314,10 +325,10 @@ func DBInit(db *gorm.DB) error {
 					ErrMsg    string         `valid:"optional"`
 					Comment   string         `valid:"optional"`
 				}
-				return tx.AutoMigrate(&Session{}).Error
+				return tx.AutoMigrate(&Session{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("sessions").Error
+				return tx.Migrator().DropTable("sessions")
 			},
 		}, {
 			ID: "22",
@@ -331,10 +342,10 @@ func DBInit(db *gorm.DB) error {
 					Entity   string         `valid:"optional"`
 					Args     []byte         `sql:"size:10000" valid:"optional,length(1|10000)"`
 				}
-				return tx.AutoMigrate(&Event{}).Error
+				return tx.AutoMigrate(&Event{})
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.DropTable("events").Error
+				return tx.Migrator().DropTable("events")
 			},
 		}, {
 			ID: "23",
@@ -347,7 +358,7 @@ func DBInit(db *gorm.DB) error {
 					User          *dbmodels.User `gorm:"ForeignKey:UserID"`
 					Comment       string         `valid:"optional"`
 				}
-				return tx.AutoMigrate(&UserKey{}).Error
+				return tx.AutoMigrate(&UserKey{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -391,7 +402,7 @@ func DBInit(db *gorm.DB) error {
 					Fingerprint string                `valid:"optional"`
 					Comment     string                `valid:"optional"`
 				}
-				return tx.AutoMigrate(&Host{}).Error
+				return tx.AutoMigrate(&Host{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -410,7 +421,7 @@ func DBInit(db *gorm.DB) error {
 					ErrMsg    string         `valid:"optional"`
 					Comment   string         `valid:"optional"`
 				}
-				return tx.AutoMigrate(&Session{}).Error
+				return tx.AutoMigrate(&Session{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -451,7 +462,7 @@ func DBInit(db *gorm.DB) error {
 					Groups   []*dbmodels.HostGroup `gorm:"many2many:host_host_groups;"`
 					Comment  string
 				}
-				return tx.AutoMigrate(&Host{}).Error
+				return tx.AutoMigrate(&Host{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -474,7 +485,7 @@ func DBInit(db *gorm.DB) error {
 					Hop      *dbmodels.Host
 					HopID    uint
 				}
-				return tx.AutoMigrate(&Host{}).Error
+				return tx.AutoMigrate(&Host{})
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return fmt.Errorf("not implemented")
@@ -498,13 +509,13 @@ func DBInit(db *gorm.DB) error {
 					Logging  string
 					HopID    uint
 				}
-				return tx.AutoMigrate(&Host{}).Error
+				return tx.AutoMigrate(&Host{})
 			},
 			Rollback: func(tx *gorm.DB) error { return fmt.Errorf("not implemented") },
 		}, {
 			ID: "31",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.Model(&dbmodels.Host{}).Updates(&dbmodels.Host{Logging: "everything"}).Error
+				return tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&dbmodels.Host{}).Updates(&dbmodels.Host{Logging: "everything"}).Error
 			},
 			Rollback: func(tx *gorm.DB) error { return fmt.Errorf("not implemented") },
 		}, {
@@ -521,7 +532,7 @@ func DBInit(db *gorm.DB) error {
 					Inception   *time.Time
 					Expiration  *time.Time
 				}
-				return tx.AutoMigrate(&ACL{}).Error
+				return tx.AutoMigrate(&ACL{})
 			},
 			Rollback: func(tx *gorm.DB) error { return fmt.Errorf("not implemented") },
 		},
@@ -532,7 +543,7 @@ func DBInit(db *gorm.DB) error {
 	dbmodels.NewEvent("system", "migrated").Log(db)
 
 	// create default ssh key
-	var count uint
+	var count int64
 	if err := db.Table("ssh_keys").Where("name = ?", "default").Count(&count).Error; err != nil {
 		return err
 	}
@@ -660,30 +671,6 @@ func DBInit(db *gorm.DB) error {
 		Status: string(dbmodels.SessionStatusClosed),
 		ErrMsg: "sshportal was halted while the connection was still active",
 	}).Error
-}
-
-func hardDeleteCallback(scope *gorm.Scope) {
-	if !scope.HasError() {
-		var extraOption string
-		if str, ok := scope.Get("gorm:delete_option"); ok {
-			extraOption = fmt.Sprint(str)
-		}
-
-		/* #nosec */
-		scope.Raw(fmt.Sprintf(
-			"DELETE FROM %v%v%v",
-			scope.QuotedTableName(),
-			addExtraSpaceIfExist(scope.CombinedConditionSql()),
-			addExtraSpaceIfExist(extraOption),
-		)).Exec()
-	}
-}
-
-func addExtraSpaceIfExist(str string) string {
-	if str != "" {
-		return " " + str
-	}
-	return ""
 }
 
 func randStringBytes(n int) string {

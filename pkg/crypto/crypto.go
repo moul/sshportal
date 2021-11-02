@@ -195,7 +195,7 @@ func decrypt(key []byte, cryptoText string) (string, error) {
 	ciphertext = ciphertext[aes.BlockSize:]
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
-	return fmt.Sprintf("%s", ciphertext), nil
+	return string(ciphertext), nil
 }
 
 func safeDecrypt(key []byte, cryptoText string) string {
