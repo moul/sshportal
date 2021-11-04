@@ -34,6 +34,7 @@ Features include: independence of users and hosts, convenient user invite system
 - [portal alias (.ssh/config)](#portal-alias-sshconfig)
 - [Scaling](#scaling)
 - [Under the hood](#under-the-hood)
+- [Testing](#testing)
 
 <!-- tocstop -->
 
@@ -471,6 +472,26 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
 
 ![sshportal data model](https://raw.github.com/moul/sshportal/master/.assets/sql-schema.png)
+
+---
+
+## Testing
+
+[Install golangci-lint](https://golangci-lint.run/usage/install/#local-installation) and run this in project root: 
+```
+golangci-lint run
+```
+---
+Perform integration tests
+```
+make integration
+```
+---
+Perform unit tests
+```
+make unittest
+```
+---
 
 ## Contributors
 
