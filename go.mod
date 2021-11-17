@@ -23,10 +23,10 @@ require (
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/tailscale/depaware v0.0.0-20210622194025-720c4b409502
 	github.com/urfave/cli v1.22.5
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.1.7
-	gorm.io/driver/mysql v1.1.3
+	gorm.io/driver/mysql v1.2.0
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/driver/sqlite v1.2.4
 	gorm.io/gorm v1.22.3
