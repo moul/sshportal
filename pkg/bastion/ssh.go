@@ -89,6 +89,22 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 
 	actx := ctx.Value(authContextKey).(*authContext)
 
+	if actx.user.ID == 0 && actx.userType() != userTypeHealthcheck {
+		ip, err := net.ResolveTCPAddr(conn.RemoteAddr().Network(), conn.RemoteAddr().String())
+		if err == nil {
+			log.Printf("Auth failed: sshUser=%q remote=%q", conn.User(), ip.IP.String())
+			actx.err = errors.New("access denied")
+
+			ch, _, err2 := newChan.Accept()
+			if err2 != nil {
+				return
+			}
+			fmt.Fprintf(ch, "error: %v\n", actx.err)
+			_ = ch.Close()
+			return
+		}
+	}
+
 	switch actx.userType() {
 	case userTypeBastion:
 		log.Printf("New connection(bastion): sshUser=%q remote=%q local=%q dbUser=id:%d,email:%s", conn.User(), conn.RemoteAddr(), conn.LocalAddr(), actx.user.ID, actx.user.Email)
