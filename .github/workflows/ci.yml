@@ -11,14 +11,14 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build the Docker image
         run: docker build . --file Dockerfile
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: lint
         uses: golangci/golangci-lint-action@v2.5.2
         with:
@@ -32,7 +32,7 @@ jobs:
         golang:
           - 1.16.x
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Go
         uses: actions/setup-go@v2
         with:
@@ -48,7 +48,7 @@ jobs:
         golang:
           - 1.16.x
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Go
         uses: actions/setup-go@v2
         with:
@@ -72,7 +72,7 @@ jobs:
           - 1.15.x
           - 1.16.x
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Go
         uses: actions/setup-go@v2
         with:
