@@ -22,7 +22,7 @@ require (
 	github.com/sabban/bastion v0.0.0-20180110125408-b9d3c9b1f4d3
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/tailscale/depaware v0.0.0-20210622194025-720c4b409502
-	github.com/urfave/cli v1.22.5
+	github.com/urfave/cli v1.22.11
 	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.1.10
