@@ -1640,11 +1640,15 @@ GLOBAL OPTIONS:
 							name = c.String("name")
 						}
 
+						r, err := randStringBytes(16)
+						if err != nil {
+							return err
+						}
 						user := dbmodels.User{
 							Name:        name,
 							Email:       email,
 							Comment:     c.String("comment"),
-							InviteToken: randStringBytes(16),
+							InviteToken: r,
 						}
 
 						if _, err := govalidator.ValidateStruct(user); err != nil {
