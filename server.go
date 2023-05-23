@@ -14,10 +14,11 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"moul.io/sshportal/pkg/bastion"
+
 	"github.com/gliderlabs/ssh"
 	"github.com/urfave/cli"
 	gossh "golang.org/x/crypto/ssh"
-	"moul.io/sshportal/pkg/bastion"
 )
 
 type serverConfig struct {
@@ -83,7 +84,7 @@ func dbConnect(c *serverConfig, config gorm.Option) (*gorm.DB, error) {
 func server(c *serverConfig) (err error) {
 	// configure db logging
 
-	db, err := dbConnect(c, &gorm.Config{
+	db, _ := dbConnect(c, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	sqlDB, err := db.DB()

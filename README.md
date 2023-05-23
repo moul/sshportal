@@ -61,7 +61,7 @@ Shared connection to localhost closed.
 $
 ```
 
-If the association fails and you are promted for a password, verify that the host you're connecting from has a SSH key set up or generate one with ```ssh-keygen -t rsa```
+If the association fails and you are prompted for a password, verify that the host you're connecting from has a SSH key set up or generate one with ```ssh-keygen -t rsa```
 
 Drop an interactive administrator shell
 
@@ -135,7 +135,7 @@ Used by educators to provide temporary access to students. [Feedback from a teac
 
 There are companies who use a jump host to monitor connections at a single point.
 
-A hosting company is using SSHportal for its “logging” feature, among the others. As every session is logged and introspectable, they have a detailed history of who performed which action. This company made its own contribution on the project, allowing the support of [more than 65.000 sessions in the database](https://github.com/moul/sshportal/pull/76).
+A hosting company is using SSHportal for its “logging” feature, among others. As every session is logged and introspectable, they have a detailed history of who performed which action. This company made its own contribution to the project, allowing the support of [more than 65.000 sessions in the database](https://github.com/moul/sshportal/pull/76).
 
 The project has also received [multiple contributions from a security researcher](https://github.com/moul/sshportal/pulls?q=is%3Apr+author%3Asabban+sort%3Aupdated-desc) that made a thesis on quantum cryptography. This person uses SSHportal in their security-hardened hosting company.
 
@@ -155,7 +155,7 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 * User management (invite, group, stats)
 * Host Key management (create, remove, update, import)
 * Automatic remote host key learning
-* User Key management (multile keys per user)
+* User Key management (multiple keys per user)
 * ACL management (acl+user-groups+host-groups)
 * User roles (admin, trusted, standard, ...)
 * User invitations (no more "give me your public ssh key please")
@@ -184,7 +184,7 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 
 * Does not work (yet?) with [`mosh`](https://mosh.org/)
 * It is not possible for a user to access a host with the same name as the user. This is easily circumvented by changing the user name, especially since the most common use cases does not expose it.
-* It is not possible access a host named `healthcheck` as this is a built in command.
+* It is not possible to access a host named `healthcheck` as this is a built-in command.
 
 ---
 
@@ -215,7 +215,7 @@ cp sshportal.db sshportal.db.bkp
 
 # run the new version
 docker run -p 2222:2222 -d --name=sshportal -v "$(pwd):$(pwd)" -w "$(pwd)" moul/sshportal:v1.10.0
-# check the logs for migration or cross-version incompabitility errors
+# check the logs for migration or cross-version incompatibility errors
 docker logs -f sshportal
 ```
 
@@ -276,7 +276,7 @@ cp sshportal.db sshportal.db.bkp
 
 By default, the configuration user is `admin`, (can be changed using `--config-user=<value>` when starting the server. The shell is also accessible through `ssh [username]@portal.example.org`.
 
-Each commands can be run directly by using this syntax: `ssh admin@portal.example.org <command> [args]`:
+Each command can be run directly by using this syntax: `ssh admin@portal.example.org <command> [args]`:
 
 ```
 ssh admin@portal.example.org host inspect toto
@@ -446,7 +446,7 @@ ssh localhost -p 2222 -l hostname
 
 By default, `sshportal` uses a local [sqlite](https://www.sqlite.org/) database which isn't scalable by design.
 
-You can run multiple instances of `sshportal` sharing a same [MySQL](https://www.mysql.com) database, using `sshportal --db-conn=user:pass@host/dbname?parseTime=true --db-driver=mysql`.
+You can run multiple instances of `sshportal` sharing the same [MySQL](https://www.mysql.com) database, using `sshportal --db-conn=user:pass@host/dbname?parseTime=true --db-driver=mysql`.
 
 ![sshportal cluster with MySQL backend](https://raw.github.com/moul/sshportal/master/.assets/cluster-mysql.png)
 
