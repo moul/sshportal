@@ -144,7 +144,7 @@ func ChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewCh
 				}}, sessionConfigs...)
 				if currentHost.HopID != 0 {
 					var newHost dbmodels.Host
-					if err := actx.db.Model(currentHost).Association("HopID").Find(&newHost); err != nil {
+					if err := actx.db.Model(currentHost).Association("Hop").Find(&newHost); err != nil {
 						log.Printf("Error: %v", err)
 						return
 					}

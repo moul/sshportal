@@ -901,7 +901,7 @@ GLOBAL OPTIONS:
 							var hop string
 							if host.HopID != 0 {
 								var hopHost dbmodels.Host
-								if err := db.Model(host).Association("HopID").Find(&hopHost); err != nil {
+								if err := db.Model(host).Association("Hop").Find(&hopHost); err != nil {
 									return err
 								}
 								hop = hopHost.Name
@@ -1028,7 +1028,7 @@ GLOBAL OPTIONS:
 							if c.Bool("unset-hop") {
 								var hopHost dbmodels.Host
 
-								if err := db.Model(&host).Association("HopID").Find(&hopHost); err != nil {
+								if err := db.Model(&host).Association("Hop").Find(&hopHost); err != nil {
 									return err
 								}
 								if err := model.Association("Hop").Clear(); err != nil {
