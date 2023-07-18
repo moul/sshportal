@@ -7,12 +7,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/pkg/errors"
 	"github.com/sabban/bastion/pkg/logchannel"
 	gossh "golang.org/x/crypto/ssh"
+)
+
+const (
+	authAgentReqOpenSSH     = "auth-agent-req@openssh.com"
+	authAgentChannelOpenSSH = "auth-agent@openssh.com"
+	authAgentReqRFC         = "auth-agent-req"
+	authAgentChannelRFC     = "auth-agent"
 )
 
 type sessionConfig struct {
@@ -61,11 +69,12 @@ func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx s
 		if err != nil {
 			return err
 		}
+
 		user := conn.User()
 		actx := ctx.Value(authContextKey).(*authContext)
 		username := actx.user.Name
 		// pipe everything
-		return pipe(lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan)
+		return pipe(conn, lastClient, lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan)
 	case "direct-tcpip":
 		lch, lreqs, err := newChan.Accept()
 		// TODO: defer clean closer
@@ -110,7 +119,7 @@ func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx s
 		actx := ctx.Value(authContextKey).(*authContext)
 		username := actx.user.Name
 		// pipe everything
-		return pipe(lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan)
+		return pipe(conn, lastClient, lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan)
 	default:
 		if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
 			log.Printf("failed to reject chan: %v", err)
@@ -119,7 +128,7 @@ func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx s
 	}
 }
 
-func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig sessionConfig, user string, username string, sessionID uint, newChan gossh.NewChannel) error {
+func pipe(serverConn *gossh.ServerConn, client *gossh.Client, lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig sessionConfig, user string, username string, sessionID uint, newChan gossh.NewChannel) error {
 	defer func() {
 		_ = lch.Close()
 		_ = rch.Close()
@@ -195,6 +204,16 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig
 					log.Printf("failed to write log: %v", err)
 				}
 			}
+			if req.Type == authAgentReqOpenSSH {
+				if err := ForwardToRemote(authAgentChannelOpenSSH, serverConn, client); err != nil {
+					log.Println("Failed to forward openssh agent", err)
+				}
+			}
+			if req.Type == authAgentReqRFC {
+				if err := ForwardToRemote(authAgentChannelRFC, serverConn, client); err != nil {
+					log.Println("Failed to forward RFC agent", err)
+				}
+			}
 
 			if err != nil {
 				errch <- err
@@ -251,6 +270,52 @@ func pipe(lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig
 			}
 		}
 	}
+}
+
+func ForwardToRemote(chanName string, conn *gossh.ServerConn, client *gossh.Client) error {
+	channels := client.HandleChannelOpen(chanName)
+	if channels == nil {
+		return errors.New("agent: already have handler for " + chanName)
+	}
+
+	go func() {
+		for ch := range channels {
+			lch, reqs, err := ch.Accept()
+			if err != nil {
+				log.Println("On auth-agent channel accept", err)
+				continue
+			}
+			defer lch.Close()
+			go gossh.DiscardRequests(reqs)
+
+			rch, rreqs, err := conn.OpenChannel(chanName, nil)
+			if err != nil {
+				log.Println("On auth-agent channel open", err)
+				continue
+			}
+			defer rch.Close()
+			go gossh.DiscardRequests(rreqs)
+
+			forwardChannel(rch, lch)
+		}
+	}()
+	return nil
+}
+
+func forwardChannel(rch, lch gossh.Channel) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		io.Copy(lch, rch)
+		lch.CloseWrite()
+		wg.Done()
+	}()
+	go func() {
+		io.Copy(rch, lch)
+		rch.CloseWrite()
+		wg.Done()
+	}()
+	wg.Wait()
 }
 
 func newDiscardWriteCloser() io.WriteCloser { return &discardWriteCloser{ioutil.Discard} }
