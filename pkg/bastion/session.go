@@ -74,7 +74,7 @@ func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx s
 		actx := ctx.Value(authContextKey).(*authContext)
 		username := actx.user.Name
 		// pipe everything
-		return pipe(conn, lastClient, lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan, actx.aesKey)
+		return pipe(conn, lastClient, lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan)
 	case "direct-tcpip":
 		lch, lreqs, err := newChan.Accept()
 		// TODO: defer clean closer
@@ -119,7 +119,7 @@ func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx s
 		actx := ctx.Value(authContextKey).(*authContext)
 		username := actx.user.Name
 		// pipe everything
-		return pipe(conn, lastClient, lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan, actx.aesKey)
+		return pipe(conn, lastClient, lreqs, rreqs, lch, rch, configs[len(configs)-1], user, username, sessionID, newChan)
 	default:
 		if err := newChan.Reject(gossh.UnknownChannelType, "unsupported channel type"); err != nil {
 			log.Printf("failed to reject chan: %v", err)
@@ -128,7 +128,7 @@ func multiChannelHandler(conn *gossh.ServerConn, newChan gossh.NewChannel, ctx s
 	}
 }
 
-func pipe(serverConn *gossh.ServerConn, client *gossh.Client, lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig sessionConfig, user string, username string, sessionID uint, newChan gossh.NewChannel, aesKey string) error {
+func pipe(serverConn *gossh.ServerConn, client *gossh.Client, lreqs, rreqs <-chan *gossh.Request, lch, rch gossh.Channel, sessConfig sessionConfig, user string, username string, sessionID uint, newChan gossh.NewChannel) error {
 	defer func() {
 		_ = lch.Close()
 		_ = rch.Close()
