@@ -84,8 +84,12 @@ func dbConnect(c *serverConfig, config gorm.Option) (*gorm.DB, error) {
 func server(c *serverConfig) (err error) {
 	// configure db logging
 
+	logMode := logger.Silent
+	if c.debug {
+		logMode = logger.Info
+	}
 	db, _ := dbConnect(c, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: logger.Default.LogMode(logMode),
 	})
 	sqlDB, err := db.DB()
 
