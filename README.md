@@ -129,11 +129,11 @@ Demo gif:
 
 ## Use cases
 
-Used by educators to provide temporary access to students. [Feedback from a teacher](https://github.com/moul/sshportal/issues/64). The author is using it in one of his projects, *pathwar*, to dynamically configure hosts and users, so that he can give temporary accesses for educational purposes.
+Used by educators to provide temporary access to students. [Feedback from a teacher](https://github.com/moul/sshportal/issues/64). The author is using it in one of his projects, *pathwar*, to dynamically configure hosts and users, so that he can give temporary access for educational purposes.
 
 *vptech*, the vente-privee.com technical team (a group of over 6000 people) is using it internally to manage access to servers/routers, saving hours on configuration management and not having to share the configuration information.
 
-There are companies who use a jump host to monitor connections at a single point.
+There are companies that use a jump host to monitor connections at a single point.
 
 A hosting company is using SSHportal for its “logging” feature, among others. As every session is logged and introspectable, they have a detailed history of who performed which action. This company made its own contribution to the project, allowing the support of [more than 65.000 sessions in the database](https://github.com/moul/sshportal/pull/76).
 
@@ -165,7 +165,7 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
 * Audit log (logging every user action)
 * Record TTY Session (with [ttyrec](https://en.wikipedia.org/wiki/Ttyrec) format, use `ttyplay` for replay)
 * Tunnels logging
-* Host Keys verifications shared across users
+* Host Key verifications shared across users
 * Healthcheck user (replying OK to any user)
 * SSH compatibility
   * ipv4 and ipv6 support
@@ -176,14 +176,14 @@ If you need to invite multiple people to an event (hackathon, course, etc), the 
   * [`ssh-agent`](https://www.ssh.com/ssh/agent) support
   * [`X11 forwarding`](http://en.tldp.org/HOWTO/XDMCP-HOWTO/ssh.html) support
   * Git support (can be used to easily use multiple user keys on GitHub, or access your own firewalled gitlab server)
-  * Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming libraries and every tested SSH clients
+  * Do not require any SSH client modification or custom `.ssh/config`, works with every tested SSH programming library and every tested SSH clients
 * SSH to non-SSH proxy
   * [Telnet](https://www.ssh.com/ssh/telnet) support
 
 **(Known) limitations**
 
 * Does not work (yet?) with [`mosh`](https://mosh.org/)
-* It is not possible for a user to access a host with the same name as the user. This is easily circumvented by changing the user name, especially since the most common use cases does not expose it.
+* It is not possible for a user to access a host with the same name as the user. This is easily circumvented by changing the user name, especially since the most common use cases do not expose it.
 * It is not possible to access a host named `healthcheck` as this is a built-in command.
 
 ---
@@ -258,7 +258,7 @@ ssh portal config restore < sshportal.bkp
 
 This method is particularly useful as it should be resistant against future DB schema changes (expected during development phase).
 
-I suggest you to be careful during this development phase, and use an additional backup method, for example:
+I suggest you be careful during this development phase, and use an additional backup method, for example:
 
 ```sh
 # sqlite dump
@@ -466,7 +466,7 @@ See [examples/mysql](http://github.com/moul/sshportal/tree/master/examples/mysql
     * https://github.com/go-gormigrate/gormigrate: Database migration system
   * Built-in shell
     * https://github.com/olekukonko/tablewriter: Ascii tables
-    * https://github.com/asaskevich/govalidator: Valide user inputs
+    * https://github.com/asaskevich/govalidator: Validate user inputs
     * https://github.com/dustin/go-humanize: Human-friendly representation of technical data (time ago, bytes, ...)
     * https://github.com/mgutz/ansi: Terminal color helpers
     * https://github.com/urfave/cli: CLI flag parsing with subcommands support
