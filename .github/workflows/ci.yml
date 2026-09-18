@@ -22,7 +22,7 @@ jobs:
       - name: lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50.1
+          version: v1.64.8
           github-token: ${{ secrets.GITHUB_TOKEN }}
   tests-on-windows:
     needs: golangci-lint # run after golangci-lint action to not produce duplicated errors
@@ -53,7 +53,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.golang }}
-      - uses: actions/cache@v2.1.7
+      - uses: actions/cache@v2.1.8
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
@@ -77,7 +77,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.golang }}
-      - uses: actions/cache@v2.1.7
+      - uses: actions/cache@v2.1.8
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
