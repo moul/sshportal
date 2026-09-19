@@ -3,5 +3,6 @@
     "config:base"
   ],
   "groupName": "all",
-  "gomodTidy": true
+  "gomodTidy": true,
+  "enabled": false
 }
