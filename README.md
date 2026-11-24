@@ -239,7 +239,7 @@ docker logs -f sshportal
 Get the latest version using GO.
 
 ```sh
-GO111MODULE=on go get -u moul.io/sshportal
+go install moul.io/sshportal@latest
 ```
 
 ---
