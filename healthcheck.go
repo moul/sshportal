@@ -12,53 +12,56 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
+const healthcheckTimeout = 5 * time.Second
+
 // perform a healthcheck test without requiring an ssh client or an ssh key (used for Docker's HEALTHCHECK)
 func healthcheck(addr string, wait, quiet bool) error {
 	cfg := gossh.ClientConfig{
 		User:            "healthcheck",
-		HostKeyCallback: func(hostname string, remote net.Addr, key gossh.PublicKey) error { return nil },
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 		Auth:            []gossh.AuthMethod{gossh.Password("healthcheck")},
 	}
 
-	if wait {
-		for {
-			if err := healthcheckOnce(addr, cfg, quiet); err != nil {
-				if !quiet {
-					log.Printf("error: %v", err)
-				}
-				time.Sleep(time.Second)
-				continue
-			}
+	for {
+		err := healthcheckOnce(addr, cfg, healthcheckTimeout)
+		if err == nil {
 			return nil
 		}
-	}
-
-	if err := healthcheckOnce(addr, cfg, quiet); err != nil {
-		if quiet {
-			return cli.NewExitError("", 1)
+		if !wait {
+			if quiet {
+				return cli.NewExitError("", 1)
+			}
+			return err
 		}
-		return err
+		if !quiet {
+			log.Printf("error: %v", err)
+		}
+		time.Sleep(time.Second)
 	}
-	return nil
 }
 
-func healthcheckOnce(addr string, config gossh.ClientConfig, quiet bool) error {
-	client, err := gossh.Dial("tcp", addr, &config)
+func healthcheckOnce(addr string, config gossh.ClientConfig, timeout time.Duration) error {
+	dialer := net.Dialer{Deadline: time.Now().Add(timeout)}
+	conn, err := dialer.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}
+	defer func() { _ = conn.Close() }()
+
+	// The dialer's deadline only covers connecting, so also bound the SSH exchange.
+	if err := conn.SetDeadline(dialer.Deadline); err != nil {
+		return err
+	}
+	sshConn, channels, requests, err := gossh.NewClientConn(conn, addr, &config)
+	if err != nil {
+		return err
+	}
+	client := gossh.NewClient(sshConn, channels, requests)
 
 	session, err := client.NewSession()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := session.Close(); err != nil {
-			if !quiet {
-				log.Printf("failed to close session: %v", err)
-			}
-		}
-	}()
 
 	var b bytes.Buffer
 	session.Stdout = &b
