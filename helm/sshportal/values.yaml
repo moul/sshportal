@@ -6,6 +6,9 @@
 ##
 debug: false
 
+## Number of replicas in standalone mode. MySQL deployments use the HPA.
+replicaCount: 1
+
 ## SSH Portal Docker image
 ##
 image:
@@ -110,7 +113,8 @@ tolerations: []
 ##
 affinity: {}
 
-## HPA support, require `mysql.enable: true`
+## HPA support requires mysql.enabled and Kubernetes 1.23 or later.
+## Set resources.requests.cpu to enable CPU-based scaling.
 ## This section enables sshportal to autoscale based on metrics.
 ##
 autoscaling:

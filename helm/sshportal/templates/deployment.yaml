@@ -5,7 +5,9 @@ metadata:
   labels:
     {{- include "sshportal.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.mysql.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "sshportal.selectorLabels" . | nindent 6 }}
