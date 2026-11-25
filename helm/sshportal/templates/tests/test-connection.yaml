@@ -3,13 +3,27 @@ kind: Pod
 metadata:
   name: "{{ include "sshportal.fullname" . }}-test-connection"
   labels:
-{{ include "sshportal.labels" . | nindent 4 }}
+    {{- include "sshportal.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": test-success
+    "helm.sh/hook": test
 spec:
-  containers:
-    - name: wget
-      image: busybox
-      command: ['wget']
-      args:  ['{{ include "sshportal.fullname" . }}:{{ .Values.service.port }}']
   restartPolicy: Never
+  activeDeadlineSeconds: 20
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  securityContext:
+    {{- toYaml .Values.podSecurityContext | nindent 4 }}
+  containers:
+    - name: sshportal-healthcheck
+      image: "{{ .Values.image.repository }}:v{{ .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      command:
+        - /bin/sshportal
+        - healthcheck
+      args:
+        - --addr
+        - {{ printf "%s:%v" (include "sshportal.fullname" .) .Values.service.port | quote }}
