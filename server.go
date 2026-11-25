@@ -66,49 +66,52 @@ func ensureLogDirectory(location string) error {
 	return nil
 }
 
-func dbConnect(c *serverConfig, config gorm.Option) (*gorm.DB, error) {
-	var dbOpen func(string) gorm.Dialector
-	if c.dbDriver == "sqlite3" {
-		dbOpen = sqlite.Open
-	}
-	if c.dbDriver == "postgres" {
-		dbOpen = postgres.Open
+func dbConnect(c *serverConfig) (*gorm.DB, error) {
+	var dialector gorm.Dialector
+	switch c.dbDriver {
+	case "sqlite3":
+		dialector = sqlite.Open(c.dbURL)
+	case "postgres":
+		dialector = postgres.Open(c.dbURL)
+	case "mysql":
+		dialector = mysql.Open(c.dbURL)
+	default:
+		return nil, fmt.Errorf("unsupported database driver %q (supported: sqlite3, postgres, mysql)", c.dbDriver)
 	}
 
-	if c.dbDriver == "mysql" {
-		dbOpen = mysql.Open
+	db, err := gorm.Open(dialector, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		// GORM can allocate a connection pool before initialization fails.
+		if db != nil {
+			if sqlDB, poolErr := db.DB(); poolErr == nil && sqlDB != nil {
+				_ = sqlDB.Close()
+			}
+		}
+		// Driver errors can include the connection string and its credentials.
+		return nil, fmt.Errorf("cannot open %s database: check --db-conn (SSHPORTAL_DATABASE_URL) and database availability", c.dbDriver)
 	}
-	return gorm.Open(dbOpen(c.dbURL), config)
+	return db, nil
 }
 
 func server(c *serverConfig) (err error) {
-	// configure db logging
-
-	db, _ := dbConnect(c, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+	db, err := dbConnect(c)
+	if err != nil {
+		return err
+	}
 	sqlDB, err := db.DB()
-
+	if err != nil {
+		return fmt.Errorf("get database connection pool: %w", err)
+	}
 	defer func() {
-		origErr := err
-		err = sqlDB.Close()
-		if origErr != nil {
-			err = origErr
+		if closeErr := sqlDB.Close(); err == nil {
+			err = closeErr
 		}
 	}()
 
-	if err = sqlDB.Ping(); err != nil {
-		return
-	}
-
-	if err = bastion.DBInit(db); err != nil {
-		return
-	}
-
-	// create TCP listening socket
-	ln, err := net.Listen("tcp", c.bindAddr)
-	if err != nil {
-		return err
+	if err := bastion.DBInit(db); err != nil {
+		return fmt.Errorf("initialize database: %w", err)
 	}
 
 	// configure server
@@ -152,6 +155,11 @@ func server(c *serverConfig) (err error) {
 		if err := srv.SetOption(opt); err != nil {
 			return err
 		}
+	}
+
+	ln, err := net.Listen("tcp", c.bindAddr)
+	if err != nil {
+		return err
 	}
 
 	log.Printf("info: SSH Server accepting connections on %s, idle-timout=%v", c.bindAddr, c.idleTimeout)
