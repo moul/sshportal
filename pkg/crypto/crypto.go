@@ -131,38 +131,48 @@ func NewEd25519Key() (*pem.Block, gossh.PublicKey, error) {
 }
 
 func ImportSSHKey(keyValue string) (*dbmodels.SSHKey, error) {
-	key := dbmodels.SSHKey{
-		Type: "rsa",
-	}
-
 	parsedKey, err := gossh.ParseRawPrivateKey([]byte(keyValue))
 	if err != nil {
 		return nil, err
 	}
-	var privateKey *rsa.PrivateKey
-	var ok bool
-	if privateKey, ok = parsedKey.(*rsa.PrivateKey); !ok {
+	// OpenSSH and PKCS#8 Ed25519 keys are parsed into different Go types.
+	if key, ok := parsedKey.(*ed25519.PrivateKey); ok {
+		parsedKey = *key
+	}
+
+	var key dbmodels.SSHKey
+	var pemKey *pem.Block
+	switch privateKey := parsedKey.(type) {
+	case *rsa.PrivateKey:
+		key.Type = "rsa"
+		key.Length = uint(privateKey.PublicKey.N.BitLen())
+		pemKey = &pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+		}
+	case *ecdsa.PrivateKey:
+		key.Type = "ecdsa"
+		key.Length = uint(privateKey.Curve.Params().BitSize)
+	case ed25519.PrivateKey:
+		key.Type = "ed25519"
+		key.Length = 1 // Match the metadata for generated Ed25519 keys.
+	default:
 		return nil, errors.New("key type not supported")
 	}
-	key.Length = uint(privateKey.PublicKey.N.BitLen())
-	// convert priv key to x509 format
-	var pemKey = &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	if pemKey == nil {
+		marshaledKey, err := x509.MarshalPKCS8PrivateKey(parsedKey)
+		if err != nil {
+			return nil, err
+		}
+		pemKey = &pem.Block{Type: "PRIVATE KEY", Bytes: marshaledKey}
 	}
-	buf := bytes.NewBufferString("")
-	if err = pem.Encode(buf, pemKey); err != nil {
-		return nil, err
-	}
-	key.PrivKey = buf.String()
 
-	// generte authorized-key formatted pubkey output
-	pub, err := gossh.NewPublicKey(&privateKey.PublicKey)
+	signer, err := gossh.NewSignerFromKey(parsedKey)
 	if err != nil {
 		return nil, err
 	}
-	key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(pub)))
-
+	key.PrivKey = string(pem.EncodeToMemory(pemKey))
+	key.PubKey = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(signer.PublicKey())))
 	return &key, nil
 }
 

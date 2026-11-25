@@ -1379,6 +1379,10 @@ GLOBAL OPTIONS:
 							return err
 						}
 
+						if err := crypto.SSHKeyEncrypt(actx.aesKey, key); err != nil {
+							return err
+						}
+
 						key.Name = name
 						key.Comment = c.String("comment")
 
