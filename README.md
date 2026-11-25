@@ -379,6 +379,10 @@ info [-h]
 version [-h]
 ```
 
+The key import command accepts unencrypted RSA, ECDSA, and Ed25519 SSH private keys.
+On a server configured with an AES key, imported private keys are encrypted in the database.
+
+
 ---
 
 ## Healthcheck
