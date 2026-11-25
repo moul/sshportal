@@ -18,10 +18,21 @@ import (
 	"moul.io/sshportal/pkg/dbmodels"
 )
 
+func recreateIndex(db *gorm.DB, model interface{}, name string) error {
+	migrator := db.Migrator()
+	if migrator.HasIndex(model, name) {
+		if err := migrator.DropIndex(model, name); err != nil {
+			return err
+		}
+	}
+	return migrator.CreateIndex(model, name)
+}
+
 func DBInit(db *gorm.DB) error {
 	log.SetOutput(ioutil.Discard)
 	log.SetOutput(os.Stderr)
 
+	// Keep index definitions on historical models that revise indexed name columns.
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
 		{
 			ID: "1",
@@ -41,7 +52,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type SSHKey struct {
 					gorm.Model
-					Name        string
+					Name        string `gorm:"size:255;index:uix_keys_name,unique"`
 					Type        string
 					Length      uint
 					Fingerprint string
@@ -97,7 +108,7 @@ func DBInit(db *gorm.DB) error {
 					gorm.Model
 					IsAdmin     bool
 					Email       string
-					Name        string
+					Name        string                `gorm:"size:255;index:uix_users_name,unique"`
 					Keys        []*dbmodels.UserKey   `gorm:"ForeignKey:UserID"`
 					Groups      []*dbmodels.UserGroup `gorm:"many2many:user_user_groups;"`
 					Comment     string
@@ -113,7 +124,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type UserGroup struct {
 					gorm.Model
-					Name    string
+					Name    string           `gorm:"size:255;index:uix_usergroups_name,unique"`
 					Users   []*dbmodels.User `gorm:"many2many:user_user_groups;"`
 					ACLs    []*dbmodels.ACL  `gorm:"many2many:user_group_acls;"`
 					Comment string
@@ -128,7 +139,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type HostGroup struct {
 					gorm.Model
-					Name    string
+					Name    string           `gorm:"size:255;index:uix_hostgroups_name,unique"`
 					Hosts   []*dbmodels.Host `gorm:"many2many:host_host_groups;"`
 					ACLs    []*dbmodels.ACL  `gorm:"many2many:host_group_acls;"`
 					Comment string
@@ -159,10 +170,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "9",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Migrator().DropIndex(&dbmodels.Setting{}, "uix_settings_name"); err != nil {
-					return err
-				}
-				return tx.Migrator().CreateIndex(&dbmodels.Setting{}, "uix_settings_name")
+				return recreateIndex(tx, &dbmodels.Setting{}, "uix_settings_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Migrator().DropIndex(&dbmodels.Setting{}, "uix_settings_name")
@@ -170,10 +178,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "10",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Migrator().DropIndex(&dbmodels.SSHKey{}, "uix_keys_name"); err != nil {
-					return err
-				}
-				return tx.Migrator().CreateIndex(&dbmodels.SSHKey{}, "uix_keys_name")
+				return recreateIndex(tx, &dbmodels.SSHKey{}, "uix_keys_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Migrator().DropIndex(&dbmodels.SSHKey{}, "uix_keys_name")
@@ -181,10 +186,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "11",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Migrator().DropIndex(&dbmodels.Host{}, "uix_hosts_name"); err != nil {
-					return err
-				}
-				return tx.Migrator().CreateIndex(&dbmodels.Host{}, "uix_hosts_name")
+				return recreateIndex(tx, &dbmodels.Host{}, "uix_hosts_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Migrator().DropIndex(&dbmodels.Host{}, "uix_hosts_name")
@@ -192,10 +194,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "12",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Migrator().DropIndex(&dbmodels.User{}, "uix_users_name"); err != nil {
-					return err
-				}
-				return tx.Migrator().CreateIndex(&dbmodels.User{}, "uix_users_name")
+				return recreateIndex(tx, &dbmodels.User{}, "uix_users_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Migrator().DropIndex(&dbmodels.User{}, "uix_users_name")
@@ -203,10 +202,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "13",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Migrator().DropIndex(&dbmodels.UserGroup{}, "uix_usergroups_name"); err != nil {
-					return err
-				}
-				return tx.Migrator().CreateIndex(&dbmodels.UserGroup{}, "uix_usergroups_name")
+				return recreateIndex(tx, &dbmodels.UserGroup{}, "uix_usergroups_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Migrator().DropIndex(&dbmodels.UserGroup{}, "uix_usergroups_name")
@@ -214,10 +210,7 @@ func DBInit(db *gorm.DB) error {
 		}, {
 			ID: "14",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Migrator().DropIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name"); err != nil {
-					return err
-				}
-				return tx.Migrator().CreateIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name")
+				return recreateIndex(tx, &dbmodels.HostGroup{}, "uix_hostgroups_name")
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Migrator().DropIndex(&dbmodels.HostGroup{}, "uix_hostgroups_name")
@@ -243,7 +236,7 @@ func DBInit(db *gorm.DB) error {
 					IsAdmin     bool
 					Roles       []*dbmodels.UserRole  `gorm:"many2many:user_user_roles"`
 					Email       string                `valid:"required,email"`
-					Name        string                `valid:"required,length(1|32),unix_user"`
+					Name        string                `gorm:"size:255;index:uix_users_name,unique" valid:"required,length(1|32),unix_user"`
 					Keys        []*dbmodels.UserKey   `gorm:"ForeignKey:UserID"`
 					Groups      []*dbmodels.UserGroup `gorm:"many2many:user_user_groups;"`
 					Comment     string                `valid:"optional"`
@@ -293,7 +286,7 @@ func DBInit(db *gorm.DB) error {
 					gorm.Model
 					Roles       []*dbmodels.UserRole  `gorm:"many2many:user_user_roles"`
 					Email       string                `valid:"required,email"`
-					Name        string                `valid:"required,length(1|32),unix_user"`
+					Name        string                `gorm:"size:255;index:uix_users_name,unique" valid:"required,length(1|32),unix_user"`
 					Keys        []*dbmodels.UserKey   `gorm:"ForeignKey:UserID"`
 					Groups      []*dbmodels.UserGroup `gorm:"many2many:user_user_groups;"`
 					Comment     string                `valid:"optional"`
@@ -392,7 +385,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
 					gorm.Model
-					Name        string                `gorm:"size:32" valid:"required,length(1|32),unix_user"`
+					Name        string                `gorm:"size:32;index:uix_hosts_name,unique" valid:"required,length(1|32),unix_user"`
 					Addr        string                `valid:"required"`
 					User        string                `valid:"optional"`
 					Password    string                `valid:"optional"`
@@ -452,7 +445,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
 					gorm.Model
-					Name     string `gorm:"size:32"`
+					Name     string `gorm:"size:32;index:uix_hosts_name,unique"`
 					Addr     string
 					User     string
 					Password string
@@ -473,7 +466,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
 					gorm.Model
-					Name     string `gorm:"size:32"`
+					Name     string `gorm:"size:32;index:uix_hosts_name,unique"`
 					Addr     string
 					User     string
 					Password string
@@ -496,7 +489,7 @@ func DBInit(db *gorm.DB) error {
 			Migrate: func(tx *gorm.DB) error {
 				type Host struct {
 					gorm.Model
-					Name     string `gorm:"size:32"`
+					Name     string `gorm:"size:32;index:uix_hosts_name,unique"`
 					Addr     string
 					User     string
 					Password string

@@ -19,33 +19,30 @@ require (
 	github.com/urfave/cli v1.22.5
 	golang.org/x/crypto v0.59.0
 	golang.org/x/tools v0.53.0
-	gorm.io/driver/mysql v1.2.3
-	gorm.io/driver/postgres v1.2.3
-	gorm.io/driver/sqlite v1.2.6
-	gorm.io/gorm v1.22.5
+	gorm.io/driver/mysql v1.6.0
+	gorm.io/driver/postgres v1.6.3
+	gorm.io/driver/sqlite v1.6.0
+	gorm.io/gorm v1.31.2
 	moul.io/srand v1.6.1
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/creack/pty v1.1.11 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
+	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.14.3 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgtype v1.14.0 // indirect
-	github.com/jackc/pgx/v4 v4.18.3 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.13.0 // indirect
+	github.com/jackc/puddle/v2 v2.2.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.4 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.12 // indirect
-	github.com/mattn/go-sqlite3 v1.14.9 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/pkg/diff v0.0.0-20200914180035-5b29258ca4f7 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
