@@ -50,7 +50,7 @@ func main() {
 					Name:   "db-driver",
 					EnvVar: "SSHPORTAL_DB_DRIVER",
 					Value:  "sqlite3",
-					Usage:  "GORM driver (sqlite3)",
+					Usage:  "Database driver (sqlite3, postgres, or mysql)",
 				},
 				cli.StringFlag{
 					Name:   "db-conn",
