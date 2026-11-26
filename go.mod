@@ -7,7 +7,7 @@ require (
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/docker/docker v20.10.12+incompatible
 	github.com/dustin/go-humanize v1.0.0
-	github.com/gliderlabs/ssh v0.3.3
+	github.com/gliderlabs/ssh v0.3.5
 	github.com/go-gormigrate/gormigrate/v2 v2.0.0
 	github.com/kr/pty v1.1.8
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -23,8 +23,7 @@ require (
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/tailscale/depaware v0.0.0-20210622194025-720c4b409502
 	github.com/urfave/cli v1.22.5
-	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab
-	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d
 	golang.org/x/tools v0.1.10
 	gorm.io/driver/mysql v1.2.3
 	gorm.io/driver/postgres v1.2.3
